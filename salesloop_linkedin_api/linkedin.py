@@ -618,6 +618,29 @@ class Linkedin(object):
 
         return data
 
+    def get_sent_invitations(self, start=0, limit=10):
+        """
+        Return list of new invites
+        # original request
+        # https://www.linkedin.com/voyager/api/relationships/sentInvitationViewsV2?count=10&invitationType=CONNECTION&q=invitationType&start=0
+        """
+        params = {
+            "count": limit,
+            "invitationType": 'CONNECTION',
+            "q": "invitationType",
+            "start": start,
+        }
+
+        res = self._fetch(
+            f"/relationships/sentInvitationViewsV2", params=params
+        )
+
+        if res.status_code != 200:
+            return []
+
+        response_payload = res.json()
+        return [element["invitation"] for element in response_payload["elements"]]
+
     def get_invitations(self, start=0, limit=3):
         """
         Return list of new invites
@@ -630,7 +653,7 @@ class Linkedin(object):
         }
 
         res = self._fetch(
-            f"{self.client.API_BASE_URL}/relationships/invitationViews", params=params
+            f"/relationships/invitationViews", params=params
         )
 
         if res.status_code != 200:
@@ -638,6 +661,20 @@ class Linkedin(object):
 
         response_payload = res.json()
         return [element["invitation"] for element in response_payload["elements"]]
+
+    def get_invitations_summary(self):
+        """
+        Return list of new invites
+        """
+        res = self._fetch(
+            f"/relationships/invitationsSummary"
+        )
+
+        if res.status_code != 200:
+            return []
+
+        response_payload = res.json()
+        return response_payload
 
     def reply_invitation(
         self, invitation_entity_urn, invitation_shared_secret, action="accept"
