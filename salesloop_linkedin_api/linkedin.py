@@ -618,7 +618,7 @@ class Linkedin(object):
 
         return data
 
-    def get_sent_invitations(self, start=0, limit=10):
+    def get_sent_invitations(self, start=0, limit=100):
         """
         Return list of new invites
         # original request
@@ -639,6 +639,7 @@ class Linkedin(object):
             return []
 
         response_payload = res.json()
+        print(response_payload)
         return [element["invitation"] for element in response_payload["elements"]]
 
     def get_invitations(self, start=0, limit=3):
