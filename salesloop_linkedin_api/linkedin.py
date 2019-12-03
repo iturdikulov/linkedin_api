@@ -639,7 +639,6 @@ class Linkedin(object):
             return []
 
         response_payload = res.json()
-        print(response_payload)
         return [element["invitation"] for element in response_payload["elements"]]
 
     def get_invitations(self, start=0, limit=3):
@@ -812,7 +811,7 @@ class Linkedin(object):
         elif public_id:
             self.get_current_profile_urn(public_id)
 
-    def connect_with_someone(self, profile_urn_id, message=None):
+    def connect_with_someone(self, profile_urn_id, message=None, get_json=False):
         """
         Send a message to a given conversation. If error, return true.
         generate_tracking_id is not equal to API, gene
@@ -860,7 +859,10 @@ class Linkedin(object):
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
         )
 
-        return res.status_code != 201, res.status_code
+        if get_json:
+            return res.status_code != 201, res.status_code, res.json()
+        else:
+            return res.status_code != 201, res.status_code
 
     def remove_connection(self, public_profile_id):
         res = self._post(
