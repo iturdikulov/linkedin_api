@@ -512,11 +512,20 @@ class Linkedin(object):
 
         return item
 
-    def get_conversations(self, start=0):
+    def get_conversations(self, createdBefore=None):
         """
         Return list of conversations the user is in.
         """
-        params = {"keyVersion": "LEGACY_INBOX", "start": start}
+        if not createdBefore:
+            params = {
+                "keyVersion": "LEGACY_INBOX",
+                "count": 20
+            }
+        else:
+            params = {
+                "keyVersion": "LEGACY_INBOX",
+                "createdBefore": createdBefore
+            }
 
         res = self._fetch(f"/messaging/conversations", params=params)
 
