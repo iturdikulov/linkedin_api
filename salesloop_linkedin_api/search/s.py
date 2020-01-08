@@ -16,9 +16,23 @@ import argparse
 from scrapy import signals
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
-
 from scrapy.signalmanager import dispatcher
 
+
+def linkedin_get_display_picture_url(picture):
+    if not isinstance(picture, dict):
+        return None
+
+    display_picture_meta = picture.get('com.linkedin.common.VectorImage', {})
+    url_segment = None
+    url_root = display_picture_meta.get('rootUrl', None)
+    for artifact in display_picture_meta.get('artifacts', []):
+        if artifact.get('width') == 100:
+            url_segment = artifact.get('fileIdentifyingUrlPathSegment')
+            break
+
+    if url_root and url_segment and isinstance(url_root, str) and isinstance(url_segment, str) :
+        return url_root + url_segment
 
 class CustomItem(scrapy.Item):
     title = scrapy.Field()
@@ -387,20 +401,21 @@ class LoginSpider(scrapy.Spider):
             i['inCrm'] = -1
             i['tags'] = ""
             entityUrn = None
+
             if 'entityUrn' in lead:
                 entityUrn = ''.join(re.findall(r'urn:li:fs_miniProfile:(.*)', lead['entityUrn']))
                 if entityUrn:
-                    i['profileLinkSN'] = ''
-                    i['profileLink'] = 'https://www.linkedin.com/profile/view/?id=%s' % entityUrn
+                    i['profileLinkSN'] = 'https://www.linkedin.com/sales/people/%s' % entityUrn
+                    i['profileLink'] = ''
                     i['entityUrn'] = entityUrn
 
             i['position'] = lead.get('headline', {}).get('text')
 
-            snippet_text = lead.get('snippetText', {})
-            if snippet_text and snippet_text.get('text'):
-                company_name = re.findall(r'at(.*)?', snippet_text.get('text'))
-                if len(company_name) == 1:
-                    i['companyName'] = company_name[0].strip()
+            # snippet_text = lead.get('snippetText', {})
+            # if snippet_text and snippet_text.get('text'):
+            #     company_name = re.findall(r'at(.*)?', snippet_text.get('text'))
+            #     if len(company_name) == 1:
+            #         i['companyName'] = company_name[0].strip()
 
             if lead.get('picture', {}):
                 pictures = lead.get('picture', {}).get('artifacts', [])
@@ -410,7 +425,6 @@ class LoginSpider(scrapy.Spider):
                             i['picture'] = '%s%s' % (lead['picture']['rootUrl'], image['fileIdentifyingUrlPathSegment'])
                             break
 
-            #self.leads.append(i.__dict__['_values'])
             yield self.getPositionEducationForLeadsRequest(i)
 
     def after_login(self, response):
@@ -438,6 +452,8 @@ class LoginSpider(scrapy.Spider):
 
         if csrfToken:
             self.csrfToken = csrfToken
+
+        redirect = None
 
         if 'redirect' in qsDict:
             redirect = qsDict['redirect'][0]
@@ -663,9 +679,9 @@ class LoginSpider(scrapy.Spider):
                                 i['companyName'] = position['companyName']
                             if 'title' in position:
                                 i['position'] = position['title']
-                            if 'companyUrn' in position:
-                                companyId = str(position['companyUrn'].replace('urn:li:fs_salesCompany:', ''))
-                                i['companyId'] = companyId
+                            # if 'companyUrn' in position:
+                            #     companyId = str(position['companyUrn'].replace('urn:li:fs_salesCompany:', ''))
+                            #     i['companyId'] = companyId
                             break
 
                 if 'profilePictureDisplayImage' in lead:
@@ -674,7 +690,6 @@ class LoginSpider(scrapy.Spider):
                             i['picture'] = '%s%s' % (lead['profilePictureDisplayImage']['rootUrl'], image['fileIdentifyingUrlPathSegment'])
                             break
 
-                # self.leads.append(i.__dict__['_values'])
                 yield self.getPositionEducationForLeadsRequest(i)
 
 
@@ -697,6 +712,17 @@ class LoginSpider(scrapy.Spider):
         i = response.meta['item']
         #self.logger.debug('parsePositionEducationForLeads %s', response.body_as_unicode())
 
+        if 'positionGroupView' in data and 'elements' in data['positionGroupView']:
+            if data['positionGroupView']['elements'] and len(data['positionGroupView']['elements']) > 0:
+                positions = data['positionGroupView']['elements'][0].get('positions')
+
+                for position in positions:
+                    i['companyName'] = position.get('companyName')
+                    i['position'] = position.get('title')
+                    companyId = str(position.get('companyUrn', '').replace('urn:li:fs_salesCompany:', ''))
+                    i['companyId'] = companyId
+                    break
+
         if 'educationView' in data and 'elements' in data['educationView']:
             educations = []
             for element in data['educationView']['elements']:
@@ -708,14 +734,19 @@ class LoginSpider(scrapy.Spider):
 
             i['educations'] = ('\n').join(educations)
 
-        if 'profile' in data and 'headline' in data['profile']:
-            i['headline'] = data['profile']['headline']
+        if 'profile' in data and 'miniProfile' in data['profile']:
+            # if 'picture' in data['profile']['miniProfile']:
+            #     self.logger.debug(i)
+            #     i['picture'] = linkedin_get_display_picture_url(data['profile']['miniProfile']['picutre'])
 
             if 'publicIdentifier' in data['profile']['miniProfile']:
                 i['publicIdentifier'] = data['profile']['miniProfile']['publicIdentifier']
 
             if 'miniProfile' in data['profile'] and 'publicIdentifier' in data['profile']['miniProfile']:
                 i['profileLink'] = 'https://www.linkedin.com/in/%s' % data['profile']['miniProfile']['publicIdentifier']
+
+        if 'profile' in data and 'headline' in data['profile']:
+            i['headline'] = data['profile']['headline']
 
         if 'languageView' in data and 'elements' in data['languageView']:
             languages = []
@@ -725,12 +756,57 @@ class LoginSpider(scrapy.Spider):
 
             i['languages'] = ('\n').join(languages)
 
-        self.leads.append(i.__dict__['_values'])
+
+
+        current_lead = i.__dict__['_values']
+        sorted_keys = [
+            'picture',
+            'memberId',
+            'firstname',
+            'lastname',
+            'fullname',
+            'degree',
+            'canSendInMail',
+            'headline',
+            'profileLink',
+            'profileLinkSN',
+            'location',
+            'position',
+            'languages',
+            'tags',
+            'positions',
+            'educations',
+            'companyName',
+            'companyType',
+            'companyIndustry',
+            'companyCountry',
+            'companyGeographicArea',
+            'companyCity',
+            'companyPostalCode',
+            'companyLine1',
+            'companyLine2',
+            'companyFounded',
+            'companyFollowerCount',
+            'companyStaffCount',
+            'companyWebsite',
+            'companyEmails',
+            'companyLink',
+            'companyLinkSN',
+            'companySlug'
+        ]
+
+        items = [current_lead[k] if k in current_lead.keys() else 0 for k in sorted_keys]
+        sorted_dict = {}
+        for i in range(len(sorted_keys)):
+            sorted_dict[sorted_keys[i]] = items[i]
+
+        self.leads.append(sorted_dict)
 
     def closed(self, reason):
         if self.leads:
             print('Found %s leads' % len(self.leads), reason)
-            all_keys = {k for d in self.leads for k in d.keys()}
+            all_keys = self.leads[0].keys()
+            self.logger.debug(f'Writing CSV with keys: {all_keys}')
 
             with open(self.settings.get('OUT_FILE', f'unknown_{datetime.utcnow()}'), 'w') as result_file:
                 dict_writer = csv.DictWriter(result_file, all_keys, dialect='excel')
@@ -742,20 +818,19 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('search_url', type=str)
     parser.add_argument('outfile', type=str)
+    parser.add_argument('proxy_url', type=str)
+    parser.add_argument('linkedin_session_key', type=str)
+    parser.add_argument('linkedin_session_password', type=str)
+    parser.add_argument('--proxy_username', type=str, default=None)
+    parser.add_argument('--proxy_password', type=str, default=None)
     args = parser.parse_args()
 
-    # results = []
-    # def crawler_results(signal, sender, item, response, spider):
-    #     results.append(item)
-    #
-    # dispatcher.connect(crawler_results, signal=signals.item_scraped)
-
     settings = {
-        'PROXY_URL': 'https://45.77.91.16:33847',
-        'PROXY_USERNAME': 'fqLMEg',
-        'PROXY_PASSWORD': 'D6VQ4Y',
-        'LINKEDIN_SESSION_KEY': 'oh9215345@gmail.com',
-        'LINKEDIN_SESSION_PASSWORD': 'Pokemon151',
+        'PROXY_URL': args.proxy_url,
+        'PROXY_USERNAME': args.proxy_username,
+        'PROXY_PASSWORD': args.proxy_password,
+        'LINKEDIN_SESSION_KEY': args.linkedin_session_key,
+        'LINKEDIN_SESSION_PASSWORD': args.linkedin_session_password,
         'SEARCH_QUERY_URL': args.search_url,
         'OUT_FILE': args.outfile
     }
