@@ -809,16 +809,30 @@ class Linkedin(object):
         if entityUrn:
             return get_id_from_urn(entityUrn)
 
-    def random_user_actions(self, public_id=None):
+    def random_user_actions(self, public_id=None, force_check=False):
         action = random.randint(1, 4)
-        if action == 1:
-            self.get_user_profile()
-        elif action == 2:
-            self.get_user_panels()
-        elif action == 3 and public_id:
-            self.get_profile_network_info(public_id)
-        elif public_id:
-            self.get_current_profile_urn(public_id)
+        results = []
+
+        if force_check:
+            results.append(self.get_user_profile())
+            results.append(self.get_user_panels())
+            results.append(self.get_profile_network_info(public_id))
+            results.append(self.get_current_profile_urn(public_id))
+        else:
+            if action == 1:
+                results.append(self.get_user_profile())
+            elif action == 2:
+                results.append(self.get_user_panels())
+            elif action == 3 and public_id:
+                results.append(self.get_profile_network_info(public_id))
+            elif action == 3:
+                results.append(self.get_user_panels())
+            elif public_id:
+                results.append(self.get_current_profile_urn(public_id))
+            else:
+                results.append(self.get_user_profile())
+
+        return results
 
     def connect_with_someone(self, profile_urn_id, message=None, get_json=False):
         """
@@ -853,7 +867,8 @@ class Linkedin(object):
             "vytODa2SR0iMsXxClvBu6g==",
             "1BMhTu89SxWBlo+J2/gdiA==",
             "VguB2Gl0R/W1EtAFy5AviA==",
-            "fSyULbVWRDiyxBykagOmNg=="
+            "fSyULbVWRDiyxBykagOmNg==",
+            "sb2mWmSGRTmRXc9WzH/Pfw=="
         ]
 
         current_tracking_id = random.choice(tracking_ids)
