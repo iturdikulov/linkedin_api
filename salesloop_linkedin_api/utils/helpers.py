@@ -31,15 +31,17 @@ def get_converstation_data(api, max_iterations, get_conversation_delay, log=None
         data = api.get_conversations(createdBefore=created_before)
 
         if data:
+            conversations_data.append(data)
             elements = data.get('elements', [])
             if elements and isinstance(elements, list):
-                element = elements[-1]
-                events = element.get('events')
-                if events and isinstance(events, list):
-                    created_at = events[-1].get('createdAt')
-                    created_before = created_at
-
-            conversations_data.append(data)
+                for element in elements:
+                    events = element.get('events')
+                    if events and isinstance(events, list):
+                        created_at = events[-1].get('createdAt')
+                        if created_before and created_at < created_before:
+                            created_before = created_at
+                        else:
+                            created_before = created_at
 
     return conversations_data
 
