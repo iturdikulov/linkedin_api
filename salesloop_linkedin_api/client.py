@@ -1,8 +1,9 @@
 import requests
 import pickle
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 import salesloop_linkedin_api.settings as settings
+from traceback import print_exc
 
 class ChallengeException(Exception):
     pass
@@ -44,29 +45,35 @@ class Client(object):
         "Accept-Language": "en-us",
     }
 
-    def __init__(self, *, debug=False, refresh_cookies=False, proxies={}, cookies=None, api_cookies=None):
+    def __init__(self, *, debug=False, refresh_cookies=False, proxies={}, cookies=None, api_cookies=None, ua=None):
         self.session = requests.session()
         self.session.proxies.update(proxies)
-        self.session.headers.update(Client.REQUEST_HEADERS)
+        logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
+
         self.proxies = proxies
         self.logger = logger
         self._use_cookie_cache = not refresh_cookies
         self._cookies = cookies
-        logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
         self.api_cookies = api_cookies
+        if ua:
+            Client.REQUEST_HEADERS["user-agent"] = ua
+
+        self.session.headers.update(Client.REQUEST_HEADERS)
 
     def _request_session_cookies(self):
         """
         Return a new set of session cookies as given by Linkedin.
         """
         if self._use_cookie_cache and self.api_cookies:
-            self.logger.debug("Attempting to use cached cookies")
+            self.logger.info(f"Attempting to use cached cookies")
+            self.logger.info(self.api_cookies)
+
             try:
-                cookies = pickle.loads(self.api_cookies)
+                cookies = self.api_cookies
                 if cookies:
                     return cookies
-            except FileNotFoundError:
-                self.logger.debug("Cookies not found! Requesting new cookies.")
+            except Exception as e:
+                self.logger.info(f"Cookies not found! Requesting new cookies. {str(e)}")
 
         res = requests.get(
             f"{Client.AUTH_BASE_URL}/uas/authenticate",
@@ -91,7 +98,9 @@ class Client(object):
 
     def alternate_authenticate(self):
         self._set_session_cookies(self._request_session_cookies())
+        self.logger.info('Used cached cookies!')
         self.api_cookies = pickle.dumps(self.session.cookies, pickle.HIGHEST_PROTOCOL)
+        self.api_headers = pickle.dumps(self.session.headers, pickle.HIGHEST_PROTOCOL)
 
     def authenticate(self, username, password):
         """
@@ -129,3 +138,4 @@ class Client(object):
 
         self._set_session_cookies(res.cookies)
         self.api_cookies = pickle.dumps(res.cookies, pickle.HIGHEST_PROTOCOL)
+        self.api_headers = pickle.dumps(res.headers, pickle.HIGHEST_PROTOCOL)
