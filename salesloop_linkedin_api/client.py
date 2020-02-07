@@ -66,7 +66,6 @@ class Client(object):
         """
         if self._use_cookie_cache and self.api_cookies:
             self.logger.info(f"Attempting to use cached cookies")
-            self.logger.info(self.api_cookies)
 
             try:
                 cookies = self.api_cookies
