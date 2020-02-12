@@ -6,6 +6,7 @@ import logging
 from time import sleep
 from urllib.parse import urlencode
 import json
+from .utils.helpers import get_leads_from_html
 
 from salesloop_linkedin_api.utils.helpers import get_id_from_urn
 
@@ -14,6 +15,9 @@ from salesloop_linkedin_api.client import Client
 logger = logging.getLogger()
 from datetime import datetime, timedelta
 import salesloop_linkedin_api.settings as settings
+import requests
+import re
+import lxml.html as LH
 
 def default_evade():
     """
@@ -52,6 +56,7 @@ class Linkedin(object):
 
         self.api_cookies = self.client.api_cookies
         self.api_headers = self.client.api_headers
+        self.results = None
 
     def _fetch(self, uri, evade=default_evade, **kwargs):
         """
@@ -811,6 +816,59 @@ class Linkedin(object):
 
         if entityUrn:
             return get_id_from_urn(entityUrn)
+
+    def get_leads(self, search_url, is_sales=False):
+        if is_sales:
+            r1 = self.client.session.get('https://www.linkedin.com/sales/')
+            cookies = self.client.session.cookies.get_dict()
+            session_id = cookies.get('JSESSIONID').strip('\"')
+            client_page_instance_data_groups = re.search(r'(urn\:li\:page\:d_sales2_contract_chooser.*?)\n', r1.content.decode())
+            if client_page_instance_data_groups:
+                client_page_instance = client_page_instance_data_groups.group(1).strip()
+            else:
+                return []
+
+            r2 = self.client.session.get('https://www.linkedin.com/sales-api/salesApiIdentity?q=findLicensesByCurrentMember',
+                                    headers={
+                                        'dnt': '1',
+                                        'accept-encoding': 'gzip, deflate, br',
+                                        'x-li-lang': 'en_US',
+                                        'accept-language': 'en-US,en;q=0.9',
+                                        'x-requested-with': 'XMLHttpRequest',
+                                        'pragma': 'no-cache',
+                                        'accept': '*/*',
+                                        'cache-control': 'no-cache',
+                                        'x-restli-protocol-version': '2.0.0',
+                                        'authority': 'www.linkedin.com',
+                                        'referer': 'https://www.linkedin.com/sales/',
+                                        'Csrf-Token': session_id
+                                    },
+                                    timeout=Linkedin._DEFAULT_GET_TIMEOUT)
+
+
+            data = r2.json()
+            element = data['elements'][0]
+            contractData = {'viewerDeviceType': 'DESKTOP',
+                            'name': element['name'],
+                            'identity': {'agnosticIdentity': element['agnosticIdentity'],
+                                         'name': element['name']}}
+
+            redirect = '/sales/search'
+            redirect = urlencode({'redirect': redirect})
+
+            r3 = self.client.session.post('https://www.linkedin.com/sales-api/salesApiAgnosticAuthentication?%s' % (redirect,),
+                                  headers={'Csrf-Token': session_id,
+                                           'X-Restli-Protocol-Version': '2.0.0',
+                                           'X-Requested-With': 'XMLHttpRequest',
+                                           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                           'X-Li-Page-Instance': client_page_instance,
+                                           'X-Li-Lang': 'en_US',
+                                           'Referer': 'https://www.linkedin.com/sales/contract-chooser?redirect=%2Fsales%2Fsearch'
+                                           },
+                                  data=json.dumps(contractData))
+
+        html = self.client.session.get(search_url, timeout=Linkedin._DEFAULT_GET_TIMEOUT).content
+        return get_leads_from_html(html, is_sales=is_sales)
 
     def random_user_actions(self, public_id=None, force_check=False):
         action = random.randint(1, 4)
