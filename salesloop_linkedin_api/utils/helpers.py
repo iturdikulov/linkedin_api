@@ -70,16 +70,22 @@ def get_conversations_additional_data(conversations_data, logger=None):
     linkedin_users_blacklist = {}
 
     for data in conversations_data:
+        if not data:
+            logger.warning('No data found! in conversations data')
+
         user_elements = data.get('elements', [])
 
         for element in user_elements:
             skip_participant = False
 
+            if not element:
+                logger.warning('No element found! in conversations data')
+
             # Step 1. Users who replied to our message
             for event in element.get('events', []):
                 event_body = event.get('eventContent', {}) \
                     .get('com.linkedin.voyager.messaging.event.MessageEvent', {}) \
-                    .get('attributedBody') \
+                    .get('attributedBody', {}) \
                     .get('text')
 
                 if event_body:
@@ -125,6 +131,9 @@ def get_conversations_additional_data(conversations_data, logger=None):
 
     # Step 3. Remove users from conversations_users_participants (if they exist in conversations_users_replies)
     for public_id, user in conversations_users_replies.items():
+        if not user or not public_id:
+            logger.warning('No user/public_id found in conversations_users')
+
         linkedin_users_blacklist[public_id] = {
             'latest_reply': user.get('event_body'),
             'display_picture_url': user.get('display_picture_url')
