@@ -817,9 +817,14 @@ class Linkedin(object):
         if entityUrn:
             return get_id_from_urn(entityUrn)
 
-    def get_leads(self, search_url, is_sales=False):
+    def get_leads(self, search_url, is_sales=False, timeout=None):
+        if not timeout:
+            timeout = Linkedin._DEFAULT_GET_TIMEOUT
+
+        logger.info('Leads quick search with %s timeout', timeout)
+
         if is_sales:
-            r1 = self.client.session.get('https://www.linkedin.com/sales/')
+            r1 = self.client.session.get('https://www.linkedin.com/sales/', timeout=timeout)
             cookies = self.client.session.cookies.get_dict()
             session_id = cookies.get('JSESSIONID').strip('\"')
             client_page_instance_data_groups = re.search(r'(urn\:li\:page\:d_sales2_contract_chooser.*?)\n', r1.content.decode())
@@ -843,7 +848,7 @@ class Linkedin(object):
                                         'referer': 'https://www.linkedin.com/sales/',
                                         'Csrf-Token': session_id
                                     },
-                                    timeout=Linkedin._DEFAULT_GET_TIMEOUT)
+                                    timeout=timeout)
 
 
             data = r2.json()
@@ -865,10 +870,11 @@ class Linkedin(object):
                                            'X-Li-Lang': 'en_US',
                                            'Referer': 'https://www.linkedin.com/sales/contract-chooser?redirect=%2Fsales%2Fsearch'
                                            },
-                                  data=json.dumps(contractData))
+                                  data=json.dumps(contractData),
+                                  timeout=timeout)
 
-        html = self.client.session.get(search_url, timeout=Linkedin._DEFAULT_GET_TIMEOUT).content
-        return get_leads_from_html(html, is_sales=is_sales)
+        html = self.client.session.get(search_url, timeout=timeout).content
+        return get_leads_from_html(html, is_sales=is_sales, get_pagination=True)
 
     def random_user_actions(self, public_id=None, force_check=False):
         action = random.randint(1, 4)
