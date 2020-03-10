@@ -190,14 +190,14 @@ class Linkedin(object):
 
         return results
 
-    def get_connections_count(self):
+    def get_connections_summary(self):
         res = self._fetch(
             f"/relationships/connectionsSummary/",
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
         )
         data = res.json()
-        connections_count = data["data"]["numConnections"]
-        return connections_count
+        connections_summary = data["data"]
+        return connections_summary
 
     def get_profile_contact_info(self, public_id=None, urn_id=None):
         """
