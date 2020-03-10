@@ -179,13 +179,16 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                 pagination = paging
 
             elements = users_data.get('data', {}).get('elements')
-            for sub_element in elements:
-                sub_elements = sub_element.get('elements')
-                for item in sub_elements:
-                    if item.get('$type') == 'com.linkedin.voyager.search.SearchHitV2':
-                        user_public_id = item.get('publicIdentifier')
-                        users.setdefault(user_public_id, {})
-                        users[user_public_id].update(item)
+
+            if elements and isinstance(elements, list):
+                for sub_element in elements:
+                    sub_elements = sub_element.get('elements')
+                    if sub_elements and isinstance(sub_elements, list):
+                        for item in sub_elements:
+                            if item.get('$type') == 'com.linkedin.voyager.search.SearchHitV2':
+                                user_public_id = item.get('publicIdentifier')
+                                users.setdefault(user_public_id, {})
+                                users[user_public_id].update(item)
 
             mini_profiles = users_data.get('included', {})
             if mini_profiles and isinstance(mini_profiles, list):
