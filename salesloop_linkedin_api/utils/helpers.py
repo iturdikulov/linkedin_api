@@ -211,7 +211,9 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
             degree = lead.get('secondaryTitle', {}).get('text')
             degree_num = -1
             if degree:
-                degree_num = int(re.search(r'\d+', degree).group())
+                degree_group = re.search(r'\d+', degree)
+                if degree_group:
+                    degree_num = int(degree_group.group())
 
             if i.get('publicIdentifier'):
                 i['profileLink'] = 'https://www.linkedin.com/in/' + i.get('publicIdentifier')
