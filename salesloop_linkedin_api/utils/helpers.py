@@ -2,6 +2,7 @@ from time import sleep
 import lxml.html as LH
 import json
 import re
+from re import finditer
 
 def get_id_from_urn(urn):
     """
@@ -62,6 +63,20 @@ def linkedin_get_display_picture_url(picture):
 
     if url_root and url_segment and isinstance(url_root, str) and isinstance(url_segment, str) :
         return url_root + url_segment
+
+
+def expand_message_variables(current_variables, invite_message):
+    if current_variables and isinstance(current_variables, dict):
+        string_variables = [x.group() for x in finditer(r'({.*?:\d+})', invite_message)]
+        for string_variable in string_variables:
+            string_variable_index = string_variable.split(':')[-1].rstrip('}')
+
+            if string_variable_index.isdigit() and string_variable_index in current_variables:
+                invite_message = invite_message.replace(string_variable, current_variables.get(string_variable_index))
+            else:
+                invite_message = invite_message.replace(string_variable, '')
+
+    return invite_message
 
 
 def get_conversations_additional_data(conversations_data, logger=None):
@@ -145,7 +160,6 @@ def get_conversations_additional_data(conversations_data, logger=None):
             logger.debug(f'Removed {public_id} participant from conversations_users_participants (already replied?')
 
     return conversations_users_replies, conversations_users_participants, linkedin_users_blacklist
-
 
 def get_leads_from_html(html, is_sales=False, get_pagination=False):
     users_data = None
