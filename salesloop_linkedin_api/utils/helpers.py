@@ -214,14 +214,39 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                             users[user_public_id].update(item)
 
         for key, lead in users.items():
-            i = {'publicIdentifier': lead.get('publicIdentifier'), 'firstname': lead.get('firstName'), 'lastname': lead.get('lastName'),
-                 'fullname': lead.get('title', {}).get('text'), 'degree': None, 'canSendInMail': None, 'headline': None,
-                 'picture': None, 'profileLink': None, 'profileLinkSN': None, 'location': None, 'position': None,
-                 'companyId': None, 'companyName': None, 'companyType': None, 'companyIndustry': None,
-                 'companyDescription': None, 'companyWebsite': None, 'companyStaffCount': None, 'companyCountry': None,
-                 'companyGeographicArea': None, 'companyCity': None, 'companyPostalCode': None, 'companyLine2': None,
-                 'companyLine1': None, 'companyFounded': None, 'companyFollowerCount': None, 'companyEmails': None,
-                 'companyLink': None, 'companyLinkSN': None, 'companySlug': None, 'extractEmailAddress': False}
+            i = {'publicIdentifier': lead.get('publicIdentifier'),
+                 'firstname': lead.get('firstName'),
+                 'lastname': lead.get('lastName'),
+                 'fullname': lead.get('title', {}).get('text'),
+                 'degree': None,
+                 'canSendInMail': None,
+                 'headline': lead.get('headline', {}).get('text'),
+                 'picture': None,
+                 'profileLink': None,
+                 'profileLinkSN': None,
+                 'location': None,
+                 'position': None,
+                 'companyId': None,
+                 'companyName': None,
+                 'companyType': None,
+                 'companyIndustry': None,
+                 'companyDescription': None,
+                 'companyWebsite': None,
+                 'companyStaffCount': None,
+                 'companyCountry': None,
+                 'companyGeographicArea': None,
+                 'companyCity': None,
+                 'companyPostalCode': None,
+                 'companyLine2': None,
+                 'companyLine1': None,
+                 'companyFounded': None,
+                 'companyFollowerCount': None,
+                 'companyEmails': None,
+                 'companyLink': None,
+                 'companyLinkSN': None,
+                 'companySlug': None,
+                 'extractEmailAddress': False
+                 }
             degree = lead.get('secondaryTitle', {}).get('text')
             degree_num = -1
             if degree:
