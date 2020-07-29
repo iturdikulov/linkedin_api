@@ -332,10 +332,9 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                 if 'crmStatus' in lead and 'imported' in lead['crmStatus']:
                     i['inCrm'] = 1 if lead['crmStatus']['imported'] else 0
                 leadTags = []
-                sales_tags = {}
                 if 'tags' in lead:
                     for leadTagId in lead['tags']:
-                        leadTags.append(sales_tags[leadTagId])
+                        leadTags.append(leadTagId)
 
                 i['tags'] = ('\n').join(leadTags)
                 entityUrn = None
