@@ -166,6 +166,7 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
     users = {}
     parsed_users = []
     pagination = None
+    results_length = 0
 
     tree = LH.document_fromstring(html)
     search_hits = tree.xpath("//code//text()")
@@ -173,7 +174,6 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
     if not is_sales:
         for item in search_hits:
             if 'publicIdentifier' in item:
-
                 try:
                     data = json.loads(item)
                     if not data.get('data'):
@@ -191,6 +191,7 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
             paging = users_data.get('data', {}).get('paging')
             if paging and not pagination:
                 pagination = paging
+                results_length += pagination.get('count', 0)
 
             elements = users_data.get('data', {}).get('elements')
 
@@ -294,10 +295,10 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
         for item in search_hits:
             try:
                 data = json.loads(item)
-                print(data)
 
                 if not pagination and data.get('paging'):
                     pagination = data.get('paging')
+                    results_length += pagination.get('count', 0)
 
                 if data.get('elements'):
                     for element in data.get('elements'):
@@ -367,6 +368,7 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                 parsed_users.append(i)
 
     if get_pagination:
+        pagination['results_length'] = results_length
         return parsed_users, pagination
     else:
         return parsed_users
