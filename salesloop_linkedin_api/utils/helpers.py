@@ -144,7 +144,8 @@ def get_conversations_additional_data(conversations_data, logger=None):
 
                         logger.debug(f'Found user without event_body, User public_id: {public_id}, Picture: {display_picture_url}')
 
-    # Step 3. Remove users from conversations_users_participants (if they exist in conversations_users_replies)
+    # Step 3. Remove users from conversations_users_participants
+    # (if they exist in conversations_users_replies)
     for public_id, user in conversations_users_replies.items():
         if not user or not public_id:
             logger.warning('No user/public_id found in conversations_users')
@@ -160,6 +161,7 @@ def get_conversations_additional_data(conversations_data, logger=None):
             logger.debug(f'Removed {public_id} participant from conversations_users_participants (already replied?')
 
     return conversations_users_replies, conversations_users_participants, linkedin_users_blacklist
+
 
 def get_leads_from_html(html, is_sales=False, get_pagination=False):
     users_data = None
