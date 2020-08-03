@@ -57,6 +57,7 @@ class Linkedin(object):
         self.api_cookies = self.client.api_cookies
         self.api_headers = self.client.api_headers
         self.results = None
+        self.results_length = None
 
     def _fetch(self, uri, evade=default_evade, **kwargs):
         """
@@ -898,11 +899,11 @@ class Linkedin(object):
             if action == 1:
                 results.append(self.get_user_profile())
             elif action == 2:
-                results.append(self.get_user_panels())
+                results.append(self.get_user_profile())
             elif action == 3 and public_id:
                 results.append(self.get_profile_network_info(public_id))
             elif action == 3:
-                results.append(self.get_user_panels())
+                results.append(self.get_user_profile())
             elif public_id:
                 results.append(self.get_current_profile_urn(public_id))
             else:
