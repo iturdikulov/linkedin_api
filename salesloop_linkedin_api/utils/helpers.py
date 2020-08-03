@@ -368,7 +368,9 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                 parsed_users.append(i)
 
     if get_pagination:
-        pagination['results_length'] = results_length
+        if pagination:
+            pagination['results_length'] = results_length
+
         return parsed_users, pagination
     else:
         return parsed_users
