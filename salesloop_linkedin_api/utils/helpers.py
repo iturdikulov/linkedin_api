@@ -193,7 +193,7 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
             paging = users_data.get('data', {}).get('paging')
             if paging and not pagination:
                 pagination = paging
-                results_length += pagination.get('count', 0)
+                results_length = pagination.get('total', 0)
 
             elements = users_data.get('data', {}).get('elements')
 
@@ -300,7 +300,7 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
 
                 if not pagination and data.get('paging'):
                     pagination = data.get('paging')
-                    results_length += pagination.get('count', 0)
+                    results_length = pagination.get('count', 0)
 
                 if data.get('elements'):
                     for element in data.get('elements'):
