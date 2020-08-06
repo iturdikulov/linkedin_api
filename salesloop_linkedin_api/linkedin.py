@@ -887,7 +887,6 @@ class Linkedin(object):
         return get_leads_from_html(html, is_sales=is_sales, get_pagination=True)
 
     def random_user_actions(self, public_id=None, force_check=False):
-        action = random.randint(1, 4)
         results = []
 
         if force_check:
@@ -895,19 +894,14 @@ class Linkedin(object):
             results.append(self.get_user_panels())
             results.append(self.get_profile_network_info(public_id))
             results.append(self.get_current_profile_urn(public_id))
-        else:
-            if action == 1:
-                results.append(self.get_user_profile())
-            elif action == 2:
-                results.append(self.get_user_profile())
-            elif action == 3 and public_id:
+
+        elif public_id:
+            if random.randint(0, 1):
                 results.append(self.get_profile_network_info(public_id))
-            elif action == 3:
-                results.append(self.get_user_profile())
-            elif public_id:
-                results.append(self.get_current_profile_urn(public_id))
             else:
-                results.append(self.get_user_profile())
+                results.append(self.get_current_profile_urn(public_id))
+        else:
+            results.append(self.get_user_profile())
 
         return results
 
