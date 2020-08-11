@@ -886,16 +886,10 @@ class Linkedin(object):
         html = self.client.session.get(search_url, timeout=timeout).content
         return get_leads_from_html(html, is_sales=is_sales, get_pagination=True)
 
-    def random_user_actions(self, public_id=None, force_check=False):
+    def random_user_actions(self, public_id=None):
         results = []
 
-        if force_check:
-            results.append(self.get_user_profile())
-            results.append(self.get_user_panels())
-            results.append(self.get_profile_network_info(public_id))
-            results.append(self.get_current_profile_urn(public_id))
-
-        elif public_id:
+        if public_id:
             if random.randint(0, 1):
                 results.append(self.get_profile_network_info(public_id))
             else:
