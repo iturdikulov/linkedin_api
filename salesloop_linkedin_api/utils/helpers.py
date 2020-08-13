@@ -3,6 +3,7 @@ import lxml.html as LH
 import json
 import re
 from re import finditer
+from traceback import print_exc
 
 def get_id_from_urn(urn):
     """
@@ -161,6 +162,17 @@ def get_conversations_additional_data(conversations_data, logger=None):
             logger.debug(f'Removed {public_id} participant from conversations_users_participants (already replied?')
 
     return conversations_users_replies, conversations_users_participants, linkedin_users_blacklist
+
+
+def get_default_regions(path):
+    regions = []
+    try:
+        with open(path) as f:
+            regions = json.load(f)
+    except Exception as e:
+        print_exc()
+
+    return regions
 
 
 def get_leads_from_html(html, is_sales=False, get_pagination=False):

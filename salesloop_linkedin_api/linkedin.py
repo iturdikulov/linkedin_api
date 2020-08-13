@@ -6,11 +6,11 @@ import logging
 from time import sleep
 from urllib.parse import urlencode
 import json
-from .utils.helpers import get_leads_from_html
-
+from .utils.helpers import get_leads_from_html, get_default_regions
 from salesloop_linkedin_api.utils.helpers import get_id_from_urn
-
+from pathlib import Path
 from salesloop_linkedin_api.client import Client
+from os.path import isfile
 
 logger = logging.getLogger()
 from datetime import datetime, timedelta
@@ -1002,3 +1002,70 @@ class Linkedin(object):
 
         data = res.json()
         return data.get("data", {})
+
+    def get_regions(self):
+        """
+        """
+        regions_json = Path(__file__).parent / 'regions.json'
+        input_regions = get_default_regions(regions_json)
+        self.logger.info('Found %d regions at %s', len(input_regions), regions_json)
+        output_regions = {}
+        self.client.session.get('https://www.linkedin.com/sales/')
+        cookies = self.client.session.cookies.get_dict()
+        session_id = cookies.get('JSESSIONID').strip('\"')
+
+        for i, region in enumerate(input_regions):
+            if isfile(f'codes_region-{region}.json'):
+                print('Region exist, skip...')
+
+            # This headers usually outdated, need generate each times...
+            headers = {
+                'authority': 'www.linkedin.com',
+                'pragma': 'no-cache',
+                'cache-control': 'no-cache',
+                'dnt': '1',
+                'x-li-lang': 'en_US',
+                'x-li-identity': 'dXJuOmxpOm1lbWJlcjo0MDAzMTE2Nzc',
+                'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36',
+                'x-li-page-instance': 'urn:li:page:d_sales2_search_people;7E4UzqTkTjyDhVB3bXelqw==',
+                'accept': '*/*',
+                'csrf-token': 'ajax:3360386482326297507',
+                'x-restli-protocol-version': '2.0.0',
+                'x-requested-with': 'XMLHttpRequest',
+                'sec-fetch-site': 'same-origin',
+                'sec-fetch-mode': 'cors',
+                'sec-fetch-dest': 'empty',
+                'referer': 'https://www.linkedin.com/sales/search/people?doFetchHeroCard=false&keywords=css&logHistory=true&page=1&rsLogId=404368625&searchSessionId=pU8%2FZjRwQKuo%2Bqs60POSXA%3D%3D',
+                'accept-language': 'en-GB,en;q=0.9,ru;q=0.8,en-US;q=0.7',
+                'cookie': 'lissc=1; _ga=GA1.2.817185630.1595680069; bcookie="v=2&b267a042-616b-4b2f-8f12-4ae0b00f680c"; bscookie="v=1&202007251227483dda7178-a9b8-463e-87c5-fae71bfdf470AQGkrNKYdMPgidyycTCXDN0WiDwAQPLB"; AMCVS_14215E3D5995C57C0A495C55%40AdobeOrg=1; at_check=true; s_cc=true; s_sq=%5B%5BB%5D%5D; mbox=session#bc48aa41231441398889d03093010aed#1595681932|PC#bc48aa41231441398889d03093010aed.37_0#1611232078; aam_uuid=72341840729918861820283121381195274571; li_rm=AQEbogJ3c4XCfQAAAXOF8fMVKJL8RSpaPKWioqVI6ECB4vwm7knvwvQEaqm8AuZJBk3bnhFXv2NpPTtOWAR3mxNLDSpqKIjjCWADG0VwU7WH7uGhVgj3jTHl; spectroscopyId=a5078f81-bc27-41af-a711-227e63e115f5; _guid=f478b4d7-8a29-439f-b233-04efaeeabbd7; PLAY_LANG=en; sdsc=1%3A1SZM1shxDNbLt36wZwCgPgvN58iw%3D; g_state={"i_l":0}; li_oatml=AQGq8u9AMDTbCQAAAXPc0wr_Z4u7Gw5kcSiRtBTtRfflpfpt0OEstOf8Tt8R-Ewfw1mFnJgjFCyUcgrZLmvAY3Lm86AJoUnp; visit=v=1&M; JSESSIONID="ajax:3360386482326297507"; UserMatchHistory=AQK5fGAyzvH61wAAAXPeJQmz1PB7LFANhSpA-y45PjVPaQc6-pPSzf3L1xa9kvbTzAAB8kLdjKxUl45g1L6tcenHEUe_owwtH-BFlUyECOz0rA; PLAY_SESSION=eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjp7InNlc3Npb25faWQiOiI3MDNjYzllMC1lMjhjLTQ3YmUtYjM4Ny01ZGQ0ODhlOGRlNzZ8MTU5NzI0MTAzNiIsInJlY2VudGx5LXNlYXJjaGVkIjoiIiwicmVmZXJyYWwtdXJsIjoiaHR0cHM6Ly93d3cuZ29vZ2xlLmNvbS8iLCJhaWQiOiIiLCJSTlQtaWQiOiJ8MCIsInJlY2VudGx5LXZpZXdlZCI6IjUwfDYwIiwiQ1BULWlkIjoiTlhGwqbDmUBdwrZvw5rCrTLCi1wiw7HCrSIsImV4cGVyaWVuY2UiOiJicm93c2UiLCJpc19uYXRpdmUiOiJmYWxzZSIsIndoaXRlbGlzdCI6Int9IiwidHJrIjoiIn0sIm5iZiI6MTU5NzI0MTA0NSwiaWF0IjoxNTk3MjQxMDQ1fQ.z0gkmgyyEKS317w--nerjADioRN6p5hSL9Uzh_KHIWM; _gid=GA1.2.1667230570.1597332167; SID=2c815bd8-cc49-4861-8e8e-937459ff91a1; VID=V_2020_08_13_20_99; UserMatchHistory=AQL5vtSxF9elZQAAAXPpuCbR3h3bk4GIIMFG40-TmKxslIvw6LJBc5VnPLjOgTG3TuGv02WhwXSQE7U_xvtKSBOsidPOOhWN0ZVPXMwroGB0ItZCTm8FBPbIHDrMcgZpbCtlBe3AqAm7vi495u6fTu7djVIESdxZhOGhQmTFydzWYFzBAzB3iFhzRNbigK3dSl-b6fwFM7qB_8my6nHqUY5BnoNQLJvjOYqJesh5MUuT3TexrFFHvqAuT62SqxDH2P--c7U; AMCV_14215E3D5995C57C0A495C55%40AdobeOrg=-408604571%7CMCIDTS%7C18488%7CMCMID%7C72541238052820563650226013797033486976%7CMCAAMLH-1597958816%7C6%7CMCAAMB-1597958816%7CRKhpRz8krg2tLO6pguXWp5olkAcUniQYPHaMWWgdJ3xzPWQmdj0y%7CMCOPTOUT-1597361216s%7CNONE%7CvVersion%7C4.6.0%7CMCCIDH%7C1796929203; _gat=1; li_at=AQEDARfcRX0CJ3hDAAABc-nSTPUAAAF0Dd7Q9U0AxW5nioq7GQ3aOYtJ796SZ-ruP2WWLFmaFc6Ngp5GnpLZXgWSa9DOxRNRDFsbGi0xaBkJaYE2dCFby3EPXxQyNtrjlnha9TeuN6oZHaQGJf5sxNq4; liap=true; lidc="b=VB77:s=V:r=V:g=2570:u=275:i=1597355741:t=1597413695:v=1:sig=AQHjpGIY3I-j6KSf2mEaT18l-NQYfs3U"; lang=v=2&lang=en-us; li_a=AQJ2PTEmc2FsZXNfY2lkPTc1NzYyNzUwNSUzQSUzQTIwNDQxNDIwNfj1Et6cQqlojVhAGuYFOZP3HTSk',
+            }
+
+            params = (
+                ('q', 'query'),
+                ('start', '0'),
+                ('type', 'BING_GEO'),
+                ('count', '25'),
+                ('query', region),
+            )
+
+            res = requests.get('https://www.linkedin.com/sales-api/salesApiFacetTypeahead',
+                                    headers=headers, params=params)
+
+            print(res.text)
+            data = res.json()
+            elements = data.get('elements', [])
+            subregions = []
+            for element in elements:
+                if element:
+                    subregions.append(element)
+                    self.logger.info('Region %d of %d - %s, %s', i, len(input_regions),
+                                     region, element)
+
+            output_regions[region] = subregions
+
+            sleep(random.randint(0, 10))
+
+            with open(f'codes_region-{region}.json', 'w') as f:
+                json.dump(output_regions[region], f)
+
+        return output_regions
