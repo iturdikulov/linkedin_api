@@ -257,7 +257,7 @@ class Linkedin(object):
 
         return skills
 
-    def get_profile(self, public_id=None, urn_id=None):
+    def get_profile(self, public_id=None, urn_id=None, get_skills=False):
         """
         Return data for a single profile.
 
@@ -281,6 +281,7 @@ class Linkedin(object):
                     "com.linkedin.common.VectorImage"
                 ]["rootUrl"]
             profile["profile_id"] = get_id_from_urn(profile["miniProfile"]["entityUrn"])
+            profile['publicIdentifier'] = profile["miniProfile"].get("publicIdentifier")
 
             del profile["miniProfile"]
 
@@ -306,8 +307,8 @@ class Linkedin(object):
         # massage [skills] data
         # skills = [item["name"] for item in data["skillView"]["elements"]]
         # profile["skills"] = skills
-
-        profile["skills"] = self.get_profile_skills(public_id=public_id, urn_id=urn_id)
+        if get_skills:
+            profile["skills"] = self.get_profile_skills(public_id=public_id, urn_id=urn_id)
 
         # massage [education] data
         education = data["educationView"]["elements"]
@@ -831,17 +832,21 @@ class Linkedin(object):
         if not timeout:
             timeout = Linkedin._DEFAULT_GET_TIMEOUT
 
-        logger.info('Leads quick search with %s timeout', timeout)
+        logger.info('Leads quick search with %s timeout. Is Sales %s.', timeout, is_sales)
 
         if is_sales:
             r1 = self.client.session.get('https://www.linkedin.com/sales/', timeout=timeout)
             cookies = self.client.session.cookies.get_dict()
             session_id = cookies.get('JSESSIONID').strip('\"')
-            client_page_instance_data_groups = re.search(r'(urn\:li\:page\:d_sales2_contract_chooser.*?)\n', r1.content.decode())
+
+            client_page_instance_data_groups = re.search(r'id="clientPageInstance">([\S\s]*?)<\/code>', r1.content.decode())
+
             if client_page_instance_data_groups:
                 client_page_instance = client_page_instance_data_groups.group(1).strip()
+                logger.debug('Page instance: %s', client_page_instance)
             else:
-                return []
+                logger.error('No client_page_instance_data_groups groups found %s', client_page_instance_data_groups)
+                return [], None
 
             r2 = self.client.session.get('https://www.linkedin.com/sales-api/salesApiIdentity?q=findLicensesByCurrentMember',
                                     headers={
@@ -859,7 +864,6 @@ class Linkedin(object):
                                         'Csrf-Token': session_id
                                     },
                                     timeout=timeout)
-
 
             data = r2.json()
             element = data['elements'][0]
