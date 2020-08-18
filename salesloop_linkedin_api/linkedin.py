@@ -838,14 +838,18 @@ class Linkedin(object):
             r1 = self.client.session.get('https://www.linkedin.com/sales/', timeout=timeout)
             cookies = self.client.session.cookies.get_dict()
             session_id = cookies.get('JSESSIONID').strip('\"')
+            client_page_instance = None
 
-            client_page_instance_data_groups = re.search(r'id="clientPageInstance">([\S\s]*?)<\/code>', r1.content.decode())
+            client_page_instance_data_groups = re.search(r'id="clientPageInstance">([\S\s]*?)<\/code>',
+                                                         r1.content.decode())
 
             if client_page_instance_data_groups:
                 client_page_instance = client_page_instance_data_groups.group(1).strip()
-                logger.debug('Page instance: %s', client_page_instance)
-            else:
-                logger.error('No client_page_instance_data_groups groups found %s', client_page_instance_data_groups)
+                logger.info('Page instance: %s', client_page_instance)
+
+            if not client_page_instance:
+                logger.error('No client_page_instance_data_groups groups found %s',
+                             client_page_instance_data_groups)
                 return [], None
 
             r2 = self.client.session.get('https://www.linkedin.com/sales-api/salesApiIdentity?q=findLicensesByCurrentMember',
