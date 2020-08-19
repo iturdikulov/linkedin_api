@@ -189,6 +189,8 @@ def get_raw_leads_from_html(html):
                 if data.get('data'):
                     raw_data = data.get('data')
                     paging = raw_data.get('paging')
+            else:
+                print(data_type)
         except json.JSONDecodeError as e:
             print(f'Failed parse item..., {repr(e)}')
 
