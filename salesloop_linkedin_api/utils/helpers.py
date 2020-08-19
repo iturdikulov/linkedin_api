@@ -175,6 +175,26 @@ def get_default_regions(path):
     return regions
 
 
+def get_raw_leads_from_html(html):
+    raw_data = {}
+    paging = {}
+
+    tree = LH.document_fromstring(html)
+    search_hits = tree.xpath("//code//text()")
+    for item in search_hits:
+        try:
+            data = json.loads(item)
+            data_type = data.get('data', {}).get('$type')
+            if data_type == 'com.linkedin.restli.common.CollectionResponse':
+                if data.get('data'):
+                    raw_data = data.get('data')
+                    paging = raw_data.get('paging')
+        except json.JSONDecodeError as e:
+            print(f'Failed parse item..., {repr(e)}')
+
+    return raw_data, paging
+
+
 def get_leads_from_html(html, is_sales=False, get_pagination=False):
     users_data = None
     users = {}

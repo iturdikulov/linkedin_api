@@ -828,7 +828,7 @@ class Linkedin(object):
         if entityUrn:
             return get_id_from_urn(entityUrn)
 
-    def get_leads(self, search_url, is_sales=False, timeout=None):
+    def get_leads(self, search_url, is_sales=False, timeout=None, get_raw=False):
         if not timeout:
             timeout = Linkedin._DEFAULT_GET_TIMEOUT
 
@@ -892,7 +892,11 @@ class Linkedin(object):
                                   timeout=timeout)
 
         html = self.client.session.get(search_url, timeout=timeout).content
-        return get_leads_from_html(html, is_sales=is_sales, get_pagination=True)
+
+        if get_raw:
+            return html
+        else:
+            return get_leads_from_html(html, is_sales=is_sales, get_pagination=True)
 
     def random_user_actions(self, public_id=None):
         results = []
