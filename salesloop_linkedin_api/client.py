@@ -127,6 +127,7 @@ class Client(object):
         data = res.json()
 
         if data and data["login_result"] != "PASS":
+            self.logger.warning('Linkedin auth error, username: %s, data: %s', username, data)
             raise ChallengeException(data["login_result"])
 
         if res.status_code == 401:
