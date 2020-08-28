@@ -201,6 +201,7 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
     users_data = None
     users = {}
     parsed_users = []
+    unknown_profiles = []
     pagination = None
     results_length = 0
 
@@ -236,10 +237,13 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                     sub_elements = sub_element.get('elements')
                     if sub_elements and isinstance(sub_elements, list):
                         for item in sub_elements:
+                            user_public_id = item.get('publicIdentifier')
                             if item.get('$type') == 'com.linkedin.voyager.search.SearchHitV2':
-                                user_public_id = item.get('publicIdentifier')
                                 users.setdefault(user_public_id, {})
                                 users[user_public_id].update(item)
+
+                                if item.get('targetUrn') and not item.get('publicIdentifier'):
+                                    unknown_profiles.append(item)
 
             mini_profiles = users_data.get('included', {})
             if mini_profiles and isinstance(mini_profiles, list):
@@ -407,6 +411,6 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
         if pagination:
             pagination['results_length'] = results_length
 
-        return parsed_users, pagination
+        return parsed_users, pagination, unknown_profiles
     else:
-        return parsed_users
+        return parsed_users, unknown_profiles
