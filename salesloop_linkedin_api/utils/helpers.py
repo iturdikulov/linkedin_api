@@ -206,13 +206,14 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
     results_length = 0
 
     tree = LH.document_fromstring(html)
-    search_hits = tree.xpath("//code//text()")
+    search_hits = tree.xpath("//code//text()[string-length() > 0]")
 
     if not is_sales:
         for item in search_hits:
-            if 'publicIdentifier' in item:
-                try:
-                    data = json.loads(item)
+            try:
+                data = json.loads(item)
+
+                if 'publicIdentifier' in item:
                     if not data.get('data'):
                         continue
 
@@ -221,8 +222,8 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                     if data_type == 'com.linkedin.restli.common.CollectionResponse' and not users_data:
                         users_data = data
 
-                except Exception as e:
-                    print(f'Failed parse item... {str(e)}')
+            except Exception as e:
+                print(f'Failed parse item... {str(e)}')
 
         if users_data:
             paging = users_data.get('data', {}).get('paging')
