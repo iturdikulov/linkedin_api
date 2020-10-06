@@ -189,8 +189,6 @@ def get_raw_leads_from_html(html):
                 if data.get('data'):
                     raw_data = data.get('data')
                     paging = raw_data.get('paging')
-            else:
-                print(data_type)
         except json.JSONDecodeError as e:
             print(f'Failed parse item..., {repr(e)}')
 
@@ -250,19 +248,27 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
             if mini_profiles and isinstance(mini_profiles, list):
                 for item in mini_profiles:
                     type = item.get('$type')
-                    if type == 'com.linkedin.voyager.identity.shared.MiniProfile':
+                    if type in ['com.linkedin.voyager.identity.shared.MiniProfile', 'com.linkedin.voyager.dash.identity.profile.Profile']:
                         user_public_id = item.get('publicIdentifier')
                         if user_public_id in users:
                             users[user_public_id].update(item)
+                        else:
+                            users[user_public_id] = item
 
         for key, lead in users.items():
+            print(lead)
+            if lead.get('firstName') and lead.get('lastName'):
+                fullname = f"{lead.get('firstName')} {lead.get('lastName')}"
+            else:
+                fullname = lead.get('title') or lead.get('title', {}).get('text')
+
             i = {'publicIdentifier': lead.get('publicIdentifier'),
                  'firstname': lead.get('firstName'),
                  'lastname': lead.get('lastName'),
-                 'fullname': lead.get('title', {}).get('text'),
+                 'fullname': fullname or '',
                  'degree': None,
                  'canSendInMail': None,
-                 'headline': lead.get('headline', {}).get('text'),
+                 'headline': lead.get('headline') or lead.get('headline', {}).get('text'),
                  'picture': None,
                  'profileLink': None,
                  'profileLinkSN': None,
@@ -307,12 +313,13 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
             entityUrn = None
 
             if 'entityUrn' in lead:
-                entityUrn = ''.join(re.findall(r'urn:li:fs_miniProfile:(.*)', lead['entityUrn']))
+                entityUrn = ''.join(re.findall(r'urn:li:fs_miniProfile:(.*)', lead['entityUrn'])) or ''.join(
+                        re.findall(r'urn:li:fsd_profile:(.*)', lead['entityUrn']))
                 if entityUrn:
                     i['profileLinkSN'] = 'https://www.linkedin.com/sales/people/%s' % entityUrn
                     i['entityUrn'] = entityUrn
 
-            i['position'] = lead.get('headline', {}).get('text')
+            i['position'] = lead.get('headline') or lead.get('headline', {}).get('text')
 
             snippet_text = lead.get('snippetText', {})
             if snippet_text and snippet_text.get('text'):
