@@ -4,6 +4,9 @@ import json
 import re
 from re import finditer
 from traceback import print_exc
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 def get_id_from_urn(urn):
     """
@@ -221,7 +224,7 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                         users_data = data
 
             except Exception as e:
-                print(f'Failed parse item... {str(e)}')
+                logger.info(f'Failed parse item... {str(e)}')
 
         if users_data:
             paging = users_data.get('data', {}).get('paging')
@@ -250,13 +253,43 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                     type = item.get('$type')
                     if type in ['com.linkedin.voyager.identity.shared.MiniProfile', 'com.linkedin.voyager.dash.identity.profile.Profile']:
                         user_public_id = item.get('publicIdentifier')
+                        if not user_public_id:
+                            continue
+
                         if user_public_id in users:
                             users[user_public_id].update(item)
                         else:
                             users[user_public_id] = item
 
+                for item in mini_profiles:
+                    type = item.get('$type')
+                    if type in ['com.linkedin.voyager.dash.search.EntityResultViewModel']:
+
+                        for key, lead in users.items():
+
+                            try:
+                                user_entity_urn_id = get_id_from_urn(lead.get('entityUrn', ''))
+                                item_entity_urn = item.get('entityUrn', '')
+
+                                if all([user_entity_urn_id,
+                                        item_entity_urn,
+                                        user_entity_urn_id in item_entity_urn]):
+
+                                    image_attributes = item.get('image', {}).get('attributes', [])
+                                    if image_attributes:
+                                        vector_image = image_attributes[0].get('detailDataUnion',
+                                                                           {}).get(
+                                            'nonEntityProfilePicture', {}).get('vectorImage')
+
+
+                                        if vector_image:
+                                            item['picture'] = vector_image
+                                            users[key].update(item)
+                            except Exception as e:
+                                logger.warning('Failed pars %s item', lead, exc_info=e)
+
+
         for key, lead in users.items():
-            print(lead)
             if lead.get('firstName') and lead.get('lastName'):
                 fullname = f"{lead.get('firstName')} {lead.get('lastName')}"
             else:
@@ -307,7 +340,7 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
 
             i['degree'] = degree_num
             i['canSendInMail'] = -1
-            i['location'] = lead.get('subline', {}).get('text')
+            i['location'] = lead.get('subline', {}).get('text') or lead.get('secondarySubtitle', {}).get('text')
             i['inCrm'] = -1
             i['tags'] = ""
             entityUrn = None
@@ -321,19 +354,18 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
 
             i['position'] = lead.get('headline') or lead.get('headline', {}).get('text')
 
-            snippet_text = lead.get('snippetText', {})
-            if snippet_text and snippet_text.get('text'):
-                company_name = re.findall(r'at(.*)?', snippet_text.get('text'))
+            snippet_text = lead.get('snippetText', {}).get('text') or i['position']
+            if snippet_text:
+                company_name = re.findall(r'at(.*)?', snippet_text)
                 if len(company_name) == 1:
                     i['companyName'] = company_name[0].strip()
 
-            if lead.get('picture', {}):
-                pictures = lead.get('picture', {}).get('artifacts', [])
-                if pictures:
-                    for image in pictures:
-                        if image['width'] == 400:
-                            i['picture'] = '%s%s' % (lead['picture']['rootUrl'], image['fileIdentifyingUrlPathSegment'])
-                            break
+            pictures = lead.get('picture', {}).get('artifacts', [])
+            if pictures:
+                for image in pictures:
+                    if image['width'] == 400:
+                        i['picture'] = '%s%s' % (lead['picture']['rootUrl'], image['fileIdentifyingUrlPathSegment'])
+                        break
 
             if i.get('profileLink') and i.get('profileLinkSN') and i.get('firstname') and i.get('lastname'):
                 parsed_users.append(i)
