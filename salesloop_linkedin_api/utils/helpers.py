@@ -251,42 +251,44 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
             if mini_profiles and isinstance(mini_profiles, list):
                 for item in mini_profiles:
                     type = item.get('$type')
+                    if 'com.linkedin.voyager.dash.deco.relationships.ProfileWithIweWarned' in item.get('$recipeTypes'):
+                        continue
+
                     if type in ['com.linkedin.voyager.identity.shared.MiniProfile', 'com.linkedin.voyager.dash.identity.profile.Profile']:
                         user_public_id = item.get('publicIdentifier')
                         if not user_public_id:
                             continue
 
-                        if user_public_id in users:
-                            users[user_public_id].update(item)
+                        if type == 'com.linkedin.voyager.dash.identity.profile.Profile':
+                            if user_public_id in users:
+                                users[user_public_id].update(item)
+                            else:
+                                users[user_public_id] = item
                         else:
-                            users[user_public_id] = item
+                            users[user_public_id].update(item)
 
-                for item in mini_profiles:
-                    type = item.get('$type')
-                    if type in ['com.linkedin.voyager.dash.search.EntityResultViewModel']:
+                for key, lead in users.items():
+                    try:
+                        for item in mini_profiles:
+                            type = item.get('$type')
 
-                        for key, lead in users.items():
-
-                            try:
-                                user_entity_urn_id = get_id_from_urn(lead.get('entityUrn', ''))
-                                item_entity_urn = item.get('entityUrn', '')
-
-                                if all([user_entity_urn_id,
-                                        item_entity_urn,
-                                        user_entity_urn_id in item_entity_urn]):
+                            if type in ['com.linkedin.voyager.dash.search.EntityResultViewModel']:
+                                if all([lead.get('publicIdentifier'),
+                                        item.get('navigationUrl'),
+                                        lead.get('publicIdentifier') in item.get('navigationUrl')]):
 
                                     image_attributes = item.get('image', {}).get('attributes', [])
+
                                     if image_attributes:
                                         vector_image = image_attributes[0].get('detailDataUnion',
                                                                            {}).get(
                                             'nonEntityProfilePicture', {}).get('vectorImage')
 
-
                                         if vector_image:
                                             item['picture'] = vector_image
                                             users[key].update(item)
-                            except Exception as e:
-                                logger.warning('Failed pars %s item', lead, exc_info=e)
+                    except Exception as e:
+                        logger.warning('Failed pars %s item', lead, exc_info=e)
 
 
         for key, lead in users.items():
