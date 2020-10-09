@@ -251,7 +251,7 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
             if mini_profiles and isinstance(mini_profiles, list):
                 for item in mini_profiles:
                     type = item.get('$type')
-                    if 'com.linkedin.voyager.dash.deco.relationships.ProfileWithIweWarned' in item.get('$recipeTypes'):
+                    if item.get('$recipeTypes') and 'com.linkedin.voyager.dash.deco.relationships.ProfileWithIweWarned' in item.get('$recipeTypes'):
                         continue
 
                     if type in ['com.linkedin.voyager.identity.shared.MiniProfile', 'com.linkedin.voyager.dash.identity.profile.Profile']:
@@ -264,7 +264,7 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                                 users[user_public_id].update(item)
                             else:
                                 users[user_public_id] = item
-                        else:
+                        elif user_public_id in users:
                             users[user_public_id].update(item)
 
                 for key, lead in users.items():
@@ -354,7 +354,10 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                     i['profileLinkSN'] = 'https://www.linkedin.com/sales/people/%s' % entityUrn
                     i['entityUrn'] = entityUrn
 
-            i['position'] = lead.get('headline') or lead.get('headline', {}).get('text')
+            if isinstance(lead.get('headline'), dict):
+                i['position'] = lead.get('headline', {}).get('text')
+            else:
+                i['position'] = lead.get('headline')
 
             snippet_text = lead.get('snippetText', {}).get('text') or i['position']
             if snippet_text:
