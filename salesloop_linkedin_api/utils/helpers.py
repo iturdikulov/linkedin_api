@@ -365,7 +365,10 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                 if len(company_name) == 1:
                     i['companyName'] = company_name[0].strip()
 
-            pictures = lead.get('picture', {}).get('artifacts', [])
+            pictures = lead.get('picture', {})
+            if pictures:
+                pictures = pictures.get('artifacts', [])
+
             if pictures:
                 for image in pictures:
                     if image['width'] == 400:
