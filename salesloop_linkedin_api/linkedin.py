@@ -11,6 +11,7 @@ from salesloop_linkedin_api.utils.helpers import get_id_from_urn
 from pathlib import Path
 from salesloop_linkedin_api.client import Client
 from os.path import isfile
+from urllib.parse import urlparse, parse_qs
 
 logger = logging.getLogger()
 from datetime import datetime, timedelta
@@ -852,6 +853,8 @@ class Linkedin(object):
                              client_page_instance_data_groups)
                 return [], None
 
+            logger.info('r1 headers: %s', r1.headers)
+
             r2 = self.client.session.get('https://www.linkedin.com/sales-api/salesApiIdentity?q=findLicensesByCurrentMember',
                                     headers={
                                         'dnt': '1',
@@ -868,6 +871,8 @@ class Linkedin(object):
                                         'Csrf-Token': session_id
                                     },
                                     timeout=timeout)
+
+            logger.info('r2 eaders: %s', r2.headers)
 
             data = r2.json()
             element = data['elements'][0]
@@ -890,6 +895,26 @@ class Linkedin(object):
                                            },
                                   data=json.dumps(contractData),
                                   timeout=timeout)
+
+            logger.info('r3 headers: %s', r3.headers)
+            location = r3.headers.get('Location')
+
+            if 'checkpoint/enterprise/login' in location:
+                r4 = self.client.session.get(location)
+
+                parsedURL = urlparse(r4.url)
+                parsedUrlQs = parse_qs(parsedURL.query)
+                salesApiEnterpriseAuthenticationUrl = 'https://www.linkedin.com/sales-api/salesApiEnterpriseAuthentication?accountId=%s&appInstanceId=%s&budgetGroupId=%s&licenseType=%s&viewerDeviceType=DESKTOP'
+                salesApiEnterpriseAuthenticationUrl = salesApiEnterpriseAuthenticationUrl % (
+                parsedUrlQs['accountId'][0], parsedUrlQs['appInstanceId'][0],
+                parsedUrlQs['budgetGroupId'][0], parsedUrlQs['licenseType'][0])
+
+                headers = {'Csrf-Token': session_id,
+                           'X-Restli-Protocol-Version': '2.0.0',
+                           'X-Requested-With': 'XMLHttpRequest'}
+
+                logger.info('Logging through %s url, using %s headers', salesApiEnterpriseAuthenticationUrl, headers)
+                r5 = self.client.session.get(salesApiEnterpriseAuthenticationUrl, headers=headers)
 
         html = self.client.session.get(search_url, timeout=timeout).content
 
