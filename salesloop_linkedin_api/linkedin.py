@@ -899,7 +899,7 @@ class Linkedin(object):
             logger.info('r3 headers: %s', r3.headers)
             location = r3.headers.get('Location')
 
-            if 'checkpoint/enterprise/login' in location:
+            if location and 'checkpoint/enterprise/login' in location:
                 r4 = self.client.session.get(location)
 
                 parsedURL = urlparse(r4.url)
