@@ -297,13 +297,19 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
             else:
                 fullname = lead.get('title') or lead.get('title', {}).get('text')
 
+            headline = lead.get('headline', {})
+            if headline and isinstance(headline, dict):
+                headline = headline.get('text')
+            else:
+                headline = lead.get('headline')
+
             i = {'publicIdentifier': lead.get('publicIdentifier'),
                  'firstname': lead.get('firstName'),
                  'lastname': lead.get('lastName'),
                  'fullname': fullname or '',
                  'degree': None,
                  'canSendInMail': None,
-                 'headline': lead.get('headline') or lead.get('headline', {}).get('text'),
+                 'headline': headline,
                  'picture': None,
                  'profileLink': None,
                  'profileLinkSN': None,
