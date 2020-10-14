@@ -87,7 +87,8 @@ class Client(object):
         Set cookies of the current session and save them to a file.
         """
         self.session.cookies = cookiejar
-        self.session.headers["csrf-token"] = self.session.cookies["JSESSIONID"].strip(
+        cookiejar_dict = requests.utils.dict_from_cookiejar(cookiejar)
+        self.session.headers["csrf-token"] = cookiejar_dict["JSESSIONID"].strip(
             '"'
         )
 
