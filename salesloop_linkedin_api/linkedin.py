@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 import salesloop_linkedin_api.settings as settings
 import requests
 import re
-import lxml.html as LH
+import pickle
 
 def default_evade():
     """
@@ -872,7 +872,7 @@ class Linkedin(object):
                                     },
                                     timeout=timeout)
 
-            logger.info('r2 eaders: %s', r2.headers)
+            logger.info('r2 headers: %s', r2.headers)
 
             data = r2.json()
             element = data['elements'][0]
@@ -915,6 +915,9 @@ class Linkedin(object):
 
                 logger.info('Logging through %s url, using %s headers', salesApiEnterpriseAuthenticationUrl, headers)
                 r5 = self.client.session.get(salesApiEnterpriseAuthenticationUrl, headers=headers)
+
+        self.api_cookies = pickle.dumps(self.client.session.cookies, pickle.HIGHEST_PROTOCOL)
+        self.api_headers = pickle.dumps(self.client.session.headers, pickle.HIGHEST_PROTOCOL)
 
         html = self.client.session.get(search_url, timeout=timeout).content
 
