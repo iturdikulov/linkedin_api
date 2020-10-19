@@ -133,7 +133,15 @@ def get_conversations_additional_data(conversations_data, logger=None):
                 for participant in element.get('participants', []):
                     current_participant = participant.get('com.linkedin.voyager.messaging.MessagingMember',
                                                           {}).get('miniProfile', {})
+
+                    logger.debug('Current participants: %s', current_participant)
                     public_id = current_participant.get('publicIdentifier')
+                    entity_urn = current_participant.get('entityUrn')
+                    if entity_urn:
+                        entity_urn = get_id_from_urn(entity_urn)
+
+                    # get entity urn to check conversation events
+
                     display_picture_url = linkedin_get_display_picture_url(
                         current_participant.get('picture'))
 
@@ -143,6 +151,7 @@ def get_conversations_additional_data(conversations_data, logger=None):
                             'first_name': current_participant.get('firstName'),
                             'last_name': current_participant.get('lastName'),
                             'event_body': None,
+                            'entity_urn': entity_urn,
                             'display_picture_url': display_picture_url
                         }
 
