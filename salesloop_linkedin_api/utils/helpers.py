@@ -87,6 +87,7 @@ def get_conversations_additional_data(conversations_data, logger=None):
     conversations_users_replies = {}  # Users who replied to our message
     conversations_users_participants = {}  # Users to whom only we wrote message and users which need sent follow up message
     linkedin_users_blacklist = {}
+    public_ids_found = []
 
     for data in conversations_data:
         if not data:
@@ -123,6 +124,9 @@ def get_conversations_additional_data(conversations_data, logger=None):
                             'display_picture_url': display_picture_url,
                         }
 
+                        if public_id not in public_ids_found:
+                            public_ids_found.append(public_id)
+
                         skip_participant = True
 
                         if logger:
@@ -155,6 +159,9 @@ def get_conversations_additional_data(conversations_data, logger=None):
                             'display_picture_url': display_picture_url
                         }
 
+                        if public_id not in public_ids_found:
+                            public_ids_found.append(public_id)
+
                         logger.debug(f'Found user without event_body, User public_id: {public_id}, Picture: {display_picture_url}')
 
     # Step 3. Remove users from conversations_users_participants
@@ -173,7 +180,7 @@ def get_conversations_additional_data(conversations_data, logger=None):
             del conversations_users_participants[public_id]
             logger.debug(f'Removed {public_id} participant from conversations_users_participants (already replied?')
 
-    return conversations_users_replies, conversations_users_participants, linkedin_users_blacklist
+    return conversations_users_replies, conversations_users_participants, linkedin_users_blacklist, public_ids_found
 
 
 def get_default_regions(path):
