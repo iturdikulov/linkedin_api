@@ -5,8 +5,144 @@ import re
 from re import finditer
 from traceback import print_exc
 import logging
+from os import environ, path
+from urllib.parse import urlparse, quote
+import json
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+
+def quote_query_param(data, is_sales=False):
+    if isinstance(data, str):
+        data = [data]
+
+    if is_sales:
+        return quote(','.join(data))
+    else:
+        return quote(json.dumps([item for item in data]))
+
+
+def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_data,
+                        get_companies=True, has_sn=None):
+    DEFAULT_SEARCH_PARAMS = {
+        "facetCurrentCompany": None,
+        "facetGeoRegion": None,
+        "origin": "FACETED_SEARCH",
+        "title": None,
+    }
+
+    SALES_SEARCH_DEFAULT_PARAMS = {
+        'companyIncluded': None,  # 'Microsoft:1035',
+        'companyTimeScope': 'CURRENT',  # 'CURRENT',
+        'doFetchHeroCard': 'false',  # 'false',
+        'geoIncluded': None,  # '103644278',
+        # 'keywords': None,           # 'css',
+        'logHistory': 'true',  # 'true',
+        'page': '1',  # '1',
+        'titleIncluded': None,
+        'titleTimeScope': 'CURRENT'
+    }
+
+    # check sales support
+    if has_sn is None:
+        current_user_profile = linkedin_api.get_user_profile()
+        assert isinstance(current_user_profile['premiumSubscriber'], bool)
+        has_sn = current_user_profile['premiumSubscriber']
+
+    for company_name, company_data in parsed_leads.items():
+        if not company_data.get('company_id'):
+            try:
+                company_linkedin_data = linkedin_api.get_company(company_name)
+                company_id = get_id_from_urn(
+                    company_linkedin_data.get('entityUrn'))
+
+                if company_id and company_id.isnumeric():
+                    parsed_leads[company_name]['company_id'] = int(company_id)
+                    parsed_leads[company_name]['valid'] = True
+                # TODO do something if company_id not found!
+            except Exception as e:
+                logger.warning('Failed get company! %s - %s', company_name, str(e))
+
+    if parsed_leads:
+        search_urls_list = []
+        companies_ids = []
+        regions = []
+
+        sales_companies_ids = []
+        sales_regions = []
+
+        url_title = quote(title)
+
+        # generate sub search urls
+        for company_name, lead in parsed_leads.items():
+            company_id = lead.get('company_id')
+            if not company_id:
+                logger.warning('no company id found, parsing error? %s', lead)
+                continue
+
+            # default search params
+            company_id = str(company_id)
+            companies_ids.append(company_id)
+            regions.append(f"{lead.get('country_code')}:0")
+            sub_search_url = None
+
+            # sales search params
+            if has_sn:
+                sales_companies_ids.append(f'{company_name}:{company_id}')
+                if lead.get('country_code'):
+                    country_code_id = linkedin_geo_codes_data.get(
+                        lead.get('country_code').upper(), {}).get('id')
+                    if country_code_id:
+                        sales_regions.append(country_code_id)
+                    else:
+                        logger.warning('Unknown code - %s', country_code_id)
+
+                    # generate single url
+                    url_default_params = SALES_SEARCH_DEFAULT_PARAMS
+                    url_default_params['companyIncluded'] = quote_query_param(f'{company_name}:{company_id}',
+                                                                              is_sales=True)
+                    url_default_params['geoIncluded'] = quote_query_param(country_code_id, is_sales=True)
+                    url_default_params['titleIncluded'] = url_title
+                    query_data = '&'.join(["{}={}".format(k, v) for k, v in url_default_params.items()])
+                    sub_search_url = f'https://www.linkedin.com/sales/search/people/?{query_data}'
+            else:
+                sub_url_default_params = DEFAULT_SEARCH_PARAMS
+                sub_url_default_params["facetCurrentCompany"] = quote_query_param(company_id)
+                sub_url_default_params["facetGeoRegion"] = quote_query_param(f"{lead.get('country_code')}:0")
+                sub_url_default_params["title"] = url_title
+                query_data = '&'.join(["{}={}".format(k, v) for k, v in sub_url_default_params.items()])
+                sub_search_url = f'https://www.linkedin.com/search/results/people/?{query_data}'
+
+            if sub_search_url:
+                if get_companies:
+                    search_urls_list.append((sub_search_url,
+                                             lead.get('name')))
+                else:
+                    search_urls_list.append(sub_search_url)
+
+        # generate merged url
+        if has_sn:
+            url_default_params = SALES_SEARCH_DEFAULT_PARAMS
+            url_default_params['companyIncluded'] = quote_query_param(sales_companies_ids, is_sales=True)
+            url_default_params['geoIncluded'] = quote_query_param(sales_regions, is_sales=True)
+            url_default_params['titleIncluded'] = url_title
+            query_data = '&'.join(["{}={}".format(k, v) for k, v in url_default_params.items()])
+            search_url = f'https://www.linkedin.com/sales/search/people/?{query_data}'
+        else:
+            url_default_params = DEFAULT_SEARCH_PARAMS
+            url_default_params["facetCurrentCompany"] = quote_query_param(companies_ids)
+            url_default_params["facetGeoRegion"] = quote_query_param(regions)
+            url_default_params["title"] = url_title
+            query_data = '&'.join(["{}={}".format(k, v) for k, v in url_default_params.items()])
+            search_url = f'https://www.linkedin.com/search/results/people/?{query_data}'
+
+    else:
+        logger.error('No parsed leads failed!')
+        raise Exception('No parsed leads failed!')
+
+    return parsed_leads, search_url, search_urls_list
+
 
 def get_id_from_urn(urn):
     """
