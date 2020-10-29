@@ -376,7 +376,7 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                         users_data = data
 
             except Exception as e:
-                logger.info(f'Failed parse item... {str(e)}')
+                logger.info(f'Failed parse item... {item}. {repr(e)}')
 
         if users_data:
             paging = users_data.get('data', {}).get('paging')
