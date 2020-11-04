@@ -382,6 +382,7 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                     if data_type == 'com.linkedin.voyager.common.Me':
                         logged_in = True
 
+
             except Exception as e:
                 logger.info(f'Failed parse item... {item}. {repr(e)}')
 
@@ -432,6 +433,39 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                         elif user_public_id in users:
                             users[user_public_id].update(item)
 
+                # fallback parser, if not users found
+                fallback_profiles_images = {}
+                if not users:
+                    logger.warning('No found elements with default parser, use fallback users parser')
+                    for item in mini_profiles:
+                        type = item.get('$type')
+                        user_public_id = None
+
+                        if type == 'com.linkedin.voyager.dash.search.EntityResultViewModel':
+                            user_public_id = item.get('publicIdentifier')
+                            navigation_url = item.get('navigationUrl')
+                            if not user_public_id and navigation_url:
+                                logger.debug('Get public_id from navigation URL: %s', navigation_url)
+                                try:
+                                    url_path = urlparse(navigation_url.strip('/'))
+                                    user_public_id = url_path.path.split("/")[-1]
+
+                                    if user_public_id not in users:
+                                        logger.debug('Add %s item to users', item)
+                                        users[user_public_id] = item
+                                        users[user_public_id]['publicIdentifier'] = user_public_id
+
+                                except Exception as e:
+                                    logger.warning('Failed parse %s item', item, exc_info=e)
+                            else:
+                                logger.warning('Unknown parsing case, please check this item: %s', item)
+
+                        elif type == 'com.linkedin.voyager.dash.identity.profile.Profile':
+                            if item.get('profilePicture') and item.get('entityUrn'):
+                                fallback_profiles_images[item.get('entityUrn')] = item.get('profilePicture', {}).get('displayImageReference', {}).get('vectorImage')
+
+
+                # fallback parser - elements
                 for key, lead in users.items():
                     try:
                         for item in mini_profiles:
