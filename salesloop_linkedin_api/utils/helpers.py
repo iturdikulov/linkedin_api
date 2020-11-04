@@ -355,8 +355,9 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
     users = {}
     parsed_users = []
     unknown_profiles = []
-    pagination = None
+    pagination = {}
     results_length = 0
+    logged_in = False
 
     tree = LH.document_fromstring(html)
     search_hits = tree.xpath("//code//text()[string-length() > 0]")
@@ -374,6 +375,9 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
 
                     if data_type == 'com.linkedin.restli.common.CollectionResponse' and not users_data:
                         users_data = data
+
+                    if data_type == 'com.linkedin.voyager.common.Me':
+                        logged_in = True
 
             except Exception as e:
                 logger.info(f'Failed parse item... {item}. {repr(e)}')
@@ -549,6 +553,11 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                 if data.get('elements'):
                     for element in data.get('elements'):
                         parsed_items.append(element)
+
+                current_entity_run = data.get('memberResolutionResult', {}).get('entityUrn')
+
+                if current_entity_run and 'urn:li:fs_salesProfile' in current_entity_run:
+                    logged_in = True
             except Exception:
                 pass
 
@@ -614,8 +623,8 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                 parsed_users.append(i)
 
     if get_pagination:
-        if pagination:
-            pagination['results_length'] = results_length
+        pagination['results_length'] = results_length
+        pagination['logged_in'] = logged_in
 
         return parsed_users, pagination, unknown_profiles
     else:
