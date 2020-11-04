@@ -2,7 +2,6 @@
 Provides linkedin api-related code
 """
 import random
-import logging
 from time import sleep
 from urllib.parse import urlencode
 import json
@@ -12,13 +11,14 @@ from pathlib import Path
 from salesloop_linkedin_api.client import Client
 from os.path import isfile
 from urllib.parse import urlparse, parse_qs
-
-logger = logging.getLogger()
-from datetime import datetime, timedelta
 import salesloop_linkedin_api.settings as settings
 import requests
 import re
 import pickle
+import logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('application')
+
 
 def default_evade():
     """
