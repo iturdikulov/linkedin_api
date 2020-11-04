@@ -416,9 +416,12 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                     if item.get('$recipeTypes') and 'com.linkedin.voyager.dash.deco.relationships.ProfileWithIweWarned' in item.get('$recipeTypes'):
                         continue
 
-                    if type in ['com.linkedin.voyager.identity.shared.MiniProfile', 'com.linkedin.voyager.dash.identity.profile.Profile']:
+                    if type in ['com.linkedin.voyager.identity.shared.MiniProfile',
+                                'com.linkedin.voyager.dash.identity.profile.Profile']:
                         user_public_id = item.get('publicIdentifier')
+
                         if not user_public_id:
+                            logger.debug('No public id found: %s', item)
                             continue
 
                         if type == 'com.linkedin.voyager.dash.identity.profile.Profile':
@@ -455,6 +458,8 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                                         if vector_image:
                                             item['picture'] = vector_image
                                             users[key].update(item)
+
+
                     except Exception as e:
                         logger.warning('Failed pars %s item', lead, exc_info=e)
 
@@ -462,6 +467,8 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
         logger.debug('Users found %d', len(users))
 
         for key, lead in users.items():
+            fullname = None
+
             if lead.get('firstName') and lead.get('lastName'):
                 fullname = f"{lead.get('firstName')} {lead.get('lastName')}"
             else:
