@@ -9,8 +9,8 @@ from os import environ, path
 from urllib.parse import urlparse, quote
 import json
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger('application')
 
 
 def quote_query_param(data, is_sales=False):
