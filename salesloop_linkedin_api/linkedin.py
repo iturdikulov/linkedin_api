@@ -837,7 +837,8 @@ class Linkedin(object):
 
         if is_sales:
             r1 = self.client.session.get('https://www.linkedin.com/sales/', timeout=timeout)
-            cookies = self.client.session.cookies.get_dict()
+            logger.info('Get sales cookies - %s', self.client.session.cookies)
+            cookies = requests.utils.dict_from_cookiejar(self.client.session.cookies)
             session_id = cookies.get('JSESSIONID').strip('\"')
             client_page_instance = None
 
