@@ -516,9 +516,18 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
             if lead.get('firstName') and lead.get('lastName'):
                 fullname = f"{lead.get('firstName')} {lead.get('lastName')}"
             else:
-                fullname = lead.get('title') or lead.get('title', {}).get('text')
+                if isinstance(lead.get('title'), dict) and lead.get('title', {}).get('text'):
+                    fullname = lead.get('title', {}).get('text')
+                elif lead.get('title'):
+                    fullname = lead.get('title')
+
+            if not lead.get('firstName') or not lead.get('lastName') and fullname:
+                fullname_parts = fullname.split(' ')
+                if len(fullname_parts) == 2:
+                    lead['firstName'], lead['lastName'] = fullname_parts
 
             headline = lead.get('headline', {})
+
             if headline and isinstance(headline, dict):
                 headline = headline.get('text')
             else:
