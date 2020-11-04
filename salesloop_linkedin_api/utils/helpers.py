@@ -361,6 +361,7 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
 
     tree = LH.document_fromstring(html)
     search_hits = tree.xpath("//code//text()[string-length() > 0]")
+    logger.info('Found %d search hits', len(search_hits))
 
     if not is_sales:
         for item in search_hits:
@@ -375,6 +376,8 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
 
                     if data_type == 'com.linkedin.restli.common.CollectionResponse' and not users_data:
                         users_data = data
+                    else:
+                        logger.debug('Data type: %s', data_type)
 
                     if data_type == 'com.linkedin.voyager.common.Me':
                         logged_in = True
@@ -388,7 +391,8 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                 pagination = paging
                 results_length = pagination.get('total', 0)
 
-            elements = users_data.get('data', {}).get('elements')
+            elements = users_data.get('data', {}).get('elements', [])
+            logger.debug('Found %d elements', len(elements))
 
             if elements and isinstance(elements, list):
                 for sub_element in elements:
@@ -407,6 +411,8 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
             if mini_profiles and isinstance(mini_profiles, list):
                 for item in mini_profiles:
                     type = item.get('$type')
+                    logger.debug('Mini profile type: %s', type)
+
                     if item.get('$recipeTypes') and 'com.linkedin.voyager.dash.deco.relationships.ProfileWithIweWarned' in item.get('$recipeTypes'):
                         continue
 
@@ -433,6 +439,12 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                                         item.get('navigationUrl'),
                                         lead.get('publicIdentifier') in item.get('navigationUrl')]):
 
+                                    logger.debug('Fallback parser - found new user: %s, %s, %s, %s',
+                                                 item,
+                                                 lead.get('publicIdentifier'),
+                                                 item.get('navigationUrl'),
+                                                 lead.get('publicIdentifier') in item.get('navigationUrl'))
+
                                     image_attributes = item.get('image', {}).get('attributes', [])
 
                                     if image_attributes:
@@ -446,6 +458,8 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                     except Exception as e:
                         logger.warning('Failed pars %s item', lead, exc_info=e)
 
+
+        logger.debug('Users found %d', len(users))
 
         for key, lead in users.items():
             if lead.get('firstName') and lead.get('lastName'):
@@ -539,6 +553,8 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
 
             if i.get('profileLink') and i.get('profileLinkSN') and i.get('firstname') and i.get('lastname'):
                 parsed_users.append(i)
+            else:
+                logger.warning('Not enough data to add user: %s', i)
 
     else:
         parsed_items = []
