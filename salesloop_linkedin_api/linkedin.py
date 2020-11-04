@@ -874,48 +874,49 @@ class Linkedin(object):
                                     timeout=timeout)
 
             logger.info('r2 headers: %s', r2.headers)
-
             data = r2.json()
-            element = data['elements'][0]
-            contractData = {'viewerDeviceType': 'DESKTOP',
-                            'name': element['name'],
-                            'identity': {'agnosticIdentity': element['agnosticIdentity'],
-                                         'name': element['name']}}
 
-            redirect = '/sales/search'
-            redirect = urlencode({'redirect': redirect})
+            if data.get('elements'):
+                element = data['elements'][0]
+                contractData = {'viewerDeviceType': 'DESKTOP',
+                                'name': element['name'],
+                                'identity': {'agnosticIdentity': element['agnosticIdentity'],
+                                             'name': element['name']}}
 
-            r3 = self.client.session.post('https://www.linkedin.com/sales-api/salesApiAgnosticAuthentication?%s' % (redirect,),
-                                  headers={'Csrf-Token': session_id,
-                                           'X-Restli-Protocol-Version': '2.0.0',
-                                           'X-Requested-With': 'XMLHttpRequest',
-                                           'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                           'X-Li-Page-Instance': client_page_instance,
-                                           'X-Li-Lang': 'en_US',
-                                           'Referer': 'https://www.linkedin.com/sales/contract-chooser?redirect=%2Fsales%2Fsearch'
-                                           },
-                                  data=json.dumps(contractData),
-                                  timeout=timeout)
+                redirect = '/sales/search'
+                redirect = urlencode({'redirect': redirect})
 
-            logger.info('r3 headers: %s', r3.headers)
-            location = r3.headers.get('Location')
+                r3 = self.client.session.post('https://www.linkedin.com/sales-api/salesApiAgnosticAuthentication?%s' % (redirect,),
+                                      headers={'Csrf-Token': session_id,
+                                               'X-Restli-Protocol-Version': '2.0.0',
+                                               'X-Requested-With': 'XMLHttpRequest',
+                                               'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                               'X-Li-Page-Instance': client_page_instance,
+                                               'X-Li-Lang': 'en_US',
+                                               'Referer': 'https://www.linkedin.com/sales/contract-chooser?redirect=%2Fsales%2Fsearch'
+                                               },
+                                      data=json.dumps(contractData),
+                                      timeout=timeout)
 
-            if location and 'checkpoint/enterprise/login' in location:
-                r4 = self.client.session.get(location)
+                logger.info('r3 headers: %s', r3.headers)
+                location = r3.headers.get('Location')
 
-                parsedURL = urlparse(r4.url)
-                parsedUrlQs = parse_qs(parsedURL.query)
-                salesApiEnterpriseAuthenticationUrl = 'https://www.linkedin.com/sales-api/salesApiEnterpriseAuthentication?accountId=%s&appInstanceId=%s&budgetGroupId=%s&licenseType=%s&viewerDeviceType=DESKTOP'
-                salesApiEnterpriseAuthenticationUrl = salesApiEnterpriseAuthenticationUrl % (
-                parsedUrlQs['accountId'][0], parsedUrlQs['appInstanceId'][0],
-                parsedUrlQs['budgetGroupId'][0], parsedUrlQs['licenseType'][0])
+                if location and 'checkpoint/enterprise/login' in location:
+                    r4 = self.client.session.get(location)
 
-                headers = {'Csrf-Token': session_id,
-                           'X-Restli-Protocol-Version': '2.0.0',
-                           'X-Requested-With': 'XMLHttpRequest'}
+                    parsedURL = urlparse(r4.url)
+                    parsedUrlQs = parse_qs(parsedURL.query)
+                    salesApiEnterpriseAuthenticationUrl = 'https://www.linkedin.com/sales-api/salesApiEnterpriseAuthentication?accountId=%s&appInstanceId=%s&budgetGroupId=%s&licenseType=%s&viewerDeviceType=DESKTOP'
+                    salesApiEnterpriseAuthenticationUrl = salesApiEnterpriseAuthenticationUrl % (
+                    parsedUrlQs['accountId'][0], parsedUrlQs['appInstanceId'][0],
+                    parsedUrlQs['budgetGroupId'][0], parsedUrlQs['licenseType'][0])
 
-                logger.info('Logging through %s url, using %s headers', salesApiEnterpriseAuthenticationUrl, headers)
-                r5 = self.client.session.get(salesApiEnterpriseAuthenticationUrl, headers=headers)
+                    headers = {'Csrf-Token': session_id,
+                               'X-Restli-Protocol-Version': '2.0.0',
+                               'X-Requested-With': 'XMLHttpRequest'}
+
+                    logger.info('Logging through %s url, using %s headers', salesApiEnterpriseAuthenticationUrl, headers)
+                    r5 = self.client.session.get(salesApiEnterpriseAuthenticationUrl, headers=headers)
 
         self.api_cookies = pickle.dumps(self.client.session.cookies, pickle.HIGHEST_PROTOCOL)
         self.api_headers = pickle.dumps(self.client.session.headers, pickle.HIGHEST_PROTOCOL)
