@@ -489,6 +489,16 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                                                                            {}).get(
                                             'nonEntityProfilePicture', {}).get('vectorImage')
 
+                                        if not vector_image:
+                                            logger.debug('Trying get image from fallback images')
+                                            profile_picture_urn = image_attributes[0].get(
+                                                'detailDataUnion',
+                                                {}).get(
+                                                'profilePicture')
+
+                                            if profile_picture_urn and profile_picture_urn in fallback_profiles_images:
+                                                vector_image = fallback_profiles_images.get(profile_picture_urn)
+
                                         if vector_image:
                                             item['picture'] = vector_image
                                             users[key].update(item)
