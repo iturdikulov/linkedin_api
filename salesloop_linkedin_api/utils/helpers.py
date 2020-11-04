@@ -592,8 +592,10 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
 
             if isinstance(lead.get('headline'), dict):
                 i['position'] = lead.get('headline', {}).get('text')
-            else:
+            elif lead.get('headline'):
                 i['position'] = lead.get('headline')
+            elif isinstance(lead.get('primarySubtitle', {}), dict):
+                i['position'] = lead.get('primarySubtitle', {}).get('text')
 
             snippet_text = lead.get('snippetText', {}).get('text') or i['position']
             if snippet_text:
