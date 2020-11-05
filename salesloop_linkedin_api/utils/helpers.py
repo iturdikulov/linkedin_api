@@ -615,6 +615,14 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
 
             if i.get('profileLink') and i.get('profileLinkSN') and i.get('firstname') and i.get('lastname'):
                 parsed_users.append(i)
+
+                logger.debug('Added user to parsed_users list: %s', {
+                    'entityUrn': i.get('entityUrn'),
+                    'profileLink': i.get('profileLink'),
+                    'profileLinkSN': i.get('profileLinkSN'),
+                    'firstname': i.get('firstname'),
+                    'lastname': i.get('lastname')
+                })
             else:
                 logger.warning('Not enough data to add user: %s', i)
 
@@ -699,6 +707,14 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                             break
 
                 parsed_users.append(i)
+
+                logger.debug('Added user to parsed_users list: %s', {
+                    'entityUrn': i.get('entityUrn'),
+                    'profileLink': i.get('profileLink'),
+                    'profileLinkSN': i.get('profileLinkSN'),
+                    'firstname': i.get('firstname'),
+                    'lastname': i.get('lastname')
+                })
 
     if get_pagination:
         pagination['results_length'] = results_length
