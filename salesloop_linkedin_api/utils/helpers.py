@@ -581,11 +581,21 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
             i['location'] = lead.get('subline', {}).get('text') or lead.get('secondarySubtitle', {}).get('text')
             i['inCrm'] = -1
             i['tags'] = ""
-            entityUrn = None
+            entityUrn = lead.get('entityUrn')
 
-            if 'entityUrn' in lead:
-                entityUrn = ''.join(re.findall(r'urn:li:fs_miniProfile:(.*)', lead['entityUrn'])) or ''.join(
-                        re.findall(r'urn:li:fsd_profile:(.*)', lead['entityUrn']))
+            if entityUrn and isinstance(entityUrn, str):
+                if 'urn:li:fs_miniProfile' in entityUrn:
+                    # this usually default format
+                    entityUrn = ''.join(re.findall(r'urn:li:fs_miniProfile:(.*)', entityUrn))
+                elif 'urn:li:fsd_profile' in entityUrn:
+                    # fallback format
+                    entityUrn = ''.join(re.findall(r'urn:li:fsd_profile:(.*)', entityUrn))
+
+                # get data before comma in entity (remove some like ,SEARCH_SRP)
+                if ',' in entityUrn:
+                    entityUrn = ''.join(re.findall(r'^(.+?),', entityUrn))
+
+                # check entity valid after all operations & fill variables
                 if entityUrn:
                     i['profileLinkSN'] = 'https://www.linkedin.com/sales/people/%s' % entityUrn
                     i['entityUrn'] = entityUrn
