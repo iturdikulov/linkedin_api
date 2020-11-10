@@ -43,7 +43,8 @@ class Linkedin(object):
     def __init__(self, username, password, *, refresh_cookies=False, debug=False, proxies={},
                  api_cookies=None,
                  cached_login=False,
-                 ua=None):
+                 ua=None,
+                 default_retry_max_time=600):
         self.logger = logger
         self.client = Client(refresh_cookies=refresh_cookies, debug=debug, proxies=proxies, api_cookies=api_cookies,
                              ua=ua)
