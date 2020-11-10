@@ -69,23 +69,60 @@ class Linkedin(object):
     def _get_max_retry_time(self):
         return self.default_retry_max_time
 
-    def _fetch(self, uri, evade=default_evade, **kwargs):
+    def backoff_hdlr(self, details):
+        self.logger.debug("Backing off {wait:0.1f} seconds afters {tries} tries "
+              "calling function {target} with args {args} and kwargs "
+              "{kwargs}".format(**details))
+
+    def _fetch(self, uri, evade=default_evade, raw_url=False, **kwargs):
         """
         GET request to Linkedin API
         """
         evade()
 
-        url = f"{self.client.API_BASE_URL}{uri}"
-        return self.client.session.get(url, timeout=Linkedin._DEFAULT_GET_TIMEOUT, **kwargs)
+        @backoff.on_exception(backoff.expo,
+                              (requests.exceptions.Timeout,
+                               requests.exceptions.RequestException,
+                               requests.exceptions.ConnectionError),
+                              max_time=self._get_max_retry_time,
+                              on_backoff=self.backoff_hdlr)
+        def fetch_data():
+            if raw_url:
+                url = uri
+            else:
+                url = f"{self.client.API_BASE_URL}{uri}"
 
-    def _post(self, uri, evade=default_evade, **kwargs):
+            if not kwargs.get('timeout'):
+                # Use default timeout
+                kwargs['timeout'] = Linkedin._DEFAULT_GET_TIMEOUT
+            return self.client.session.get(url, **kwargs)
+
+        return fetch_data()
+
+    def _post(self, uri, evade=default_evade, raw_url=False, **kwargs):
         """
         POST request to Linkedin API
         """
         evade()
 
-        url = f"{self.client.API_BASE_URL}{uri}"
-        return self.client.session.post(url, timeout=Linkedin._DEFAULT_POST_TIMEOUT, **kwargs)
+        @backoff.on_exception(backoff.expo,
+                              (requests.exceptions.Timeout,
+                               requests.exceptions.RequestException,
+                               requests.exceptions.ConnectionError),
+                              max_time=self._get_max_retry_time,
+                              on_backoff=self.backoff_hdlr)
+        def post_data():
+            if raw_url:
+                url = uri
+            else:
+                url = f"{self.client.API_BASE_URL}{uri}"
+
+            if not kwargs.get('timeout'):
+                # Use default timeout
+                kwargs['timeout'] = Linkedin._DEFAULT_POST_TIMEOUT
+            return self.client.session.post(url,  **kwargs)
+
+        return post_data()
 
     def search(self, params, limit=None, results=[]):
         """
