@@ -16,6 +16,8 @@ import requests
 import re
 import pickle
 import logging
+import backoff
+
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('application')
 
@@ -49,7 +51,9 @@ class Linkedin(object):
         self.client = Client(refresh_cookies=refresh_cookies, debug=debug, proxies=proxies, api_cookies=api_cookies,
                              ua=ua)
 
-        logger.info('Initialize basic linkedin api class...')
+        logger.info('Initialize basic linkedin api class with %.2f max_retry_time. '
+                    'Default GET timeout: %.2f, Default POST timeout: %.2f',
+                    default_retry_max_time, self._DEFAULT_GET_TIMEOUT, self._DEFAULT_POST_TIMEOUT)
 
         if cached_login:
             self.client.alternate_authenticate()
@@ -60,6 +64,10 @@ class Linkedin(object):
         self.api_headers = self.client.api_headers
         self.results = None
         self.results_length = None
+        self.default_retry_max_time = default_retry_max_time
+
+    def _get_max_retry_time(self):
+        return self.default_retry_max_time
 
     def _fetch(self, uri, evade=default_evade, **kwargs):
         """
