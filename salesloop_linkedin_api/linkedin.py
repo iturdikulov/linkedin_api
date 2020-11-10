@@ -876,13 +876,11 @@ class Linkedin(object):
             return get_id_from_urn(entityUrn)
 
     def get_leads(self, search_url, is_sales=False, timeout=None, get_raw=False):
-        if not timeout:
-            timeout = Linkedin._DEFAULT_GET_TIMEOUT
-
         logger.info('Leads quick search with %s timeout. Is Sales %s.', timeout, is_sales)
 
         if is_sales:
-            r1 = self.client.session.get('https://www.linkedin.com/sales/', timeout=timeout)
+            r1 = self._fetch('https://www.linkedin.com/sales/', raw_url=True, timeout=timeout)
+
             logger.info('Get sales cookies - %s', self.client.session.cookies)
             cookies = requests.utils.dict_from_cookiejar(self.client.session.cookies)
             session_id = cookies.get('JSESSIONID').strip('\"')
@@ -902,22 +900,23 @@ class Linkedin(object):
 
             logger.info('r1 headers: %s', r1.headers)
 
-            r2 = self.client.session.get('https://www.linkedin.com/sales-api/salesApiIdentity?q=findLicensesByCurrentMember',
-                                    headers={
-                                        'dnt': '1',
-                                        'accept-encoding': 'gzip, deflate, br',
-                                        'x-li-lang': 'en_US',
-                                        'accept-language': 'en-US,en;q=0.9',
-                                        'x-requested-with': 'XMLHttpRequest',
-                                        'pragma': 'no-cache',
-                                        'accept': '*/*',
-                                        'cache-control': 'no-cache',
-                                        'x-restli-protocol-version': '2.0.0',
-                                        'authority': 'www.linkedin.com',
-                                        'referer': 'https://www.linkedin.com/sales/',
-                                        'Csrf-Token': session_id
-                                    },
-                                    timeout=timeout)
+            r2 = self._fetch('https://www.linkedin.com/sales-api/salesApiIdentity?q=findLicensesByCurrentMember',
+                             raw_url=True,
+                             headers={
+                                 'dnt': '1',
+                                 'accept-encoding': 'gzip, deflate, br',
+                                 'x-li-lang': 'en_US',
+                                 'accept-language': 'en-US,en;q=0.9',
+                                 'x-requested-with': 'XMLHttpRequest',
+                                 'pragma': 'no-cache',
+                                 'accept': '*/*',
+                                 'cache-control': 'no-cache',
+                                 'x-restli-protocol-version': '2.0.0',
+                                 'authority': 'www.linkedin.com',
+                                 'referer': 'https://www.linkedin.com/sales/',
+                                 'Csrf-Token': session_id
+                             },
+                             timeout=timeout)
 
             logger.info('r2 headers: %s', r2.headers)
             data = r2.json()
@@ -932,23 +931,26 @@ class Linkedin(object):
                 redirect = '/sales/search'
                 redirect = urlencode({'redirect': redirect})
 
-                r3 = self.client.session.post('https://www.linkedin.com/sales-api/salesApiAgnosticAuthentication?%s' % (redirect,),
-                                      headers={'Csrf-Token': session_id,
-                                               'X-Restli-Protocol-Version': '2.0.0',
-                                               'X-Requested-With': 'XMLHttpRequest',
-                                               'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                               'X-Li-Page-Instance': client_page_instance,
-                                               'X-Li-Lang': 'en_US',
-                                               'Referer': 'https://www.linkedin.com/sales/contract-chooser?redirect=%2Fsales%2Fsearch'
-                                               },
-                                      data=json.dumps(contractData),
-                                      timeout=timeout)
+                SALES_API_AGONSITC_AUTH_URL = 'https://www.linkedin.com/sales-api/salesApiAgnosticAuthentication?%s' % (redirect,)
+                r3 = self._post(
+                    SALES_API_AGONSITC_AUTH_URL,
+                    raw_url=True,
+                    headers={'Csrf-Token': session_id,
+                             'X-Restli-Protocol-Version': '2.0.0',
+                             'X-Requested-With': 'XMLHttpRequest',
+                             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                             'X-Li-Page-Instance': client_page_instance,
+                             'X-Li-Lang': 'en_US',
+                             'Referer': 'https://www.linkedin.com/sales/contract-chooser?redirect=%2Fsales%2Fsearch'},
+                    data=json.dumps(contractData),
+                    timeout=timeout
+                )
 
                 logger.info('r3 headers: %s', r3.headers)
                 location = r3.headers.get('Location')
 
                 if location and 'checkpoint/enterprise/login' in location:
-                    r4 = self.client.session.get(location)
+                    r4 = self._fetch(location, raw_url=True, timeout=timeout)
 
                     parsedURL = urlparse(r4.url)
                     parsedUrlQs = parse_qs(parsedURL.query)
@@ -962,12 +964,14 @@ class Linkedin(object):
                                'X-Requested-With': 'XMLHttpRequest'}
 
                     logger.info('Logging through %s url, using %s headers', salesApiEnterpriseAuthenticationUrl, headers)
-                    r5 = self.client.session.get(salesApiEnterpriseAuthenticationUrl, headers=headers)
+                    r5 = self._fetch(salesApiEnterpriseAuthenticationUrl, raw_url=True, headers=headers, timeout=timeout)
 
         self.api_cookies = pickle.dumps(self.client.session.cookies, pickle.HIGHEST_PROTOCOL)
         self.api_headers = pickle.dumps(self.client.session.headers, pickle.HIGHEST_PROTOCOL)
 
-        html = self.client.session.get(search_url, timeout=timeout).content
+        raw_html_request = self._fetch(search_url, raw_url=True, timeout=timeout)
+        raw_html_request.raise_for_status()
+        html = raw_html_request.text
 
         if get_raw:
             return html
