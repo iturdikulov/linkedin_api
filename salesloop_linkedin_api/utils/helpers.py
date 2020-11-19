@@ -96,14 +96,26 @@ def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_da
 
             # sales search params
             if has_sn:
+                # SALES NAV URL LOGIC
                 sales_companies_ids.append(f'{company_name}:{company_id}')
-                if lead.get('country_code'):
-                    country_code_id = linkedin_geo_codes_data.get(
-                        lead.get('country_code').upper(), {}).get('id')
-                    if country_code_id:
-                        sales_regions.append(country_code_id)
+
+                if lead.get('country_code') or leadfeeder_countries_codes:
+                    # generate single url
+                    url_default_params = SALES_SEARCH_DEFAULT_PARAMS
+
+                    if leadfeeder_countries_codes:
+                        # regions exist, overwrite leads locations
+                        url_default_params['geoIncluded'] = quote_query_param(sales_regions,
+                                                                              is_sales=True)
                     else:
-                        logger.warning('Unknown code - %s', country_code_id)
+                        # use lead location, append location to generate all regions
+                        country_code_id = linkedin_geo_codes_data.get(
+                            lead.get('country_code').upper(), {}).get('id')
+
+                        if country_code_id:
+                            sales_regions.append(country_code_id)
+                        else:
+                            logger.warning('Unknown code - %s', country_code_id)
 
                     # generate single url
                     url_default_params = SALES_SEARCH_DEFAULT_PARAMS
@@ -114,6 +126,7 @@ def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_da
                     query_data = '&'.join(["{}={}".format(k, v) for k, v in url_default_params.items()])
                     sub_search_url = f'https://www.linkedin.com/sales/search/people/?{query_data}'
             else:
+                # DEFAULT URL LOGIC
                 sub_url_default_params = DEFAULT_SEARCH_PARAMS
                 sub_url_default_params["facetCurrentCompany"] = quote_query_param(company_id)
                 sub_url_default_params["facetGeoRegion"] = quote_query_param(f"{lead.get('country_code')}:0")
