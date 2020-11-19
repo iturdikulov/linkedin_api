@@ -24,7 +24,7 @@ def quote_query_param(data, is_sales=False):
 
 
 def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_data,
-                        get_companies=True, has_sn=None):
+                        get_companies=True, has_sn=None, leadfeeder_countries_codes=[]):
     DEFAULT_SEARCH_PARAMS = {
         "facetCurrentCompany": None,
         "facetGeoRegion": None,
