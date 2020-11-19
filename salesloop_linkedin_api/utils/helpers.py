@@ -117,11 +117,11 @@ def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_da
                         else:
                             logger.warning('Unknown code - %s', country_code_id)
 
-                    # generate single url
-                    url_default_params = SALES_SEARCH_DEFAULT_PARAMS
+                        url_default_params['geoIncluded'] = quote_query_param(country_code_id,
+                                                                              is_sales=True)
+
                     url_default_params['companyIncluded'] = quote_query_param(f'{company_name}:{company_id}',
                                                                               is_sales=True)
-                    url_default_params['geoIncluded'] = quote_query_param(country_code_id, is_sales=True)
                     url_default_params['titleIncluded'] = url_title
                     query_data = '&'.join(["{}={}".format(k, v) for k, v in url_default_params.items()])
                     sub_search_url = f'https://www.linkedin.com/sales/search/people/?{query_data}'
@@ -129,7 +129,15 @@ def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_da
                 # DEFAULT URL LOGIC
                 sub_url_default_params = DEFAULT_SEARCH_PARAMS
                 sub_url_default_params["facetCurrentCompany"] = quote_query_param(company_id)
-                sub_url_default_params["facetGeoRegion"] = quote_query_param(f"{lead.get('country_code')}:0")
+
+                if leadfeeder_countries_codes:
+                    # regions exist, overwrite leads locations
+                    sub_url_default_params["facetGeoRegion"] = quote_query_param(regions)
+                else:
+                    # use lead location, append location to generate all regions
+                    regions.append(f"{lead.get('country_code')}:0")
+                    sub_url_default_params["facetGeoRegion"] = quote_query_param(f"{lead.get('country_code')}:0")
+
                 sub_url_default_params["title"] = url_title
                 query_data = '&'.join(["{}={}".format(k, v) for k, v in sub_url_default_params.items()])
                 sub_search_url = f'https://www.linkedin.com/search/results/people/?{query_data}'
