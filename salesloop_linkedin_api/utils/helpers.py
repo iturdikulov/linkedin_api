@@ -67,12 +67,20 @@ def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_da
     if parsed_leads:
         search_urls_list = []
         companies_ids = []
-        regions = []
 
         sales_companies_ids = []
-        sales_regions = []
 
         url_title = quote(title)
+
+        if leadfeeder_countries_codes:
+            logger.debug('Use predefined country codes: %d',
+                         len(leadfeeder_countries_codes))
+            regions = [f"{country_code}:0" for country_code in leadfeeder_countries_codes]
+            sales_regions = [linkedin_geo_codes_data.get(country_code.upper(), {}).get('id')
+                             for country_code in leadfeeder_countries_codes]
+        else:
+            regions = []
+            sales_regions = []
 
         # generate sub search urls
         for company_name, lead in parsed_leads.items():
@@ -84,7 +92,6 @@ def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_da
             # default search params
             company_id = str(company_id)
             companies_ids.append(company_id)
-            regions.append(f"{lead.get('country_code')}:0")
             sub_search_url = None
 
             # sales search params
