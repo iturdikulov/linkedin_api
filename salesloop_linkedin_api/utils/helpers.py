@@ -30,6 +30,7 @@ def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_da
         "facetGeoRegion": None,
         "origin": "FACETED_SEARCH",
         "title": None,
+        "geoUrn": None,
     }
 
     SALES_SEARCH_DEFAULT_PARAMS = {
@@ -138,6 +139,12 @@ def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_da
                     regions.append(f"{lead.get('country_code')}:0")
                     sub_url_default_params["facetGeoRegion"] = quote_query_param(f"{lead.get('country_code')}:0")
 
+                geo_urns = [
+                    linkedin_geo_codes_data.get(region.replace(':0', '').upper(), {}).get('id')
+                    for region in regions if region]
+
+                sub_url_default_params["geoUrn"] = quote_query_param(geo_urns)
+
                 sub_url_default_params["title"] = url_title
                 query_data = '&'.join(["{}={}".format(k, v) for k, v in sub_url_default_params.items()])
                 sub_search_url = f'https://www.linkedin.com/search/results/people/?{query_data}'
@@ -161,6 +168,11 @@ def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_da
             url_default_params = DEFAULT_SEARCH_PARAMS
             url_default_params["facetCurrentCompany"] = quote_query_param(companies_ids)
             url_default_params["facetGeoRegion"] = quote_query_param(regions)
+
+            geo_urns = [linkedin_geo_codes_data.get(region.replace(':0', '').upper(), {}).get('id')
+                        for region in regions if region]
+            url_default_params["geoUrn"] = quote_query_param(geo_urns)
+
             url_default_params["title"] = url_title
             query_data = '&'.join(["{}={}".format(k, v) for k, v in url_default_params.items()])
             search_url = f'https://www.linkedin.com/search/results/people/?{query_data}'
