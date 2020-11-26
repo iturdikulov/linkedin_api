@@ -62,6 +62,8 @@ class Linkedin(object):
 
         self.api_cookies = self.client.api_cookies
         self.api_headers = self.client.api_headers
+        self.api_proxies = proxies
+
         self.results = None
         self.results_length = None
         self.default_retry_max_time = default_retry_max_time
