@@ -6,9 +6,27 @@ from traceback import print_exc
 import logging
 from urllib.parse import urlparse, quote
 import json
+from time import sleep
+import random
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('application')
+
+
+def default_evade():
+    """
+    A catch-all method to try and evade suspension from Linkedin.
+    Currently, just delays the request by a random (bounded) time
+    """
+    sleep(random.uniform(2, 5))  # sleep a random duration to try and evade suspention
+
+
+def fast_evade():
+    """
+    A catch-all method to try and evade suspension from Linkedin.
+    Currently, just delays the request by a random (bounded) time
+    """
+    sleep(random.uniform(0.5, 2))
 
 
 def quote_query_param(data, is_sales=False):

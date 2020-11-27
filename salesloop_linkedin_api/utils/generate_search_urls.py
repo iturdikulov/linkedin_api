@@ -1,17 +1,8 @@
 from urllib.parse import quote
-from salesloop_linkedin_api.utils.helpers import get_id_from_urn, logger, quote_query_param
-from salesloop_linkedin_api.requests_threads import AsyncSession
-
-
-async def get_companies(parsed_leads):
-    session = AsyncSession(n=100)
-
-    rs = []
-    for _ in range(100):
-        rs.append(session.get('http://httpbin.org/get'))
-    for i in range(100):
-        rs[i] = await rs[i]
-    print(rs)
+from salesloop_linkedin_api.utils.helpers import get_id_from_urn, logger, quote_query_param, fast_evade
+from concurrent.futures import ThreadPoolExecutor
+from requests_futures.sessions import FuturesSession
+import pickle
 
 
 def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_data,

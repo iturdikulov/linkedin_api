@@ -5,7 +5,7 @@ import random
 from time import sleep
 from urllib.parse import urlencode
 import json
-from .utils.helpers import get_leads_from_html, get_default_regions
+from .utils.helpers import get_leads_from_html, get_default_regions, default_evade
 from salesloop_linkedin_api.utils.helpers import get_id_from_urn
 from pathlib import Path
 from salesloop_linkedin_api.client import Client
@@ -20,14 +20,6 @@ import backoff
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('application')
-
-
-def default_evade():
-    """
-    A catch-all method to try and evade suspension from Linkedin.
-    Currenly, just delays the request by a random (bounded) time
-    """
-    sleep(random.randint(2, 5))  # sleep a random duration to try and evade suspention
 
 
 class Linkedin(object):
