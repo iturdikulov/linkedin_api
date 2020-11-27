@@ -3,7 +3,7 @@ from salesloop_linkedin_api.utils.helpers import get_id_from_urn, logger, quote_
 from concurrent.futures import ThreadPoolExecutor
 from requests_futures.sessions import FuturesSession
 import pickle
-
+from os import environ
 
 def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_data,
                         get_companies=True, has_sn=None, leadfeeder_countries_codes=[], max_workers=5):
@@ -31,13 +31,17 @@ def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_da
     linkedin_api_headers = pickle.loads(linkedin_api.api_headers)
     linkedin_api_proxies = linkedin_api.api_proxies
 
-    # check sales support
-    if has_sn is None:
-        current_user_profile = linkedin_api.get_user_profile()
-        assert isinstance(current_user_profile['premiumSubscriber'], bool)
-        has_sn = current_user_profile['premiumSubscriber']
-
     with FuturesSession(executor=ThreadPoolExecutor(max_workers=max_workers)) as session:
+        search_timeout = int(environ['LINKEDIN_API_SEARCH_TIMEOUT'])
+
+        # check sales support
+        if has_sn is None:
+            users_data = session.get(f"https://www.linkedin.com/voyager/api/me",
+                                     cookies=linkedin_api_cookies,
+                                     headers=linkedin_api_headers,
+                                     proxies=linkedin_api_proxies,
+                                     timeout=search_timeout)
+
         logger.debug('Getting companies data with %d workers', max_workers)
         futures = []
         for company_name, company_data in parsed_leads.items():
