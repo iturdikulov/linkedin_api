@@ -6,7 +6,7 @@ import pickle
 
 
 def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_data,
-                        get_companies=True, has_sn=None, leadfeeder_countries_codes=[]):
+                        get_companies=True, has_sn=None, leadfeeder_countries_codes=[], max_workers=5):
     DEFAULT_SEARCH_PARAMS = {
         "facetCurrentCompany": None,
         "facetGeoRegion": None,
@@ -27,11 +27,9 @@ def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_da
         'titleTimeScope': 'CURRENT'
     }
 
-    linkedin_api_cookies = linkedin_api.api_cookies
-    linkedin_api_headers = linkedin_api.api_headers
+    linkedin_api_cookies = pickle.loads(linkedin_api.api_cookies)
+    linkedin_api_headers = pickle.loads(linkedin_api.api_headers)
     linkedin_api_proxies = linkedin_api.api_proxies
-
-    session = AsyncSession(n=100)
 
     # check sales support
     if has_sn is None:
@@ -39,19 +37,43 @@ def generate_search_url(linkedin_api, parsed_leads, title, linkedin_geo_codes_da
         assert isinstance(current_user_profile['premiumSubscriber'], bool)
         has_sn = current_user_profile['premiumSubscriber']
 
-    for company_name, company_data in parsed_leads.items():
-        if not company_data.get('company_id'):
-            try:
-                company_linkedin_data = linkedin_api.get_company(company_name)
-                company_id = get_id_from_urn(
-                    company_linkedin_data.get('entityUrn'))
+    with FuturesSession(executor=ThreadPoolExecutor(max_workers=max_workers)) as session:
+        logger.debug('Getting companies data with %d workers', max_workers)
+        futures = []
+        for company_name, company_data in parsed_leads.items():
+            if not company_data.get('company_id'):
+                fast_evade()
 
+                params = {
+                    "decorationId": "com.linkedin.voyager.deco.organization.web.WebFullCompanyMain-12",
+                    "q": "universalName",
+                    "universalName": company_name,
+                }
+
+                res = session.get(f"https://www.linkedin.com/voyager/api/organization/companies",
+                                  params=params,
+                                  cookies=linkedin_api_cookies,
+                                  headers=linkedin_api_headers,
+                                  proxies=linkedin_api_proxies,
+                                  timeout=60)
+
+                futures.append((company_name, res))
+                logger.debug('Added %s company name to futures', company_name)
+
+        for company_name, future in futures:
+            try:
+                future_data = future.result()
+                data = future_data.json()
+                company_linkedin_data = data["elements"][0]
+                company_id = get_id_from_urn(company_linkedin_data.get('entityUrn'))
+                logger.debug('Found %s company id', company_id)
+
+                # TODO do something if company_id not found!
                 if company_id and company_id.isnumeric():
                     parsed_leads[company_name]['company_id'] = int(company_id)
                     parsed_leads[company_name]['valid'] = True
-                # TODO do something if company_id not found!
             except Exception as e:
-                logger.warning('Failed get company! %s - %s', company_name, str(e))
+                logger.warning('Failed get company! %s', company_name, exc_info=e)
 
     if parsed_leads:
         search_urls_list = []
