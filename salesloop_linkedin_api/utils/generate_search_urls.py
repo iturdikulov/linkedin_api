@@ -13,7 +13,7 @@ def generate_search_url(linkedin_api, company_leads,
                         countries_codes=None,
                         max_workers=5,
                         maximum_companies=30,
-                        type='leadsfeeder'):
+                        type='leadfeeder'):
     """
     :param linkedin_api: linkedin api method
     :param company_leads: raw data from leadfeeder service
