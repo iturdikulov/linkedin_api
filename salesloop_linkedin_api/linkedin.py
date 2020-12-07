@@ -663,12 +663,7 @@ class Linkedin(object):
         """"
         Return current user profile
         """
-        sleep(
-            random.randint(0, 1)
-        )  # sleep a random duration to try and evade suspention
-
         res = self._fetch(f"/me")
-
         data = res.json()
 
         return data
@@ -677,14 +672,8 @@ class Linkedin(object):
         """"
         Return current user profile
         """
-        sleep(
-            random.randint(0, 1)
-        )  # sleep a random duration to try and evade suspention
-
         res = self._fetch(f"/identity/panels")
-
         data = res.json()
-
         return data
 
     def get_sent_invitations(self, start=0, limit=100):
