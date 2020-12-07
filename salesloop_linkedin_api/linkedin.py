@@ -668,6 +668,25 @@ class Linkedin(object):
 
         return data
 
+    def get_billings(self):
+        """"
+         Return current user billings
+         """
+        res = self._fetch(f"https://www.linkedin.com/psettings/premium-subscription/billings", raw_url=True, headers={
+            'authority': 'www.linkedin.com',
+            'pragma': 'no-cache',
+            'cache-control': 'no-cache',
+            'accept': '*/*',
+            'dnt': '1',
+            'x-requested-with': 'XMLHttpRequest',
+            'sec-fetch-site': 'same-origin',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-dest': 'empty',
+            'referer': 'https://www.linkedin.com/',
+        })
+        data = res.json()
+        return data
+
     def get_user_panels(self):
         """"
         Return current user profile
