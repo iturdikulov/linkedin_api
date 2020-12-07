@@ -160,7 +160,10 @@ def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_co
                                      proxies=linkedin_api_proxies,
                                      timeout=search_timeout)
 
-        logger.debug('Getting companies data with %d workers', max_workers)
+        locations_number = len(set([lead_data.get('country_code') for lead, lead_data in parsed_leads.items()]))
+
+        logger.debug('Getting companies data with %d workers. Parsed leads %d, Locations number %d',
+                     max_workers, len(parsed_leads), locations_number)
         futures = []
         for company_name, company_data in parsed_leads.items():
             if not company_data.get('company_id'):
