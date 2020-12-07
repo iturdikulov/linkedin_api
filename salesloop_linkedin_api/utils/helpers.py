@@ -277,7 +277,6 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                     if data_type == 'com.linkedin.voyager.common.Me':
                         logged_in = True
 
-
             except Exception as e:
                 logger.info(f'Failed parse item... {item}. {repr(e)}')
 
@@ -307,7 +306,6 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
             if mini_profiles and isinstance(mini_profiles, list):
                 for item in mini_profiles:
                     type = item.get('$type')
-                    logger.debug('Mini profile type: %s', type)
 
                     if item.get('$recipeTypes') and 'com.linkedin.voyager.dash.deco.relationships.ProfileWithIweWarned' in item.get('$recipeTypes'):
                         continue
@@ -327,6 +325,8 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
                                 users[user_public_id] = item
                         elif user_public_id in users:
                             users[user_public_id].update(item)
+                    elif type not in ['com.linkedin.voyager.identity.profile.MemberBadges']:
+                        logger.warning('Unknown profile type: %s', type)
 
                 # fallback parser, if not users found
                 fallback_profiles_images = {}
