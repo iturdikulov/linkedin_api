@@ -673,7 +673,8 @@ class Linkedin(object):
         """"
          Return current user billings
          """
-        res = self._fetch(f"https://www.linkedin.com/psettings/premium-subscription/billings", raw_url=True, headers={
+        res = self._fetch(f"https://www.linkedin.com/psettings/premium-subscription/billings",
+                          raw_url=True, headers={
             'authority': 'www.linkedin.com',
             'pragma': 'no-cache',
             'cache-control': 'no-cache',
