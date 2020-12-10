@@ -169,15 +169,6 @@ def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_co
 
     with FuturesSession(executor=ThreadPoolExecutor(max_workers=max_workers)) as session:
         search_timeout = int(environ['LINKEDIN_API_SEARCH_TIMEOUT'])
-
-        # check sales support
-        if has_sn is None:
-            users_data = session.get(f"https://www.linkedin.com/voyager/api/me",
-                                     cookies=linkedin_api_cookies,
-                                     headers=linkedin_api_headers,
-                                     proxies=linkedin_api_proxies,
-                                     timeout=search_timeout)
-
         locations_number = len(set([lead_data.get('country_code') for lead, lead_data in parsed_leads.items()]))
 
         logger.debug('Getting companies data with %d workers. Parsed leads %d, Locations number %d',
@@ -202,12 +193,6 @@ def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_co
 
                 futures.append((company_name, res))
                 logger.debug('Added %s company name to futures', company_name)
-
-        if has_sn is None:
-            current_user_profile = users_data.result()
-            current_user_profile_data = current_user_profile.json()
-            assert isinstance(current_user_profile_data['premiumSubscriber'], bool)
-            has_sn = current_user_profile_data['premiumSubscriber']
 
         for company_name, future in futures:
             try:
