@@ -6,6 +6,7 @@ from os import environ
 from urllib.parse import urlparse, quote
 import pycountry
 
+
 def generate_search_url(linkedin_api, company_leads,
                         title, linkedin_geo_codes_data,
                         get_companies=True,
@@ -15,6 +16,9 @@ def generate_search_url(linkedin_api, company_leads,
                         maximum_companies=30,
                         type='leadfeeder'):
     """
+    :param type: Service type: leadfeeder or visitorqueue
+    :param maximum_companies: limit maximum leads (companies) from services
+    :param max_workers: maximum parallel requests to get company ID using LN Voyager API
     :param linkedin_api: linkedin api method
     :param company_leads: raw data from leadfeeder service
     :param title: title to generate search url
@@ -25,15 +29,16 @@ def generate_search_url(linkedin_api, company_leads,
     :return: generates LN search url
     """
 
-
-
     parsed_leads = {}
+    skipped_leads = []
+    log_extra = {
+        'ctx': 'generate_search_url',
+        'linkedin_login_email': linkedin_api.username
+    }
 
     if type == 'leadfeeder':
         data = company_leads.get('data')
         included_data = company_leads.get('included')
-        logger.debug('Found %d company_leads. Predefined country codes: %s',
-                     len(data), countries_codes)
 
         if not data or not included_data:
             return None, None, None
@@ -46,11 +51,13 @@ def generate_search_url(linkedin_api, company_leads,
             country = None
             region = None
             city = None
-
-            lead_linkedin_url = lead.get('attributes', {}).get('linkedin_url')
+            public_id = None
             lead_company_name = lead.get('attributes', {}).get('name')
+            lead_linkedin_url = lead.get('attributes', {}).get('linkedin_url')
             if lead_linkedin_url:
                 public_id = urlparse(lead_linkedin_url).path.rpartition('/')[-1]
+
+            if public_id:
                 leadfeeder_location_id = lead.get('relationships', {}).get(
                     'location', {}).get('data', {}).get('id')
 
@@ -66,20 +73,21 @@ def generate_search_url(linkedin_api, company_leads,
                 if public_id.isnumeric():
                     company_id = int(public_id)
 
-                if public_id:
-                    parsed_leads[public_id] = {
-                        'name': lead_company_name,
-                        'company_id': company_id,
-                        'country_code': country_code.lower(),
-                        'valid': company_id is not None,
-                        'country': country,
-                        'region': region,
-                        'city': city
-                    }
+                parsed_leads[public_id] = {
+                    'name': lead_company_name,
+                    'company_id': company_id,
+                    'country_code': country_code.lower(),
+                    'valid': company_id is not None,
+                    'country': country,
+                    'region': region,
+                    'city': city
+                }
+            else:
+                skipped_leads.append(lead_company_name)
 
             if len(parsed_leads) > maximum_companies:
-                logger.debug('Raised maximum companies - %s, stop.',
-                             maximum_companies)
+                logger.debug('Raised maximum companies - %s, stop.', maximum_companies,
+                             extra=log_extra)
                 break
     elif type == 'visitorqueue':
         data = company_leads
@@ -109,13 +117,23 @@ def generate_search_url(linkedin_api, company_leads,
                     'country_code': company_country_code,
                     'valid': company_id is not None
                 }
+            else:
+                skipped_leads.append(company_name)
 
             if len(parsed_leads) > maximum_companies:
-                logger.debug('Raised maximum companies - %s, stop.',
-                             maximum_companies)
+                logger.debug('Raised maximum companies - %s, stop.', maximum_companies,
+                             extra=log_extra)
                 break
     else:
         raise Exception('Unknown leads type ')
+
+    if skipped_leads:
+        logger.debug('Skipped %d company leads: %s', len(skipped_leads), skipped_leads, extra=log_extra)
+
+    if parsed_leads:
+        parsed_leads_names = [lead.get('name') for lead in parsed_leads.values()]
+        logger.debug('Found %d company leads: %s. Predefined country codes: %s',
+                     len(parsed_leads_names), parsed_leads_names, countries_codes, extra=log_extra)
 
     return generate_search_url_leads(linkedin_api, parsed_leads, title,
                                      linkedin_geo_codes_data, get_companies=get_companies,
