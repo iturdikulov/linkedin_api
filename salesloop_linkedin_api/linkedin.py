@@ -42,6 +42,7 @@ class Linkedin(object):
         self.logger = logger
         self.client = Client(refresh_cookies=refresh_cookies, debug=debug, proxies=proxies, api_cookies=api_cookies,
                              ua=ua)
+        self.username = username
 
         logger.info('Initialize basic linkedin api class with %.2f max_retry_time. '
                     'Default GET timeout: %.2f, Default POST timeout: %.2f',
