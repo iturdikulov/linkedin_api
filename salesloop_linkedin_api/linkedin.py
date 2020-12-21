@@ -838,6 +838,7 @@ class Linkedin(object):
         if data and data.get('elements'):
             connections_list = data.get('elements')
             connections = []
+            logger.debug('Found %d elements', len(connections_list))
             if only_urn:
                 for profile in connections_list:
                     connections.append({
