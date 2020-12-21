@@ -6,6 +6,7 @@ from os import environ
 from urllib.parse import urlparse, quote
 import pycountry
 
+# TODO - optimize/convert to class?
 
 def generate_search_url(linkedin_api, company_leads,
                         title, linkedin_geo_codes_data,
@@ -143,6 +144,15 @@ def generate_search_url(linkedin_api, company_leads,
 
 def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_codes_data,
                               get_companies=True, has_sn=None, countries_codes=None, max_workers=5):
+    log_extra = {
+        'ctx': 'generate_search_url',
+        'linkedin_login_email': linkedin_api.username
+    }
+
+    logger.debug(f'Generate search URL with {len(parsed_leads)} leads,'
+                 f' {title} title and {countries_codes} countries codes',
+                 extra=log_extra)
+
     DEFAULT_SEARCH_PARAMS = {
         "facetCurrentCompany": None,
         "facetGeoRegion": None,
