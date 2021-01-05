@@ -425,8 +425,11 @@ def get_leads_from_html(html, is_sales=False, get_pagination=False):
 
             if headline and isinstance(headline, dict):
                 headline = headline.get('text')
-            else:
+            elif lead.get('headline'):
                 headline = lead.get('headline')
+            elif lead.get('primarySubtitle') and isinstance(lead.get('primarySubtitle'), dict):
+                headline = lead.get('primarySubtitle', {}).get('text')
+
 
             i = {'publicIdentifier': lead.get('publicIdentifier'),
                  'firstname': lead.get('firstName'),
