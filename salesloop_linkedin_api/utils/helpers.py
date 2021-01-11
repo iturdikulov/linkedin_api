@@ -162,15 +162,20 @@ def get_conversations_additional_data(conversations_data, logger=None):
 
                         skip_participant = True
 
-                        if logger:
-                            logger.debug(f'Found user with event_body, User public_id: {public_id}, Picture: {display_picture_url}')
+                        logger.debug(f'Found user with event_body, User public_id: {public_id}, Picture: {display_picture_url}')
 
             # Step 2. Users to whom we wrote message
-            if not skip_participant:
-                for participant in element.get('participants', []):
-                    current_participant = participant.get('com.linkedin.voyager.messaging.MessagingMember',
-                                                          {}).get('miniProfile', {})
 
+            for participant in element.get('participants', []):
+                current_participant = participant.get(
+                    'com.linkedin.voyager.messaging.MessagingMember',
+                    {}).get('miniProfile', {})
+
+                if skip_participant:
+                    public_id = current_participant.get('publicIdentifier')
+                    if public_id and public_id not in public_ids_found:
+                        public_ids_found.append(public_id)
+                else:
                     logger.debug('Current participants: %s', current_participant)
                     public_id = current_participant.get('publicIdentifier')
                     entity_urn = current_participant.get('entityUrn')
