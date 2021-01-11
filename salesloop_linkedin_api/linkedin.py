@@ -634,7 +634,7 @@ class Linkedin(object):
                 data=json.dumps(message_event),
             )
 
-            return res.status_code != 201
+            return res.status_code == 201
         elif recipients and not conversation_urn_id:
             message_event["recipients"] = recipients
             message_event["subtype"] = "MEMBER_TO_MEMBER"
@@ -646,7 +646,7 @@ class Linkedin(object):
                 f"/messaging/conversations", params=params, data=json.dumps(payload)
             )
 
-            return res.status_code != 201
+            return res.status_code == 201
 
     def mark_conversation_as_seen(self, conversation_urn_id):
         """
