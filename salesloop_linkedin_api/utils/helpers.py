@@ -119,6 +119,8 @@ def get_conversations_additional_data(conversations_data, logger=None):
     conversations_users_participants = {}  # Users to whom only we wrote message and users which need sent follow up message
     linkedin_users_blacklist = {}
     public_ids_found = []
+    if logger is None:
+        logger = logging.getLogger('application')
 
     for data in conversations_data:
         if not data:
