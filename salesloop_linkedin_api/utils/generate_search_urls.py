@@ -116,7 +116,8 @@ def generate_search_url(linkedin_api, company_leads,
                     'name': company_name,
                     'company_id': company_id,
                     'country_code': company_country_code,
-                    'valid': company_id is not None
+                    'valid': company_id is not None,
+                    'social_urls': lead.get('social_urls', [])
                 }
             else:
                 skipped_leads.append(company_name)
@@ -132,7 +133,7 @@ def generate_search_url(linkedin_api, company_leads,
         logger.debug('Skipped %d company leads: %s', len(skipped_leads), skipped_leads, extra=log_extra)
 
     if parsed_leads:
-        parsed_leads_names = [lead.get('name') for lead in parsed_leads.values()]
+        parsed_leads_names = {lead_name: lead for lead_name, lead in parsed_leads.items()}
         logger.debug('Found %d company leads: %s. Predefined country codes: %s',
                      len(parsed_leads_names), parsed_leads_names, countries_codes, extra=log_extra)
 
