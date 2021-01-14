@@ -326,13 +326,13 @@ def get_leads_from_html(html, is_sales=False):
             try:
                 data_type = data.get('data', {}).get('$type')
 
-                    if data_type == 'com.linkedin.restli.common.CollectionResponse' and not users_data:
-                        users_data = data
-                    else:
-                        logger.debug('Data type: %s', data_type)
+                if data_type == 'com.linkedin.restli.common.CollectionResponse' and not users_data:
+                    users_data = data
+                else:
+                    logger.debug('Data type: %s', data_type)
 
-                    if data_type == 'com.linkedin.voyager.common.Me':
-                        logged_in = True
+                if data_type == 'com.linkedin.voyager.common.Me':
+                    logged_in = True
 
             except Exception as e:
                 logger.warning(f'Failed parse item... {data}. {repr(e)}')
@@ -347,17 +347,7 @@ def get_leads_from_html(html, is_sales=False):
             logger.debug('Found %d elements', len(elements))
 
             if elements and isinstance(elements, list):
-                for sub_element in elements:
-                    sub_elements = sub_element.get('elements')
-                    if sub_elements and isinstance(sub_elements, list):
-                        for item in sub_elements:
-                            user_public_id = item.get('publicIdentifier')
-                            if item.get('$type') == 'com.linkedin.voyager.search.SearchHitV2':
-                                users.setdefault(user_public_id, {})
-                                users[user_public_id].update(item)
-
-                                if item.get('targetUrn') and not item.get('publicIdentifier'):
-                                    unknown_profiles.append(item)
+                users, unknown_profiles, limit_data = parse_default_search_data(elements)
 
             mini_profiles = users_data.get('included', {})
             if mini_profiles and isinstance(mini_profiles, list):
@@ -679,10 +669,8 @@ def get_leads_from_html(html, is_sales=False):
                     'lastname': i.get('lastname')
                 })
 
-    if get_pagination:
-        pagination['results_length'] = results_length
-        pagination['logged_in'] = logged_in
 
-        return parsed_users, pagination, unknown_profiles
-    else:
-        return parsed_users, unknown_profiles
+    pagination['results_length'] = results_length
+    pagination['logged_in'] = logged_in
+
+    return parsed_users, pagination, unknown_profiles, limit_data
