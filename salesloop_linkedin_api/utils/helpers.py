@@ -367,7 +367,7 @@ def get_leads_from_html(html, is_sales=False):
                     if item.get('$recipeTypes') and 'com.linkedin.voyager.dash.deco.relationships.ProfileWithIweWarned' in item.get('$recipeTypes'):
                         continue
 
-                    if type in ['com.linkedin.voyager.identity.shared.MiniProfile',
+                    if item_type in ['com.linkedin.voyager.identity.shared.MiniProfile',
                                 'com.linkedin.voyager.dash.identity.profile.Profile']:
                         user_public_id = item.get('publicIdentifier')
 
@@ -375,25 +375,25 @@ def get_leads_from_html(html, is_sales=False):
                             logger.debug('No public id found: %s', item)
                             continue
 
-                        if type == 'com.linkedin.voyager.dash.identity.profile.Profile':
+                        if item_type == 'com.linkedin.voyager.dash.identity.profile.Profile':
                             if user_public_id in users:
                                 users[user_public_id].update(item)
                             else:
                                 users[user_public_id] = item
                         elif user_public_id in users:
                             users[user_public_id].update(item)
-                    elif type not in ['com.linkedin.voyager.identity.profile.MemberBadges']:
-                        logger.warning('Unknown profile type: %s', type)
+                    elif item_type not in ['com.linkedin.voyager.identity.profile.MemberBadges']:
+                        logger.warning('Unknown profile type: %s', item_type)
 
                 # fallback parser, if not users found
                 fallback_profiles_images = {}
                 if not users:
                     logger.warning('No found elements with default parser, use fallback users parser')
                     for item in mini_profiles:
-                        type = item.get('$type')
+                        item_type = item.get('$type')
                         user_public_id = None
 
-                        if type == 'com.linkedin.voyager.dash.search.EntityResultViewModel':
+                        if item_type == 'com.linkedin.voyager.dash.search.EntityResultViewModel':
                             user_public_id = item.get('publicIdentifier')
                             navigation_url = item.get('navigationUrl')
                             if not user_public_id and navigation_url:
@@ -412,7 +412,7 @@ def get_leads_from_html(html, is_sales=False):
                             else:
                                 logger.warning('Unknown parsing case, please check this item: %s', item)
 
-                        elif type == 'com.linkedin.voyager.dash.identity.profile.Profile':
+                        elif item_type == 'com.linkedin.voyager.dash.identity.profile.Profile':
                             if item.get('profilePicture') and item.get('entityUrn'):
                                 fallback_profiles_images[item.get('entityUrn')] = item.get('profilePicture', {}).get('displayImageReference', {}).get('vectorImage')
 
@@ -421,9 +421,9 @@ def get_leads_from_html(html, is_sales=False):
                 for key, lead in users.items():
                     try:
                         for item in mini_profiles:
-                            type = item.get('$type')
+                            item_type = item.get('$type')
 
-                            if type in ['com.linkedin.voyager.dash.search.EntityResultViewModel']:
+                            if item_type in ['com.linkedin.voyager.dash.search.EntityResultViewModel']:
                                 if all([lead.get('publicIdentifier'),
                                         item.get('navigationUrl'),
                                         lead.get('publicIdentifier') in item.get('navigationUrl')]):
