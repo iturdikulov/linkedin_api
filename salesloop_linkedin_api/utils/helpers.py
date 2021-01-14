@@ -322,15 +322,9 @@ def get_leads_from_html(html, is_sales=False):
             logger.info(f'Failed parse %s item - %s item, ..', type(search_hit_data), search_hit_data, exc_info=e)
 
     if not is_sales:
-        for item in search_hits:
+        for data in parsed_search_hits:
             try:
-                data = json.loads(item)
-
-                if 'publicIdentifier' in item:
-                    if not data.get('data'):
-                        continue
-
-                    data_type = data.get('data', {}).get('$type')
+                data_type = data.get('data', {}).get('$type')
 
                     if data_type == 'com.linkedin.restli.common.CollectionResponse' and not users_data:
                         users_data = data
@@ -341,7 +335,7 @@ def get_leads_from_html(html, is_sales=False):
                         logged_in = True
 
             except Exception as e:
-                logger.info(f'Failed parse item... {item}. {repr(e)}')
+                logger.warning(f'Failed parse item... {data}. {repr(e)}')
 
         if users_data:
             paging = users_data.get('data', {}).get('paging')
@@ -368,7 +362,7 @@ def get_leads_from_html(html, is_sales=False):
             mini_profiles = users_data.get('included', {})
             if mini_profiles and isinstance(mini_profiles, list):
                 for item in mini_profiles:
-                    type = item.get('$type')
+                    item_type = item.get('$type')
 
                     if item.get('$recipeTypes') and 'com.linkedin.voyager.dash.deco.relationships.ProfileWithIweWarned' in item.get('$recipeTypes'):
                         continue
@@ -599,10 +593,8 @@ def get_leads_from_html(html, is_sales=False):
 
     else:
         parsed_items = []
-        for item in search_hits:
+        for data in parsed_search_hits:
             try:
-                data = json.loads(item)
-
                 if not pagination and data.get('paging'):
                     pagination = data.get('paging')
                     results_length = pagination.get('count', 0)
@@ -615,8 +607,8 @@ def get_leads_from_html(html, is_sales=False):
 
                 if current_entity_run and 'urn:li:fs_salesProfile' in current_entity_run:
                     logged_in = True
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning('Unknown sales search parse error', exc_info=e)
 
         if parsed_items:
             for lead in parsed_items:
