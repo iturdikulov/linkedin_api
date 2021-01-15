@@ -850,12 +850,12 @@ class Linkedin(object):
         """
         Get profile view statistics, including chart data.
         """
-        networkinfo = self._fetch(
+        network_info = self._fetch(
             f"/identity/profiles/{public_id}/networkinfo"
         )
 
-        networkinfo_data = networkinfo.json()
-        entityUrn = networkinfo_data.get('entityUrn')
+        network_info_data = network_info.json()
+        entityUrn = network_info_data.get('entityUrn')
 
         if entityUrn:
             return get_id_from_urn(entityUrn)
