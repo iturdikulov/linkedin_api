@@ -783,26 +783,6 @@ class Linkedin(object):
 
         return res.status_code == 200
 
-    # def add_connection(self, profile_urn_id):
-    #     payload = {
-    #         "emberEntityName": "growth/invitation/norm-invitation",
-    #         "invitee": {
-    #             "com.linkedin.voyager.growth.invitation.InviteeProfile": {
-    #                 "profileId": profile_urn_id
-    #             }
-    #         },
-    #     }
-
-    #     print(payload)
-
-    #     res = self._post(
-    #         "/growth/normInvitations",
-    #         data=payload,
-    #         headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
-    #     )
-
-    #     return res.status_code != 201
-
     def get_profile_connections_raw(self, max_results=None, results=[], only_urn=False):
         count = (
             max_results
