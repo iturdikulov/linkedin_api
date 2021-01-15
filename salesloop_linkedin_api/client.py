@@ -55,6 +55,8 @@ class Client(object):
         self._use_cookie_cache = not refresh_cookies
         self._cookies = cookies
         self.api_cookies = api_cookies
+        self.api_headers = {}
+
         if ua:
             Client.REQUEST_HEADERS["user-agent"] = ua
 
