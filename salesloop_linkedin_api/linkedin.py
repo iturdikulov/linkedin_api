@@ -60,6 +60,8 @@ class Linkedin(object):
         self.results = None
         self.results_length = None
         self.default_retry_max_time = default_retry_max_time
+        self.pagination = None
+        self.limit_data = None
 
     def _get_max_retry_time(self):
         return self.default_retry_max_time
@@ -961,7 +963,8 @@ class Linkedin(object):
         if get_raw:
             return html
         else:
-            return get_leads_from_html(html, is_sales=is_sales, get_pagination=True)
+            parsed_users, pagination, unknown_profiles, limit_data = get_leads_from_html(html, is_sales=is_sales)
+            return parsed_users, pagination, unknown_profiles, limit_data
 
     def random_user_actions(self, public_id=None):
         results = []
