@@ -8,10 +8,20 @@ from urllib.parse import urlparse, quote
 import json
 from time import sleep
 import random
+import string
+import base64
+
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('application')
 
+
+def get_random_base64(length=16):
+    letters_and_digits = string.ascii_letters + string.digits
+    message_bytes = ''.join((random.choice(letters_and_digits) for i in range(length))).encode('ascii')
+    base64_bytes = base64.b64encode(message_bytes)
+    base64_message = base64_bytes.decode('ascii')
+    return base64_message
 
 def default_evade():
     """
