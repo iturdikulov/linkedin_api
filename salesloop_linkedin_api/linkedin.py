@@ -5,7 +5,7 @@ import random
 from time import sleep
 from urllib.parse import urlencode
 import json
-from .utils.helpers import get_leads_from_html, get_default_regions, default_evade
+from .utils.helpers import get_leads_from_html, get_default_regions, default_evade, get_random_base64
 from salesloop_linkedin_api.utils.helpers import get_id_from_urn
 from pathlib import Path
 from salesloop_linkedin_api.client import Client
@@ -670,6 +670,29 @@ class Linkedin(object):
         data = res.json()
 
         return data
+
+    def get_premium_subscription(self):
+        """"
+        Return current user profile
+        """
+        random_page_instance_postfix = get_random_base64()
+        res = self._fetch(f"https://www.linkedin.com/psettings/premium-subscription?asJson=true",
+                          raw_url=True, headers={
+            'authority': 'www.linkedin.com',
+            'accept': 'application/json, text/javascript, */*; q=0.01',
+            'dnt': '1',
+            'x-requested-with': 'XMLHttpRequest',
+            'x-li-page-instance': f'urn:li:page:psettings-premium-subscription;{random_page_instance_postfix}',
+            'sec-fetch-site': 'same-origin',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-dest': 'empty',
+            'referer': 'https://www.linkedin.com/',
+            'accept-language': 'en,en-GB;q=0.9,en;q=0.8,en-US;q=0.7',
+        })
+        data = res.json()
+
+        return data
+
 
     def get_billings(self):
         """"
