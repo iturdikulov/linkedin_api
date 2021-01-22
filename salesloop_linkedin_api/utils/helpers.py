@@ -319,12 +319,12 @@ def get_leads_from_html(html, is_sales=False):
                 continue
 
             search_hit_data = json.loads(search_hit)
+
             # Validator
             if search_type == 'DEFAULT_SEARCH' and not search_hit_data.get('data'):
                 logger.info('Skip search_hit_data, with %d length, no data key found', len(search_hit_data))
                 continue
 
-            # Limit Detector
             parsed_search_hits.append(search_hit_data)
         except json.decoder.JSONDecodeError:
             logger.debug('Failed decode %s search_hit', search_hit)
