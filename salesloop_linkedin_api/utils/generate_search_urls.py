@@ -144,7 +144,10 @@ def generate_search_url(linkedin_api, company_leads,
 
 
 def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_codes_data,
-                              get_companies=True, has_sn=None, countries_codes=None, max_workers=5):
+                              get_companies=True,
+                              has_sn=None,
+                              countries_codes=None,
+                              max_workers=5):
     log_extra = {
         'ctx': 'generate_search_url',
         'linkedin_login_email': linkedin_api.username
@@ -185,10 +188,8 @@ def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_co
         logger.debug('Getting companies data with %d workers. Parsed leads %d, Locations number %d',
                      max_workers, len(parsed_leads), locations_number)
         futures = []
-        for company_name, company_data in parsed_leads.items():
+        for i, (company_name, company_data) in enumerate(parsed_leads.items()):
             if not company_data.get('company_id'):
-                fast_evade()
-
                 params = {
                     "decorationId": "com.linkedin.voyager.deco.organization.web.WebFullCompanyMain-12",
                     "q": "universalName",
@@ -203,6 +204,9 @@ def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_co
                                   timeout=search_timeout)
 
                 futures.append((company_name, res))
+                if i < len(parsed_leads) - 1:
+                    fast_evade()
+
                 logger.debug('Added %s company name to futures', company_name)
 
         for company_name, future in futures:
