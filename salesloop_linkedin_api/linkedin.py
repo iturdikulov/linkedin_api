@@ -575,6 +575,23 @@ class Linkedin(object):
 
         return item
 
+    def get_conversation_last_sender_urn(self, entity_urn):
+        """
+        Return last conversation sender entity urn
+        """
+
+        conversation_details = self.get_conversation_details(entity_urn)
+
+        events = conversation_details.get('events')
+        if entity_urn and events and isinstance(events, list):
+            latest_event = events[-1]
+            current_participant = latest_event.get('from', {}).get(
+                'com.linkedin.voyager.messaging.MessagingMember', {}).get('miniProfile', {})
+
+            from_entity_urn = current_participant.get('entityUrn')
+            return get_id_from_urn(from_entity_urn)
+
+
     def get_conversations(self, createdBefore=None):
         """
         Return list of conversations the user is in.
