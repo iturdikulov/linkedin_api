@@ -563,12 +563,14 @@ class Linkedin(object):
 
         data = res.json()
         latest_reply_from_recipient = False
+        only_first_message_found = None
 
         if data.get('elements'):
             item = data["elements"][0]
             item_id = get_id_from_urn(item["entityUrn"])
             if get_id:
                 item = item_id
+                return item
             else:
                 item["id"] = item_id
         else:
@@ -584,10 +586,20 @@ class Linkedin(object):
             if profile_urn_id == get_id_from_urn(from_urn_id):
                 latest_reply_from_recipient = True
 
+            first_message_urn = item.get('firstMessageUrn')
+            latest_message_urn = latest_event.get('entityUrn')
+
+            if first_message_urn and latest_message_urn:
+                if first_message_urn == latest_message_urn:
+                    only_first_message_found = True
+                else:
+                    only_first_message_found = False
+
         return {
             'details': item,
             'total_events': item.get('totalEventCount'),
-            'latest_reply_from_recipient': latest_reply_from_recipient
+            'latest_reply_from_recipient': latest_reply_from_recipient,
+            'only_first_message_found': only_first_message_found
         }
 
     def get_conversations(self, createdBefore=None):
