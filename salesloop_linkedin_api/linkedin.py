@@ -933,7 +933,7 @@ class Linkedin(object):
             if not client_page_instance:
                 logger.error('No client_page_instance_data_groups groups found %s',
                              client_page_instance_data_groups)
-                return [], None
+                return [], None, {}
 
             logger.info('r1 headers: %s', r1.headers)
 
