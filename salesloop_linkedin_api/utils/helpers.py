@@ -533,7 +533,14 @@ def get_leads_from_html(html, is_sales=False):
 
             i['degree'] = degree_num
             i['canSendInMail'] = -1
-            i['location'] = lead.get('subline', {}).get('text') or lead.get('secondarySubtitle', {}).get('text')
+            lead_subline = lead.get('subline')
+            lead_secondary_subtitle = lead.get('secondarySubtitle')
+
+            if isinstance(lead_subline, dict):
+                i['location'] = lead_subline.get('text')
+            elif isinstance(lead_secondary_subtitle, dict):
+                i['location'] = lead_secondary_subtitle.get('text')
+
             i['inCrm'] = -1
             i['tags'] = ""
             entityUrn = lead.get('entityUrn')
