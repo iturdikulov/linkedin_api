@@ -39,12 +39,17 @@ def fast_evade():
     sleep(random.uniform(0.5, 2))
 
 
-def quote_query_param(data, is_sales=False):
+def quote_query_param(data, is_sales=False, has_companies_names=False):
     if isinstance(data, str):
         data = [data]
+    elif isinstance(data, int):
+        data = [str(data)]
+
+    if has_companies_names:
+        data = [f'{company}:{item}' for item, company in data]
 
     if is_sales:
-        return quote(','.join(data))
+        return quote(','.join(str(item) for item in data))
     else:
         return quote(json.dumps([item for item in data]))
 
