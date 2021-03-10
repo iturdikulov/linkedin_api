@@ -121,57 +121,64 @@ class Linkedin(object):
 
         return post_data()
 
-    def search(self, params, limit=None, results=[]):
+    def search(self, params, limit=-1, offset=0):
+        """Perform a LinkedIn search.
+        :param params: Search parameters (see code)
+        :type params: dict
+        :param limit: Maximum length of the returned list, defaults to -1 (no limit)
+        :type limit: int, optional
+        :param offset: Index to start searching from
+        :type offset: int, optional
+        :return: List of search results
+        :rtype: list
         """
-        Do a search.
-        """
-        count = (
+        count = Linkedin._MAX_SEARCH_COUNT
+        if limit is None:
+            limit = -1
+
+        results = []
+        while True:
             limit
-            if limit and limit <= Linkedin._MAX_SEARCH_COUNT
-            else Linkedin._MAX_SEARCH_COUNT
-        )
-        default_params = {
-            "count": str(count),
-            "filters": "List()",
-            "origin": "GLOBAL_SEARCH_HEADER",
-            "q": "all",
-            "start": len(results),
-            "queryContext": "List(spellCorrectionEnabled->true,relatedSearchesEnabled->true,kcardTypes->PROFILE|COMPANY)",
-        }
+            if limit > -1 and limit - len(results) < count:
+                count = limit - len(results)
+            default_params = {
+                "count": str(count),
+                "filters": "List()",
+                "origin": "GLOBAL_SEARCH_HEADER",
+                "q": "all",
+                "start": len(results) + offset,
+                "queryContext": "List(spellCorrectionEnabled->true,relatedSearchesEnabled->true,kcardTypes->PROFILE|COMPANY)",
+            }
+            default_params.update(params)
 
-        default_params.update(params)
-
-        res = self._fetch(
-            f"/search/blended?{urlencode(default_params, safe='(),')}",
-            headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
-        )
-
-        data = res.json()
-
-        new_elements = []
-        for i in range(len(data["data"]["elements"])):
-            new_elements.extend(data["data"]["elements"][i]["elements"])
-            # not entirely sure what extendedElements generally refers to - keyword search gives back a single job?
-            # new_elements.extend(data["data"]["elements"][i]["extendedElements"])
-
-        results.extend(new_elements)
-        results = results[
-            :limit
-        ]  # always trim results, no matter what the request returns
-
-        # recursive base case
-        if (
-            limit is not None
-            and (
-                len(results) >= limit  # if our results exceed set limit
-                or len(results) / count >= Linkedin._MAX_REPEATED_REQUESTS
+            res = self._fetch(
+                f"/search/blended?{urlencode(default_params, safe='(),')}",
+                headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
             )
-        ) or len(new_elements) == 0:
-            return results
+            data = res.json()
 
-        self.logger.debug(f"results grew to {len(results)}")
+            new_elements = []
+            elements = data.get("data", {}).get("elements", [])
+            for i in range(len(elements)):
+                new_elements.extend(elements[i]["elements"])
+                # not entirely sure what extendedElements generally refers to - keyword search gives back a single job?
+                # new_elements.extend(data["data"]["elements"][i]["extendedElements"])
+            results.extend(new_elements)
 
-        return self.search(params, results=results, limit=limit)
+            # break the loop if we're done searching
+            # NOTE: we could also check for the `total` returned in the response.
+            # This is in data["data"]["paging"]["total"]
+            if (
+                (
+                    limit > -1 and len(results) >= limit
+                )  # if our results exceed set limit
+                or len(results) / count >= Linkedin._MAX_REPEATED_REQUESTS
+            ) or len(new_elements) == 0:
+                break
+
+            self.logger.debug(f"results grew to {len(results)}")
+
+        return results
 
     def search_people(
         self,
@@ -507,7 +514,7 @@ class Linkedin(object):
         data = res.json()
 
         if data and "status" in data and data["status"] != 200:
-            self.logger.info("request failed: {}".format(data["message"]))
+            self.logger.info("request failed: %s", data)
             return {}
 
         company = data["elements"][0]
@@ -1132,6 +1139,42 @@ class Linkedin(object):
 
         data = res.json()
         return data.get("data", {})
+
+    def search_companies(self, keywords=None, **kwargs):
+        """Perform a LinkedIn search for companies.
+        :param keywords: A list of search keywords (str)
+        :type keywords: list, optional
+        :return: List of companies
+        :rtype: list
+        """
+        filters = ["resultType->COMPANIES"]
+
+        params = {
+            "filters": "List({})".format(",".join(filters)),
+            "queryContext": "List(spellCorrectionEnabled->true)",
+        }
+
+        if keywords:
+            params["keywords"] = keywords
+
+        data = self.search(params, **kwargs)
+
+        results = []
+        for item in data:
+            if item.get("type") != "COMPANY":
+                continue
+            results.append(
+                {
+                    "urn": item.get("targetUrn"),
+                    "urn_id": get_id_from_urn(item.get("targetUrn")),
+                    "name": item.get("title", {}).get("text"),
+                    "headline": item.get("headline", {}).get("text"),
+                    "subline": item.get("subline", {}).get("text"),
+                }
+            )
+
+        return results
+
 
     def get_regions(self):
         """

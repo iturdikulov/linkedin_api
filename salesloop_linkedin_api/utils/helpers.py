@@ -39,12 +39,17 @@ def fast_evade():
     sleep(random.uniform(0.5, 2))
 
 
-def quote_query_param(data, is_sales=False):
+def quote_query_param(data, is_sales=False, has_companies_names=False):
     if isinstance(data, str):
         data = [data]
+    elif isinstance(data, int):
+        data = [str(data)]
+
+    if has_companies_names:
+        data = [f'{company}:{item}' for item, company in data]
 
     if is_sales:
-        return quote(','.join(data))
+        return quote(','.join(str(item) for item in data))
     else:
         return quote(json.dumps([item for item in data]))
 
@@ -533,7 +538,14 @@ def get_leads_from_html(html, is_sales=False):
 
             i['degree'] = degree_num
             i['canSendInMail'] = -1
-            i['location'] = lead.get('subline', {}).get('text') or lead.get('secondarySubtitle', {}).get('text')
+            lead_subline = lead.get('subline')
+            lead_secondary_subtitle = lead.get('secondarySubtitle')
+
+            if isinstance(lead_subline, dict):
+                i['location'] = lead_subline.get('text')
+            elif isinstance(lead_secondary_subtitle, dict):
+                i['location'] = lead_secondary_subtitle.get('text')
+
             i['inCrm'] = -1
             i['tags'] = ""
             entityUrn = lead.get('entityUrn')
