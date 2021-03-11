@@ -1254,3 +1254,27 @@ class Linkedin(object):
             sleep(random.randint(0, 3))
 
         return output_regions
+
+    def reformat_api_results(self):
+        # search public ids if not exists, use same method like in scrapy search
+        for lead in self.results:
+            try:
+                if lead.get('entityUrn') and not lead.get('publicIdentifier'):
+                    profile = self.get_profile(urn_id=lead.get('entityUrn'))
+                    lead['publicIdentifier'] = profile.get('publicIdentifier')
+
+                    # fill additional fields
+                    lead['headline'] = profile.get('headline')
+
+                    if 'currentPositions' in lead:
+                        for position in lead['currentPositions']:
+                            if 'companyName' in position:
+                                lead['companyName'] = position['companyName']
+
+                            if 'title' in position:
+                                lead['position'] = position['title']
+                            break
+
+            except Exception as e:
+                logger.warning('Failed get profile data for %s lead', lead,
+                               exc_info=e)
