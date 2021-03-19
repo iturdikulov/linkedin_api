@@ -266,6 +266,7 @@ def get_raw_leads_from_html(html):
 
     return raw_data, paging
 
+
 def parse_default_search_data(elements):
     """
     :param elements: JSON decoded data with linkedin profiles
@@ -275,17 +276,6 @@ def parse_default_search_data(elements):
     unknown_profiles = []
 
     for sub_element in elements:
-        # Search limit detector
-        extended_elements = sub_element.get('extendedElements', [])
-        if extended_elements and isinstance(extended_elements, list):
-            for extended_element in extended_elements:
-                if extended_element.get('searchTieIn') == 'FREE_UPSELL':
-                    logger.info('Detected known search limit - %s', extended_element)
-                    return {}, [], extended_element
-
-        elif not isinstance(extended_elements, list):
-            logger.warning('Extend elements wrong type!')
-
         sub_elements = sub_element.get('elements')
         if sub_elements and isinstance(sub_elements, list):
             for item in sub_elements:
@@ -298,6 +288,7 @@ def parse_default_search_data(elements):
                         unknown_profiles.append(item)
 
     return users, unknown_profiles, {}
+
 
 def get_leads_from_html(html, is_sales=False):
     users_data = None
