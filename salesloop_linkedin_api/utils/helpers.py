@@ -281,7 +281,6 @@ def parse_default_search_data(elements):
             for extended_element in extended_elements:
                 if extended_element.get('searchTieIn') == 'FREE_UPSELL':
                     logger.info('Detected known search limit - %s', extended_element)
-                    return {}, [], extended_element
 
         elif not isinstance(extended_elements, list):
             logger.warning('Extend elements wrong type!')
