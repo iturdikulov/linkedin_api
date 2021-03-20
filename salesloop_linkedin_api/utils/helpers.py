@@ -23,6 +23,7 @@ def get_random_base64(length=16):
     base64_message = base64_bytes.decode('ascii')
     return base64_message
 
+
 def default_evade():
     """
     A catch-all method to try and evade suspension from Linkedin.
@@ -266,6 +267,7 @@ def get_raw_leads_from_html(html):
 
     return raw_data, paging
 
+
 def parse_default_search_data(elements):
     """
     :param elements: JSON decoded data with linkedin profiles
@@ -297,6 +299,7 @@ def parse_default_search_data(elements):
                         unknown_profiles.append(item)
 
     return users, unknown_profiles, {}
+
 
 def get_leads_from_html(html, is_sales=False):
     users_data = None
@@ -669,9 +672,6 @@ def get_leads_from_html(html, is_sales=False):
                                 i['companyName'] = position['companyName']
                             if 'title' in position:
                                 i['position'] = position['title']
-                            # if 'companyUrn' in position:
-                            #     companyId = str(position['companyUrn'].replace('urn:li:fs_salesCompany:', ''))
-                            #     i['companyId'] = companyId
                             break
 
                 if 'profilePictureDisplayImage' in lead:
@@ -689,7 +689,6 @@ def get_leads_from_html(html, is_sales=False):
                     'firstname': i.get('firstname'),
                     'lastname': i.get('lastname')
                 })
-
 
     pagination['results_length'] = results_length
     pagination['logged_in'] = logged_in
