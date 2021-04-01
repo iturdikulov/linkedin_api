@@ -360,8 +360,10 @@ def get_leads_from_html(html, is_sales=False):
                 pagination = paging
                 results_length = pagination.get('total', 0)
 
+            total_results_count = users_data.get('data', {}).get('metadata', {}).get('totalResultCount', 0)
             elements = users_data.get('data', {}).get('elements', [])
-            logger.debug('Found %d elements', len(elements))
+            logger.debug('Found %d elements, total result count: %d', len(elements),
+                         total_results_count)
 
             if elements and isinstance(elements, list):
                 users, unknown_profiles, limit_data = parse_default_search_data(elements)
