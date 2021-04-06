@@ -1,9 +1,10 @@
+import json
 from salesloop_linkedin_api.utils.helpers import get_id_from_urn, logger, quote_query_param, fast_evade
 from concurrent.futures import ThreadPoolExecutor
 from requests_futures.sessions import FuturesSession
 import pickle
 from os import environ
-from urllib.parse import urlparse, quote
+from urllib.parse import urlparse, quote, parse_qs
 import pycountry
 
 # TODO - optimize/convert to class?
@@ -341,3 +342,79 @@ def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_co
         raise Exception('No parsed leads failed!')
 
     return parsed_leads, search_url, search_urls_list
+
+
+def generate_clusters_search_url(original_url):
+    parsed = urlparse(original_url)
+
+    query_parameters = []
+    queries = parse_qs(parsed.query)
+    ordered_search_params = {}
+
+    for custom_key in ['keywords', 'origin', 'page', 'flagshipSearchIntent', 'resultType',
+                       'includeFiltersInResponse']:
+        if custom_key in queries:
+            ordered_search_params[custom_key] = queries.get(custom_key)
+            del queries[custom_key]
+
+    queries_ordered_list = ['firstName', 'lastName', 'title', 'company', 'contactInterest',
+                            'network', 'industry', 'connectionOf', 'currentCompany', 'pastCompany',
+                            'profileLanguage',
+                            'schoolFreetext', 'serviceCategory', 'geoUrn', 'schoolFilter',
+                            'resultType',
+                            'includeFiltersInResponse']
+
+    ordered_queries = {key: queries[key] for key in queries_ordered_list if queries.get(key)}
+
+    # add unknown values, except keywords & origin
+    for key in queries.keys():
+        if key not in ordered_queries:
+            ordered_queries[key] = queries[key]
+
+    # parse query values
+    for query_key, query_list in ordered_queries.items():
+        try:
+            for query_value in query_list:
+                if '[' in query_value:
+                    query_values = json.loads(query_value)
+                    query_values_str = ','.join(query_values)
+                else:
+                    query_values_str = query_value
+
+                if query_key in ['schoolFreetext', 'connectionOf']:
+                    query_values_str = query_values_str.replace('"', '')
+
+                # replace space to %20, to get equal search url like in chrome (probably not needed)
+                query_values_str = query_values_str.replace(' ', '%20')
+                query_parameters.append(f"{query_key}:List({query_values_str})")
+
+        except json.JSONDecodeError:
+            pass
+
+    query_parameters.append('resultType:List(PEOPLE)')
+
+    url_params_query = f"(keywords:{''.join(ordered_search_params.get('keywords', ['']))}," \
+                       f"flagshipSearchIntent:{''.join(ordered_search_params.get('flagshipSearchIntent', ['SEARCH_SRP']))}," \
+                       f"queryParameters:({','.join(query_parameters)})," \
+                       f"includeFiltersInResponse:false)"
+
+    search_start = 0
+    query_page = ''.join(ordered_search_params.get('page', ''))
+    if query_page.isnumeric():
+        search_start = int(query_page)
+        if search_start > 1:
+            search_start = (search_start - 1) * 10
+        else:
+            search_start = 0
+
+    url_params = {
+        'decorationId': 'com.linkedin.voyager.dash.deco.search.SearchClusterCollection-92',
+        'origin': ''.join(ordered_search_params.get('origin', ['FACETED_SEARCH'])),
+        'q': 'all',
+        'query': url_params_query,
+        'start': str(search_start)
+    }
+
+    url_params_str = '&'.join([f"{k}={v}" for k, v in url_params.items()])
+
+    return url_params_str
