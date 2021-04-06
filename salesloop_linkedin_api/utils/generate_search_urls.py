@@ -350,6 +350,7 @@ def generate_clusters_search_url(original_url):
     query_parameters = []
     queries = parse_qs(parsed.query)
     ordered_search_params = {}
+    url_params = {}
 
     for custom_key in ['keywords', 'origin', 'page', 'flagshipSearchIntent', 'resultType',
                        'includeFiltersInResponse']:
@@ -415,6 +416,4 @@ def generate_clusters_search_url(original_url):
         'start': str(search_start)
     }
 
-    url_params_str = '&'.join([f"{k}={v}" for k, v in url_params.items()])
-
-    return url_params_str
+    return url_params
