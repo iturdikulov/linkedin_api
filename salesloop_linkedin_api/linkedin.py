@@ -3,10 +3,13 @@ Provides linkedin api-related code
 """
 import random
 from time import sleep
+from urllib import parse as urlparse
 from urllib.parse import urlencode
 import json
 from .utils.helpers import get_leads_from_html, get_default_regions, default_evade, get_random_base64
 from salesloop_linkedin_api.utils.helpers import get_id_from_urn
+from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url, \
+    is_filtered_default_search
 from pathlib import Path
 from salesloop_linkedin_api.client import Client
 from os.path import isfile
@@ -180,58 +183,20 @@ class Linkedin(object):
 
         return results
 
-    def clusters_search_people(
-        self,
-        keywords=None,
-        connection_of=None,
-        network_depth=None,
-        current_company=None,
-        past_companies=None,
-        nonprofit_interests=None,
-        profile_languages=None,
-        regions=None,
-        industries=None,
-        schools=None,
-        title=None,
-        include_private_profiles=False,  # profiles without a public id, "Linkedin Member"
-        limit=None,
-    ):
+    def clusters_search_people(self, linkedin_url):
         """
-        Do a people search.
-        Request URL: https://www.linkedin.com/voyager/api/search/dash/clusters?
-        decorationId=com.linkedin.voyager.dash.deco.search.SearchClusterCollection-92
-        &origin=TYPEAHEAD_ESCAPE_HATCH
-        &q=all
-        &query=(keywords:css2,flagshipSearchIntent:SEARCH_SRP,queryParameters:(resultType:List(ALL)),includeFiltersInResponse:false)&start=0
+        Do a people search using voyager/api/search/dash/cluster
         """
-        filters = ["resultType->PEOPLE"]
-        if connection_of:
-            filters.append(f"connectionOf->{connection_of}")
-        if network_depth:
-            filters.append(f"network->{network_depth}")
-        if regions:
-            filters.append(f'geoRegion->{"|".join(regions)}')
-        if industries:
-            filters.append(f'industry->{"|".join(industries)}')
-        if current_company:
-            filters.append(f'currentCompany->{"|".join(current_company)}')
-        if past_companies:
-            filters.append(f'pastCompany->{"|".join(past_companies)}')
-        if profile_languages:
-            filters.append(f'profileLanguage->{"|".join(profile_languages)}')
-        if nonprofit_interests:
-            filters.append(f'nonprofitInterest->{"|".join(nonprofit_interests)}')
-        if schools:
-            filters.append(f'schools->{"|".join(schools)}')
-        if title:
-            filters.append(f'title->{title}')
-
-        params = {"filters": "List({})".format(",".join(filters))}
-
-        if keywords:
-            params["keywords"] = keywords
-
-        logger.info(params)
+        logger.info('Search people, using %s url, is filtered default search: %s',
+                    linkedin_url,
+                    is_filtered_default_search(linkedin_url))
+        default_params = generate_clusters_search_url(linkedin_url)
+        res = self._fetch(
+            f"/search/dash/clusters?{urlencode(default_params, safe='(),')}",
+            headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
+        )
+        data = res.json()
+        return data
 
     def search_people(
         self,
