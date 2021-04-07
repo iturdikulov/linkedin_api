@@ -344,16 +344,40 @@ def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_co
     return parsed_leads, search_url, search_urls_list
 
 
+def is_filtered_default_search(original_url):
+    queries_keys_ignore = [
+        'keywords',
+        'origin',
+        'page'
+    ]
+    parsed = urlparse(original_url)
+    queries = parse_qs(parsed.query)
+    queries_keys = [query_key for query_key in queries.keys()
+                    if query_key not in queries_keys_ignore]
+
+    if len(queries_keys) > 0:
+        return True
+    else:
+        return False
+
+
 def generate_clusters_search_url(original_url):
+    queries_keys_ignore = [
+        'keywords',
+        'origin',
+        'page',
+        'flagshipSearchIntent',
+        'resultType',
+        'includeFiltersInResponse'
+    ]
+
     parsed = urlparse(original_url)
 
     query_parameters = []
     queries = parse_qs(parsed.query)
     ordered_search_params = {}
-    url_params = {}
 
-    for custom_key in ['keywords', 'origin', 'page', 'flagshipSearchIntent', 'resultType',
-                       'includeFiltersInResponse']:
+    for custom_key in queries_keys_ignore:
         if custom_key in queries:
             ordered_search_params[custom_key] = queries.get(custom_key)
             del queries[custom_key]
