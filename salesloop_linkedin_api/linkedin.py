@@ -6,7 +6,7 @@ from time import sleep
 from urllib import parse as urlparse
 from urllib.parse import urlencode
 import json
-from .utils.helpers import get_leads_from_html, get_default_regions, default_evade, get_random_base64
+from .utils.helpers import parse_search_hits, get_default_regions, default_evade, get_random_base64
 from salesloop_linkedin_api.utils.helpers import get_id_from_urn
 from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url, \
     is_filtered_default_search
@@ -190,13 +190,17 @@ class Linkedin(object):
         logger.info('Search people, using %s url, is filtered default search: %s',
                     linkedin_url,
                     is_filtered_default_search(linkedin_url))
-        default_params = generate_clusters_search_url(linkedin_url)
+
+        url_params_str = '&'.join(
+            [f"{k}={v}" for k, v in generate_clusters_search_url(linkedin_url).items()])
+        generated_cluster_url = f"https://www.linkedin.com/voyager/api/search/dash/clusters?{url_params_str}"
+
         res = self._fetch(
-            f"/search/dash/clusters?{urlencode(default_params, safe='(),')}",
+            f"/search/dash/clusters?{url_params_str}",
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
         )
         data = res.json()
-        return data
+        return [data]
 
     def search_people(
         self,
@@ -1048,7 +1052,15 @@ class Linkedin(object):
         if get_raw:
             return html
         else:
-            parsed_users, pagination, unknown_profiles, limit_data = get_leads_from_html(html, is_sales=is_sales)
+            # get base params
+            search_hits = self.clusters_search_people(search_url)
+
+            parsed_users, \
+            pagination, \
+            unknown_profiles, \
+            limit_data = parse_search_hits(search_hits, is_sales=is_sales)
+
+
             return parsed_users, pagination, unknown_profiles, limit_data
 
     def random_user_actions(self, public_id=None):

@@ -301,7 +301,10 @@ def parse_default_search_data(elements):
     return users, unknown_profiles, {}
 
 
-def get_leads_from_html(html, is_sales=False):
+def parse_search_hits(search_hits, is_sales=False):
+    search_type = 'SALES_SEARCH' if is_sales else 'DEFAULT_SEARCH'
+    search_hit_data = None
+
     users_data = None
     users = {}
     parsed_users = []
@@ -310,33 +313,8 @@ def get_leads_from_html(html, is_sales=False):
     results_length = 0
     logged_in = False
     limit_data = {}
+    parsed_search_hits = search_hits
 
-    tree = LH.document_fromstring(html)
-    search_hits = tree.xpath("//code//text()[string-length() > 0]")
-    logger.info('Found %d search hits', len(search_hits))
-    parsed_search_hits = []
-    search_type = 'SALES_SEARCH' if is_sales else 'DEFAULT_SEARCH'
-    search_hit_data = None
-
-    for search_hit in search_hits:
-        try:
-            # base string validation
-            if search_type == 'DEFAULT_SEARCH' and 'publicIdentifier' not in search_hit:
-                logger.info('Skip search hit, with %d length, no needed data found', len(search_hit))
-                continue
-
-            search_hit_data = json.loads(search_hit)
-
-            # Validator
-            if search_type == 'DEFAULT_SEARCH' and not search_hit_data.get('data'):
-                logger.info('Skip search_hit_data, with %d length, no data key found', len(search_hit_data))
-                continue
-
-            parsed_search_hits.append(search_hit_data)
-        except json.decoder.JSONDecodeError:
-            logger.debug('Failed decode %s search_hit', search_hit)
-        except Exception as e:
-            logger.info(f'Failed parse %s item - %s item, ..', type(search_hit_data), search_hit_data, exc_info=e)
 
     if not is_sales:
         for data in parsed_search_hits:
@@ -425,7 +403,6 @@ def get_leads_from_html(html, is_sales=False):
                             if item.get('profilePicture') and item.get('entityUrn'):
                                 fallback_profiles_images[item.get('entityUrn')] = item.get('profilePicture', {}).get('displayImageReference', {}).get('vectorImage')
 
-
                 # fallback parser - elements
                 for key, lead in users.items():
                     try:
@@ -467,7 +444,6 @@ def get_leads_from_html(html, is_sales=False):
 
                     except Exception as e:
                         logger.warning('Failed pars %s item', lead, exc_info=e)
-
 
         logger.debug('Users found %d', len(users))
 
@@ -696,3 +672,32 @@ def get_leads_from_html(html, is_sales=False):
     pagination['logged_in'] = logged_in
 
     return parsed_users, pagination, unknown_profiles, limit_data
+
+
+def get_leads_from_html(html, is_sales=False):
+    tree = LH.document_fromstring(html)
+    search_hits = tree.xpath("//code//text()[string-length() > 0]")
+    logger.info('Found %d search hits', len(search_hits))
+    search_hits_list = []
+    search_type = 'SALES_SEARCH' if is_sales else 'DEFAULT_SEARCH'
+
+    for search_hit in search_hits:
+        # base string validation
+        if search_type == 'DEFAULT_SEARCH' and 'publicIdentifier' not in search_hit:
+            logger.info('Skip search hit, with %d length, no needed data found', len(search_hit))
+            continue
+
+        try:
+            search_hit_data = json.loads(search_hit)
+        except json.JSONDecodeError:
+            logger.warning('Failed load %s search hit', search_hit)
+        else:
+            # Validator
+            if search_type == 'DEFAULT_SEARCH' and not search_hit_data.get('data'):
+                logger.info('Skip search_hit_data, with %d length, no data key found',
+                            len(search_hit_data))
+                continue
+
+            search_hits_list.append(json.loads(search_hit))
+
+    return search_hits_list
