@@ -382,6 +382,9 @@ def generate_clusters_search_url(original_url):
             ordered_search_params[custom_key] = queries.get(custom_key)
             del queries[custom_key]
 
+    # rename known queries
+    queries['currentCompany'] = queries.pop('facetCurrentCompany')
+
     queries_ordered_list = ['firstName', 'lastName', 'title', 'company',
                             'contactInterest', 'network', 'industry', 'connectionOf',
                             'facetGeoRegion', 'currentCompany', 'pastCompany', 'profileLanguage',
