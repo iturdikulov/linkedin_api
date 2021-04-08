@@ -570,7 +570,11 @@ def parse_search_hits(search_hits, is_sales=False):
                         i['picture'] = '%s%s' % (lead['picture']['rootUrl'], image['fileIdentifyingUrlPathSegment'])
                         break
 
-            if i.get('profileLink') and i.get('profileLinkSN') and i.get('firstname') and i.get('lastname'):
+
+
+            if i.get('profileLink') and i.get('profileLinkSN')\
+                and ((i.get('firstname') and i.get('lastname'))
+                     or i.get('fullname')):
                 parsed_users.append(i)
 
                 logger.debug('Added user to parsed_users list: %s', {
@@ -578,7 +582,8 @@ def parse_search_hits(search_hits, is_sales=False):
                     'profileLink': i.get('profileLink'),
                     'profileLinkSN': i.get('profileLinkSN'),
                     'firstname': i.get('firstname'),
-                    'lastname': i.get('lastname')
+                    'lastname': i.get('lastname'),
+                    'fullname': i.get('fullname')
                 })
             else:
                 logger.warning('Not enough data to add user: %s', i)
