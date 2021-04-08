@@ -382,12 +382,11 @@ def generate_clusters_search_url(original_url):
             ordered_search_params[custom_key] = queries.get(custom_key)
             del queries[custom_key]
 
-    queries_ordered_list = ['firstName', 'lastName', 'title', 'company', 'contactInterest',
-                            'network', 'industry', 'connectionOf', 'currentCompany', 'pastCompany',
-                            'profileLanguage',
+    queries_ordered_list = ['firstName', 'lastName', 'title', 'company',
+                            'contactInterest', 'network', 'industry', 'connectionOf',
+                            'facetGeoRegion', 'currentCompany', 'pastCompany', 'profileLanguage',
                             'schoolFreetext', 'serviceCategory', 'geoUrn', 'schoolFilter',
-                            'resultType',
-                            'includeFiltersInResponse']
+                            'resultType', 'includeFiltersInResponse']
 
     ordered_queries = {key: queries[key] for key in queries_ordered_list if queries.get(key)}
 
@@ -406,11 +405,11 @@ def generate_clusters_search_url(original_url):
                 else:
                     query_values_str = query_value
 
-                if query_key in ['schoolFreetext', 'connectionOf']:
+                if query_key in ['schoolFreetext', 'connectionOf', 'title']:
                     query_values_str = query_values_str.replace('"', '')
 
                 # replace space to %20, to get equal search url like in chrome (probably not needed)
-                query_values_str = query_values_str.replace(' ', '%20')
+                query_values_str = quote(query_values_str, safe=',')
                 query_parameters.append(f"{query_key}:List({query_values_str})")
 
         except json.JSONDecodeError:
@@ -418,10 +417,19 @@ def generate_clusters_search_url(original_url):
 
     query_parameters.append('resultType:List(PEOPLE)')
 
-    url_params_query = f"(keywords:{''.join(ordered_search_params.get('keywords', ['']))}," \
-                       f"flagshipSearchIntent:{''.join(ordered_search_params.get('flagshipSearchIntent', ['SEARCH_SRP']))}," \
-                       f"queryParameters:({','.join(query_parameters)})," \
-                       f"includeFiltersInResponse:false)"
+    url_params_query = "("
+
+    # Add keywords if exist
+    search_keywords = ''.join(ordered_search_params.get('keywords', ['']))
+    if search_keywords:
+        url_params_query += f"keywords:{''.join(ordered_search_params.get('keywords', ['']))},"
+
+    # Add other required params
+    url_params_query += f"flagshipSearchIntent:{''.join(ordered_search_params.get('flagshipSearchIntent', ['SEARCH_SRP']))}," \
+                        f"queryParameters:({','.join(query_parameters)})," \
+                        f"includeFiltersInResponse:false"
+
+    url_params_query += ")"
 
     search_start = 0
     query_page = ''.join(ordered_search_params.get('page', ''))
