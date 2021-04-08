@@ -187,18 +187,23 @@ class Linkedin(object):
         """
         Do a people search using voyager/api/search/dash/cluster
         """
-        logger.info('Search people, using %s url, is filtered default search: %s',
-                    linkedin_url,
-                    is_filtered_default_search(linkedin_url))
 
         url_params_str = '&'.join(
             [f"{k}={v}" for k, v in generate_clusters_search_url(linkedin_url).items()])
         generated_cluster_url = f"https://www.linkedin.com/voyager/api/search/dash/clusters?{url_params_str}"
 
+        logger.info('Search people, using %s url, '
+                    'is filtered default search: %s, \n'
+                    'generated_cluster_url: %s',
+                    linkedin_url,
+                    is_filtered_default_search(linkedin_url),
+                    generated_cluster_url)
+
         res = self._fetch(
             f"/search/dash/clusters?{url_params_str}",
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
         )
+        res.raise_for_status()
         data = res.json()
         return [data]
 
