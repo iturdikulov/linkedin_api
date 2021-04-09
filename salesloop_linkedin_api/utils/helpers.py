@@ -275,8 +275,12 @@ def parse_default_search_data(elements):
     """
     users = {}
     unknown_profiles = []
+    users_order = []
 
     for sub_element in elements:
+        if not users_order and sub_element.get('*results') and isinstance(sub_element.get('*results'), list):
+            users_order = sub_element['*results']
+
         # Search limit detector
         extended_elements = sub_element.get('extendedElements', [])
         if extended_elements and isinstance(extended_elements, list):
@@ -298,7 +302,7 @@ def parse_default_search_data(elements):
                     if item.get('targetUrn') and not item.get('publicIdentifier'):
                         unknown_profiles.append(item)
 
-    return users, unknown_profiles, {}
+    return users, unknown_profiles, {}, users_order
 
 
 def parse_search_hits(search_hits, is_sales=False):
@@ -314,7 +318,7 @@ def parse_search_hits(search_hits, is_sales=False):
     logged_in = False
     limit_data = {}
     parsed_search_hits = search_hits
-
+    users_order = None
 
     if not is_sales:
         for data in parsed_search_hits:
@@ -344,7 +348,7 @@ def parse_search_hits(search_hits, is_sales=False):
                          total_results_count)
 
             if elements and isinstance(elements, list):
-                users, unknown_profiles, limit_data = parse_default_search_data(elements)
+                users, unknown_profiles, limit_data, users_order = parse_default_search_data(elements)
 
             mini_profiles = users_data.get('included', {})
             if mini_profiles and isinstance(mini_profiles, list):
@@ -446,6 +450,23 @@ def parse_search_hits(search_hits, is_sales=False):
                         logger.warning('Failed pars %s item', lead, exc_info=e)
 
         logger.debug('Users found %d', len(users))
+        if users_order:
+            logger.info('Found users order, sort %d users', len(users))
+            try:
+                sorted_users = {}
+                for entity_urn in users_order:
+                    for user_key, user_data in users.items():
+                        if user_data.get('entityUrn') == entity_urn:
+                            sorted_users[user_key] = user_data
+
+                if len(sorted_users) == len(users):
+                    logger.info('Replace users with sorted_users')
+                    users = sorted_users
+                else:
+                    logger.warning('Failed to sort: sorted users %s, \n non-sorted users %s',
+                                   sorted_users, users)
+            except Exception as e:
+                logger.warning('Failed to sort', exc_info=e)
 
         for key, lead in users.items():
             fullname = None
