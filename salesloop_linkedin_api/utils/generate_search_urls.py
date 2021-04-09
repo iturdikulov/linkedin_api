@@ -383,7 +383,8 @@ def generate_clusters_search_url(original_url):
             del queries[custom_key]
 
     # rename known queries
-    queries['currentCompany'] = queries.pop('facetCurrentCompany')
+    if queries.get('currentCompany'):
+        queries['currentCompany'] = queries.pop('facetCurrentCompany')
 
     queries_ordered_list = ['firstName', 'lastName', 'title', 'company',
                             'contactInterest', 'network', 'industry', 'connectionOf',
