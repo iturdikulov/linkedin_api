@@ -6,6 +6,7 @@ import pickle
 from os import environ
 from urllib.parse import urlparse, quote, parse_qs
 import pycountry
+from application.config import Config
 
 # TODO - optimize/convert to class?
 
@@ -383,13 +384,13 @@ def generate_clusters_search_url(original_url):
             del queries[custom_key]
 
     # rename known queries
-    if queries.get('currentCompany'):
+    if queries.get('facetCurrentCompany'):
         queries['currentCompany'] = queries.pop('facetCurrentCompany')
 
     queries_ordered_list = ['firstName', 'lastName', 'title', 'company',
                             'contactInterest', 'network', 'industry', 'connectionOf',
-                            'facetGeoRegion', 'currentCompany', 'pastCompany', 'profileLanguage',
-                            'schoolFreetext', 'serviceCategory', 'geoUrn', 'schoolFilter',
+                            'currentCompany', 'pastCompany', 'profileLanguage',
+                            'schoolFreetext', 'serviceCategory', 'facetGeoRegion', 'geoUrn', 'schoolFilter',
                             'resultType', 'includeFiltersInResponse']
 
     ordered_queries = {key: queries[key] for key in queries_ordered_list if queries.get(key)}
@@ -405,6 +406,12 @@ def generate_clusters_search_url(original_url):
             for query_value in query_list:
                 if '[' in query_value:
                     query_values = json.loads(query_value)
+
+                    if query_key == 'facetGeoRegion':
+                        regions = [code.split(':')[0] for code in query_values if ':' in code]
+                        query_values = [Config.LINKEDIN_GEO_CODES_DATA.get(region.upper(), {}).get('id') for region in regions]
+                        query_key = 'geoUrn'  # rename query key
+
                     query_values_str = ','.join(query_values)
                 else:
                     query_values_str = query_value
@@ -426,7 +433,7 @@ def generate_clusters_search_url(original_url):
     # Add keywords if exist
     search_keywords = ''.join(ordered_search_params.get('keywords', ['']))
     if search_keywords:
-        url_params_query += f"keywords:{''.join(ordered_search_params.get('keywords', ['']))},"
+        url_params_query += f"keywords:{quote(search_keywords)},"
 
     # Add other required params
     url_params_query += f"flagshipSearchIntent:{''.join(ordered_search_params.get('flagshipSearchIntent', ['SEARCH_SRP']))}," \
