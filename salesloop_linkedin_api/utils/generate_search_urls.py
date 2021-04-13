@@ -6,6 +6,7 @@ import pickle
 from os import environ
 from urllib.parse import urlparse, quote, parse_qs
 import pycountry
+import re
 from application.config import Config
 
 # TODO - optimize/convert to class?
@@ -377,23 +378,31 @@ def generate_clusters_search_url(original_url):
     query_parameters = []
     queries = parse_qs(parsed.query)
     ordered_search_params = {}
+    queries_keys = list(queries.keys())
 
     for custom_key in queries_keys_ignore:
         if custom_key in queries:
             ordered_search_params[custom_key] = queries.get(custom_key)
             del queries[custom_key]
 
-    # rename known queries
-    if queries.get('facetCurrentCompany'):
-        queries['currentCompany'] = queries.pop('facetCurrentCompany')
+    # replace facetXxxx to xxxx
+    for query_key in queries_keys:
+        if 'facet' in query_key:
+            new_query_key = re.sub('^facet', '', query_key.strip())
+            new_query_key = new_query_key[0].lower() + new_query_key[1:]
+            queries[new_query_key] = queries.pop(query_key)
+
+    # rename known fields
+    if 'school' in queries:
+        queries['schoolFilter'] = queries.pop('school')
 
     queries_ordered_list = ['firstName', 'lastName', 'title', 'company',
-                            'contactInterest', 'network', 'industry', 'connectionOf',
+                            'contactInterest', 'network', 'facetNetwork', 'industry', 'connectionOf',
                             'currentCompany', 'pastCompany', 'profileLanguage',
                             'schoolFreetext', 'serviceCategory', 'facetGeoRegion', 'geoUrn', 'schoolFilter',
                             'resultType', 'includeFiltersInResponse']
 
-    ordered_queries = {key: queries[key] for key in queries_ordered_list if queries.get(key)}
+    ordered_queries = {key[0].lower() + key[1:]: queries[key] for key in queries_ordered_list if queries.get(key)}
 
     # add unknown values, except keywords & origin
     for key in queries.keys():
@@ -407,7 +416,7 @@ def generate_clusters_search_url(original_url):
                 if '[' in query_value:
                     query_values = json.loads(query_value)
 
-                    if query_key == 'facetGeoRegion':
+                    if query_key == 'geoRegion':
                         regions = [code.split(':')[0] for code in query_values if ':' in code]
                         query_values = [Config.LINKEDIN_GEO_CODES_DATA.get(region.upper(), {}).get('id') for region in regions]
                         query_key = 'geoUrn'  # rename query key
@@ -453,7 +462,7 @@ def generate_clusters_search_url(original_url):
 
     url_params = {
         'decorationId': 'com.linkedin.voyager.dash.deco.search.SearchClusterCollection-92',
-        'origin': ''.join(ordered_search_params.get('origin', ['FACETED_SEARCH'])),
+        'origin': ''.join(ordered_search_params.get('origin', ['OTHER'])),
         'q': 'all',
         'query': url_params_query,
         'start': str(search_start)
