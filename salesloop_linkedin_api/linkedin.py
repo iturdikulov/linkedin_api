@@ -1067,7 +1067,6 @@ class Linkedin(object):
             unknown_profiles, \
             limit_data = parse_search_hits(search_hits, is_sales=is_sales)
 
-
             return parsed_users, pagination, unknown_profiles, limit_data
 
     def random_user_actions(self, public_id=None):
