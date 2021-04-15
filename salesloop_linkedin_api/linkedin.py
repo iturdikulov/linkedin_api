@@ -6,7 +6,7 @@ from time import sleep
 from urllib import parse as urlparse
 from urllib.parse import urlencode
 import json
-from .utils.helpers import parse_search_hits, get_default_regions, default_evade, get_random_base64
+from .utils.helpers import parse_search_hits, get_default_regions, default_evade, get_random_base64, get_leads_from_html
 from salesloop_linkedin_api.utils.helpers import get_id_from_urn
 from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url, \
     is_filtered_default_search
@@ -1057,8 +1057,10 @@ class Linkedin(object):
         if get_raw:
             return html
         else:
-            # get base params
-            search_hits = self.clusters_search_people(search_url)
+            if is_sales:
+                search_hits = get_leads_from_html(html, is_sales=True)
+            else:
+                search_hits = self.clusters_search_people(search_url)
 
             parsed_users, \
             pagination, \
