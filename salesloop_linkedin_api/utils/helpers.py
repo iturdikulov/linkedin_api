@@ -471,15 +471,27 @@ def parse_search_hits(search_hits, is_sales=False):
         for key, lead in users.items():
             fullname = None
 
-            if lead.get('firstName') and lead.get('lastName'):
-                fullname = f"{lead.get('firstName')} {lead.get('lastName')}"
+            if xstr(lead.get('firstName')) and xstr(lead.get('lastName')):
+                if lead['firstName'].lower().strip() == 'linkedin' \
+                   and lead['lastName'].lower().strip() == 'member':
+                    logger.info('Reset lead fullname,'
+                                ' detected default fullname combination %s', lead)
+                    lead['firstName'] = ''
+                    lead['lastName'] = ''
+                else:
+                    fullname = f"{lead.get('firstName')} {lead.get('lastName')}"
             else:
                 if isinstance(lead.get('title'), dict) and lead.get('title', {}).get('text'):
                     fullname = lead.get('title', {}).get('text')
                 elif lead.get('title'):
                     fullname = lead.get('title')
 
-            if not lead.get('firstName') or not lead.get('lastName') and fullname:
+                if xstr(fullname).lower().strip() == 'linkedin member':
+                    fullname = None
+                    logger.info('Reset lead fullname,'
+                                ' detected default fullname combination %s', lead)
+
+            if (not lead.get('firstName') or not lead.get('lastName')) and fullname:
                 fullname_parts = fullname.split(' ')
                 if len(fullname_parts) == 2:
                     lead['firstName'], lead['lastName'] = fullname_parts
@@ -492,7 +504,6 @@ def parse_search_hits(search_hits, is_sales=False):
                 headline = lead.get('headline')
             elif lead.get('primarySubtitle') and isinstance(lead.get('primarySubtitle'), dict):
                 headline = lead.get('primarySubtitle', {}).get('text')
-
 
             i = {'publicIdentifier': lead.get('publicIdentifier'),
                  'firstname': lead.get('firstName'),
