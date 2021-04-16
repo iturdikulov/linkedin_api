@@ -727,3 +727,6 @@ def get_leads_from_html(html, is_sales=False):
             search_hits_list.append(json.loads(search_hit))
 
     return search_hits_list
+
+def xstr(s):
+    return str(s or '')
