@@ -421,7 +421,7 @@ def generate_clusters_search_url(original_url):
                         query_values = [Config.LINKEDIN_GEO_CODES_DATA.get(region.upper(), {}).get('id') for region in regions]
                         query_key = 'geoUrn'  # rename query key
 
-                    query_values_str = ','.join(query_values)
+                    query_values_str = ','.join(str(x) for x in query_values)
                 else:
                     query_values_str = query_value
 
