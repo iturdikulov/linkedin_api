@@ -433,7 +433,7 @@ def generate_clusters_search_url(original_url):
                 query_parameters.append(f"{query_key}:List({query_values_str})")
 
         except json.JSONDecodeError:
-            pass
+            logger.warning('Failed decode query_value in query_list: %s', query_list)
 
     query_parameters.append('resultType:List(PEOPLE)')
 
