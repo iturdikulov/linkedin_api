@@ -641,6 +641,10 @@ def parse_search_hits(search_hits, is_sales=False):
 
         if parsed_items:
             for lead in parsed_items:
+                if not lead.get('entityUrn'):
+                    logger.warning('Skip profile parsing, entityUrn identifier not found')
+                    continue
+
                 i = {'publicIdentifier': lead.get('publicIdentifier'), 'firstname': lead.get('firstName'), 'lastname': lead.get('lastName'),
                      'fullname': f"{lead.get('firstName')} {lead.get('lastName')}", 'degree': None, 'canSendInMail': None, 'headline': None,
                      'picture': None, 'profileLink': None, 'profileLinkSN': None, 'location': None, 'position': None,
