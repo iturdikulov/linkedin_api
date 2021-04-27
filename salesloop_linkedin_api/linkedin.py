@@ -6,7 +6,7 @@ from time import sleep
 from urllib import parse as urlparse
 from urllib.parse import urlencode
 import json
-from .utils.helpers import parse_search_hits, get_default_regions, default_evade, get_random_base64, get_leads_from_html
+from .utils.helpers import parse_search_hits, get_default_regions, default_evade, get_random_base64, get_leads_from_html, get_pagination_data
 from salesloop_linkedin_api.utils.helpers import get_id_from_urn
 from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url, \
     is_filtered_default_search
@@ -1066,6 +1066,19 @@ class Linkedin(object):
             pagination, \
             unknown_profiles, \
             limit_data = parse_search_hits(search_hits, is_sales=is_sales)
+
+            if not is_sales:
+                # TODO: remove this and merge into parse_search_hits
+                logger.info('Use custom pagination data parsing '
+                            'for default search (Compatibility)')
+
+                pagination = get_pagination_data(html, is_sales=is_sales)
+
+            if parsed_users:
+                # default pagination params can be useful for debugging
+                logger.debug('Override pagination, reason: we found parsed_users')
+                pagination['logged_in'] = True
+                pagination['results_length'] = len(parsed_users)
 
             return parsed_users, pagination, unknown_profiles, limit_data
 
