@@ -715,33 +715,59 @@ def parse_search_hits(search_hits, is_sales=False):
     return parsed_users, pagination, unknown_profiles, limit_data
 
 
-def get_leads_from_html(html, is_sales=False):
-    tree = LH.document_fromstring(html)
-    search_hits = tree.xpath("//code//text()[string-length() > 0]")
-    logger.info('Found %d search hits', len(search_hits))
-    search_hits_list = []
-    search_type = 'SALES_SEARCH' if is_sales else 'DEFAULT_SEARCH'
+def get_pagination_data(search_hits, is_sales=False):
+    users_data = None
+    pagination = {}
+    results_length = 0
+    logged_in = False
+    parsed_search_hits = search_hits
 
-    for search_hit in search_hits:
-        # base string validation
-        if search_type == 'DEFAULT_SEARCH' and 'publicIdentifier' not in search_hit:
-            logger.info('Skip search hit, with %d length, no needed data found', len(search_hit))
-            continue
+    if not is_sales:
+        for data in parsed_search_hits:
+            try:
+                data_type = data.get('data', {}).get('$type')
 
-        try:
-            search_hit_data = json.loads(search_hit)
-        except json.JSONDecodeError:
-            logger.warning('Failed load %s search hit', search_hit)
-        else:
-            # Validator
-            if search_type == 'DEFAULT_SEARCH' and not search_hit_data.get('data'):
-                logger.info('Skip search_hit_data, with %d length, no data key found',
-                            len(search_hit_data))
-                continue
+                if data_type == 'com.linkedin.restli.common.CollectionResponse' and not users_data:
+                    users_data = data
+                else:
+                    logger.debug('Data type: %s', data_type)
 
-            search_hits_list.append(json.loads(search_hit))
+                if data_type == 'com.linkedin.voyager.common.Me':
+                    logged_in = True
 
-    return search_hits_list
+            except Exception as e:
+                logger.warning(f'Failed parse item... {data}. {repr(e)}')
+
+        if users_data:
+            paging = users_data.get('data', {}).get('paging')
+            if paging and not pagination:
+                pagination = paging
+                results_length = pagination.get('total', 0)
+
+    else:
+        parsed_items = []
+        for data in parsed_search_hits:
+            try:
+                if not pagination and data.get('paging'):
+                    pagination = data.get('paging')
+                    results_length = pagination.get('count', 0)
+
+                if data.get('elements'):
+                    for element in data.get('elements'):
+                        parsed_items.append(element)
+
+                current_entity_run = data.get('memberResolutionResult', {}).get('entityUrn')
+
+                if current_entity_run and 'urn:li:fs_salesProfile' in current_entity_run:
+                    logged_in = True
+            except Exception as e:
+                logger.warning('Unknown sales search parse error', exc_info=e)
+
+    pagination['results_length'] = results_length
+    pagination['logged_in'] = logged_in
+
+    return pagination
+
 
 def xstr(s):
     return str(s or '')
