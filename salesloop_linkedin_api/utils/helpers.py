@@ -744,12 +744,12 @@ def get_leads_from_html(html, is_sales=False):
     return search_hits_list
 
 
-def get_pagination_data(search_hits, is_sales=False):
+def get_pagination_data(html, is_sales=False):
+    parsed_search_hits = get_leads_from_html(html, is_sales=is_sales)
     users_data = None
     pagination = {}
     results_length = 0
     logged_in = False
-    parsed_search_hits = search_hits
 
     if not is_sales:
         for data in parsed_search_hits:
