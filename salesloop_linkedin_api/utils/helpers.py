@@ -715,6 +715,35 @@ def parse_search_hits(search_hits, is_sales=False):
     return parsed_users, pagination, unknown_profiles, limit_data
 
 
+def get_leads_from_html(html, is_sales=False):
+    tree = LH.document_fromstring(html)
+    search_hits = tree.xpath("//code//text()[string-length() > 0]")
+    logger.info('Found %d search hits', len(search_hits))
+    search_hits_list = []
+    search_type = 'SALES_SEARCH' if is_sales else 'DEFAULT_SEARCH'
+
+    for search_hit in search_hits:
+        # base string validation
+        if search_type == 'DEFAULT_SEARCH' and 'publicIdentifier' not in search_hit:
+            logger.info('Skip search hit, with %d length, no needed data found', len(search_hit))
+            continue
+
+        try:
+            search_hit_data = json.loads(search_hit)
+        except json.JSONDecodeError:
+            logger.warning('Failed load %s search hit', search_hit)
+        else:
+            # Validator
+            if search_type == 'DEFAULT_SEARCH' and not search_hit_data.get('data'):
+                logger.info('Skip search_hit_data, with %d length, no data key found',
+                            len(search_hit_data))
+                continue
+
+            search_hits_list.append(json.loads(search_hit))
+
+    return search_hits_list
+
+
 def get_pagination_data(search_hits, is_sales=False):
     users_data = None
     pagination = {}
