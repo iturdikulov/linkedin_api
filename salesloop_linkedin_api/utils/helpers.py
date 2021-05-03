@@ -800,3 +800,7 @@ def get_pagination_data(html, is_sales=False):
 
 def xstr(s):
     return str(s or '')
+
+
+def days_hours_minutes(td):
+    return f'{td.days}d. {td.seconds//3600}h. {(td.seconds//60)%60}m.'
