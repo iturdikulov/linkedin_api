@@ -305,7 +305,7 @@ def parse_default_search_data(elements):
     return users, unknown_profiles, {}, users_order
 
 
-def parse_search_hits(search_hits, is_sales=False):
+def parse_search_hits(search_hits, is_sales=False, search_start=0):
     search_type = 'SALES_SEARCH' if is_sales else 'DEFAULT_SEARCH'
     search_hit_data = None
 
@@ -468,7 +468,7 @@ def parse_search_hits(search_hits, is_sales=False):
             except Exception as e:
                 logger.warning('Failed to sort', exc_info=e)
 
-        for key, lead in users.items():
+        for index, (key, lead) in enumerate(users.items(), start=1):
             fullname = None
 
             if xstr(lead.get('firstName')) and xstr(lead.get('lastName')):
@@ -505,7 +505,8 @@ def parse_search_hits(search_hits, is_sales=False):
             elif lead.get('primarySubtitle') and isinstance(lead.get('primarySubtitle'), dict):
                 headline = lead.get('primarySubtitle', {}).get('text')
 
-            i = {'publicIdentifier': lead.get('publicIdentifier'),
+            i = {'index': index + search_start,
+                 'publicIdentifier': lead.get('publicIdentifier'),
                  'firstname': lead.get('firstName'),
                  'lastname': lead.get('lastName'),
                  'fullname': fullname or '',
@@ -800,3 +801,7 @@ def get_pagination_data(html, is_sales=False):
 
 def xstr(s):
     return str(s or '')
+
+
+def days_hours_minutes(td):
+    return f'{td.days}d. {td.seconds//3600}h. {(td.seconds//60)%60}m.'
