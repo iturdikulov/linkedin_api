@@ -2,7 +2,7 @@ import os
 import sys
 import pytest
 
-from salesloop_linkedin_api import Linkedin
+from linkedin_api import Linkedin
 
 TEST_LINKEDIN_USERNAME = os.getenv("LINKEDIN_USERNAME")
 TEST_LINKEDIN_PASSWORD = os.getenv("LINKEDIN_PASSWORD")
@@ -29,30 +29,35 @@ def linkedin():
 
 
 def test_get_profile(linkedin):
-    profile = linkedin.get_profile(TEST_PROFILE_ID)
+    profile = linkedin.get_profile(urn_id=TEST_PROFILE_ID)
+    assert profile
+    assert profile["summary"]
+    assert profile["summary"][0] == "👋"
 
-    assert profile["summary"] and profile["summary"][0] == "👋"
 
+def test_view_profile(linkedin):
+    err = linkedin.view_profile(TEST_PUBLIC_PROFILE_ID)
 
-# def test_view_profile(linkedin):
-#     err = linkedin.view_profile(TEST_PUBLIC_PROFILE_ID)
+    assert not err
 
-#     assert not err
 
 def test_get_profile_privacy_settings(linkedin):
     data = linkedin.get_profile_privacy_settings(TEST_PUBLIC_PROFILE_ID)
 
     assert data
 
+
 def test_get_profile_member_badges(linkedin):
     data = linkedin.get_profile_member_badges(TEST_PUBLIC_PROFILE_ID)
 
     assert data
 
+
 def test_get_profile_network_info(linkedin):
     data = linkedin.get_profile_network_info(TEST_PUBLIC_PROFILE_ID)
 
     assert data
+
 
 def test_get_profile_contact_info(linkedin):
     contact_info = linkedin.get_profile_contact_info(TEST_PROFILE_ID)
@@ -121,6 +126,13 @@ def test_search(linkedin):
     assert results
 
 
+def test_search_pagination(linkedin):
+    linkedin._MAX_SEARCH_COUNT = 2
+    results = linkedin.search({"keywords": "software"}, limit=4)
+    assert results
+    assert len(results) == 4
+
+
 def test_search_with_limit(linkedin):
     results = linkedin.search({"keywords": "tom"}, limit=1)
     assert len(results) == 1
@@ -144,6 +156,32 @@ def test_search_people_by_region(linkedin):
     assert results[0]["public_id"]
 
 
+def test_search_people_by_keywords_filter(linkedin: Linkedin):
+    results = linkedin.search_people(
+        keyword_first_name="John", keyword_last_name="Smith"
+    )
+    assert results
+    assert results[0]["public_id"]
+
+
+def test_search_jobs(linkedin):
+    jobs = linkedin.search_jobs(keywords="data analyst", location="Germany", count=1)
+
+    assert jobs
+
+
+def test_search_companies(linkedin):
+    results = linkedin.search_companies(keywords="linkedin", limit=1)
+    assert results
+    assert results[0]["urn_id"] == 1337
+
+
+# def test_search_people_distinct(linkedin):
+#     TEST_NAMES = ['Bill Gates', 'Mark Zuckerberg']
+#     results = [linkedin.search_people(name, limit=2)[0] for name in TEST_NAMES]
+#     assert results[0] != results[1]
+
+
 def test_get_profile_skills(linkedin):
     skills = linkedin.get_profile_skills(TEST_PROFILE_ID)
     assert skills
@@ -164,7 +202,6 @@ def test_accept_invitation(linkedin):
         # If we've got no invitations, just force test to pass
         assert True
         return
-
     num_invitations = len(invitations)
     invite = invitations[0]
     invitation_response = linkedin.reply_invitation(
@@ -188,7 +225,6 @@ def test_reject_invitation(linkedin):
         # If we've got no invitations, just force test to pass
         assert True
         return
-
     num_invitations = len(invitations)
     invite = invitations[0]
     invitation_response = linkedin.reply_invitation(
@@ -200,3 +236,35 @@ def test_reject_invitation(linkedin):
 
     invitations = linkedin.get_invitations()
     assert len(invitations) == num_invitations - 1
+
+
+def test_unfollow_entity(linkedin):
+    urn = f"urn:li:member:ACoAACVmHBkBdk3IYY1uodl8Ht4W79rmdVFccOA"
+    err = linkedin.unfollow_entity(urn)
+    assert not err
+
+
+def test_get_feed_posts_pagination(linkedin):
+    results = linkedin.get_feed_posts(101)
+    assert results
+
+
+def test_get_feed_posts_pagination_with_limit(linkedin):
+    results = linkedin.get_feed_posts(4)
+    # Currently promotions are always removed from results
+    assert len(results) <= 4
+
+
+def test_get_feed_posts_posts_keys(linkedin):
+    results = linkedin.get_feed_posts(4)
+    for i in results:
+        assert i["author_name"]
+        assert i["author_profile"]
+        assert i["content"]
+        assert i["old"]
+        assert i["url"]
+
+
+def test_get_feed_posts_urns_contains_no_duplicated(linkedin):
+    l_posts, l_urns = linkedin._get_list_feed_posts_and_list_feed_urns(101)
+    assert len(set([x for x in l_urns if l_urns.count(x) > 1])) == 0
