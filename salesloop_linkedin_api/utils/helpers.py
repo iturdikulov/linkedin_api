@@ -726,7 +726,6 @@ def get_leads_from_html(html, is_sales=False):
     for search_hit in search_hits:
         # base string validation
         if search_type == 'DEFAULT_SEARCH' and 'publicIdentifier' not in search_hit:
-            logger.info('Skip search hit, with %d length, no needed data found', len(search_hit))
             continue
 
         try:
@@ -742,6 +741,10 @@ def get_leads_from_html(html, is_sales=False):
 
             search_hits_list.append(json.loads(search_hit))
 
+    if search_hits:
+        logger.debug('Found %d search hits', len(search_hits))
+    else:
+        logger.warning('No search hits in html with %d length', len(html))
     return search_hits_list
 
 
