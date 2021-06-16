@@ -47,6 +47,8 @@ class Client(object):
 
     def __init__(self, *, debug=False, refresh_cookies=False, proxies={}, cookies=None, api_cookies=None, ua=None):
         self.session = requests.session()
+        self.session.max_redirects = 5
+
         self.session.proxies.update(proxies)
         logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
 
