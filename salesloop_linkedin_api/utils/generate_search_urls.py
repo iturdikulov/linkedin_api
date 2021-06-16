@@ -89,7 +89,7 @@ def generate_search_url(linkedin_api, company_leads,
             else:
                 skipped_leads.append(lead_company_name)
 
-            if len(parsed_leads) > maximum_companies:
+            if len(parsed_leads) >= maximum_companies:
                 logger.debug('Raised maximum companies - %s, stop.', maximum_companies,
                              extra=log_extra)
                 break
