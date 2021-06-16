@@ -396,6 +396,10 @@ def generate_clusters_search_url(original_url):
     if 'school' in queries:
         queries['schoolFilter'] = queries.pop('school')
 
+    # remove geoRegion - conflict with geoUrn
+    if 'geoRegion' in queries and 'geoUrn' in queries:
+        queries.pop('geoRegion')
+
     queries_ordered_list = ['firstName', 'lastName', 'title', 'company',
                             'contactInterest', 'network', 'facetNetwork', 'industry', 'connectionOf',
                             'currentCompany', 'pastCompany', 'profileLanguage',
