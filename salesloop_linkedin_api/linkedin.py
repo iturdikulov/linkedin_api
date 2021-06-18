@@ -65,6 +65,7 @@ class Linkedin(object):
         self.default_retry_max_time = default_retry_max_time
         self.pagination = None
         self.limit_data = None
+        self.results_success_urls = []
 
     def _get_max_retry_time(self):
         return self.default_retry_max_time
@@ -82,7 +83,10 @@ class Linkedin(object):
 
         @backoff.on_exception(backoff.expo,
                               (requests.exceptions.Timeout,
-                               requests.exceptions.RequestException,
+                               requests.exceptions.ProxyError,
+                               requests.exceptions.SSLError,
+                               requests.exceptions.ReadTimeout,
+                               requests.exceptions.HTTPError,
                                requests.exceptions.ConnectionError),
                               max_time=self._get_max_retry_time,
                               on_backoff=self.backoff_hdlr)
@@ -107,7 +111,10 @@ class Linkedin(object):
 
         @backoff.on_exception(backoff.expo,
                               (requests.exceptions.Timeout,
-                               requests.exceptions.RequestException,
+                               requests.exceptions.ProxyError,
+                               requests.exceptions.SSLError,
+                               requests.exceptions.ReadTimeout,
+                               requests.exceptions.HTTPError,
                                requests.exceptions.ConnectionError),
                               max_time=self._get_max_retry_time,
                               on_backoff=self.backoff_hdlr)
