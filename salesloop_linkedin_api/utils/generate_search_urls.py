@@ -296,16 +296,17 @@ def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_co
                 if countries_codes:
                     # regions exist, overwrite leads locations
                     sub_url_default_params["facetGeoRegion"] = quote_query_param(regions)
+                    geo_urns = [
+                        linkedin_geo_codes_data.get(region.replace(':0', '').upper(), {}).get('id')
+                        for region in regions if region]
                 else:
                     # use lead location, append location to generate all regions
                     regions.append(f"{lead.get('country_code')}:0")
                     sub_url_default_params["facetGeoRegion"] = quote_query_param(f"{lead.get('country_code')}:0")
+                    geo_urns = [linkedin_geo_codes_data.get(lead.get('country_code').upper(), {}).get('id')]
 
-                geo_urns = [
-                    linkedin_geo_codes_data.get(region.replace(':0', '').upper(), {}).get('id')
-                    for region in regions if region]
-
-                sub_url_default_params["geoUrn"] = quote_query_param(geo_urns)
+                if geo_urns:
+                    sub_url_default_params["geoUrn"] = quote_query_param(geo_urns)
 
                 sub_url_default_params["title"] = url_title
                 query_data = '&'.join(["{}={}".format(k, v) for k, v in sub_url_default_params.items()])
