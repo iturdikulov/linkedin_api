@@ -20,6 +20,7 @@ import re
 import pickle
 import logging
 import backoff
+from random import randrange
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('application')
@@ -1313,7 +1314,7 @@ class Linkedin(object):
 
     def reformat_api_results(self):
         # search public ids if not exists, use same method like in scrapy search
-        for lead in self.results:
+        for i, lead in enumerate(self.results):
             try:
                 if lead.get('entityUrn') and not lead.get('publicIdentifier'):
                     profile = self.get_profile(urn_id=lead.get('entityUrn'))
@@ -1334,3 +1335,7 @@ class Linkedin(object):
             except Exception as e:
                 logger.warning('Failed get profile data for %s lead', lead,
                                exc_info=e)
+
+            # evade limit each N requests
+            if i > 0 and randrange(0, 100) < 10:
+                sleep(randrange(10, 15))
