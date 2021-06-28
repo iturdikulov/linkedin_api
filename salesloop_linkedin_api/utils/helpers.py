@@ -421,11 +421,9 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
                                         item.get('navigationUrl'),
                                         lead.get('publicIdentifier') in item.get('navigationUrl')]):
 
-                                    logger.debug('Fallback parser - found new user: %s, %s, %s, %s',
-                                                 item,
+                                    logger.debug('Fallback parser - found new user: public_id - %s, navigation url - %s',
                                                  lead.get('publicIdentifier'),
-                                                 item.get('navigationUrl'),
-                                                 lead.get('publicIdentifier') in item.get('navigationUrl'))
+                                                 item.get('navigationUrl'))
 
                                     image_attributes = item.get('image', {}).get('attributes', [])
 
