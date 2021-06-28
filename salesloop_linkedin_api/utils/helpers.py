@@ -352,6 +352,7 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
 
             mini_profiles = users_data.get('included', {})
             if mini_profiles and isinstance(mini_profiles, list):
+                mini_profiles_skipped = []
                 for item in mini_profiles:
                     item_type = item.get('$type')
 
@@ -359,11 +360,11 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
                         continue
 
                     if item_type in ['com.linkedin.voyager.identity.shared.MiniProfile',
-                                'com.linkedin.voyager.dash.identity.profile.Profile']:
+                                     'com.linkedin.voyager.dash.identity.profile.Profile']:
                         user_public_id = item.get('publicIdentifier')
 
                         if not user_public_id:
-                            logger.debug('No public id found: %s', item)
+                            mini_profiles_skipped.append(item.get('entityUrn'))
                             continue
 
                         if item_type == 'com.linkedin.voyager.dash.identity.profile.Profile':
@@ -374,7 +375,9 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
                         elif user_public_id in users:
                             users[user_public_id].update(item)
                     elif item_type not in ['com.linkedin.voyager.identity.profile.MemberBadges']:
-                        logger.warning('Unknown profile type: %s', item_type)
+                        logger.debug('Unknown profile type: %s', item_type)
+
+                logger.debug('Skipped mini profiles: %s', mini_profiles_skipped)
 
                 # fallback parser, if not users found
                 fallback_profiles_images = {}
