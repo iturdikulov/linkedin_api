@@ -51,6 +51,7 @@ def generate_search_url(linkedin_api, company_leads,
             company_id = None
 
             # Location field
+            id = lead['id']
             country_code = None
             country = None
             region = None
@@ -78,6 +79,7 @@ def generate_search_url(linkedin_api, company_leads,
                     company_id = int(public_id)
 
                 parsed_leads[public_id] = {
+                    'id': id,
                     'name': lead_company_name,
                     'company_id': company_id,
                     'country_code': country_code.lower(),
