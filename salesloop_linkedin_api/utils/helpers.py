@@ -385,7 +385,6 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
                     logger.warning('No found elements with default parser, use fallback users parser')
                     for item in mini_profiles:
                         item_type = item.get('$type')
-                        user_public_id = None
 
                         if item_type == 'com.linkedin.voyager.dash.search.EntityResultViewModel':
                             user_public_id = item.get('publicIdentifier')
