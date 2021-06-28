@@ -396,7 +396,6 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
                                     user_public_id = url_path.path.split("/")[-1]
 
                                     if user_public_id not in users:
-                                        logger.debug('Add %s item to users', item)
                                         users[user_public_id] = item
                                         users[user_public_id]['publicIdentifier'] = user_public_id
 
@@ -408,6 +407,8 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
                         elif item_type == 'com.linkedin.voyager.dash.identity.profile.Profile':
                             if item.get('profilePicture') and item.get('entityUrn'):
                                 fallback_profiles_images[item.get('entityUrn')] = item.get('profilePicture', {}).get('displayImageReference', {}).get('vectorImage')
+
+                    logger.info('Found %d new linkedin users', len(users))
 
                 # fallback parser - elements
                 for key, lead in users.items():
