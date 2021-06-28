@@ -314,7 +314,9 @@ def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_co
                 query_data = '&'.join(["{}={}".format(k, v) for k, v in sub_url_default_params.items()])
                 sub_search_url = f'https://www.linkedin.com/search/results/people/?{query_data}'
 
+            # Fill search urls list
             if sub_search_url:
+                lead['search_url'] = sub_search_url
                 if get_companies:
                     search_urls_list.append((sub_search_url,
                                              lead.get('name')))
