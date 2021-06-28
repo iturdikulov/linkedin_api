@@ -475,8 +475,6 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
             if xstr(lead.get('firstName')) and xstr(lead.get('lastName')):
                 if lead['firstName'].lower().strip() == 'linkedin' \
                    and lead['lastName'].lower().strip() == 'member':
-                    logger.info('Reset lead fullname,'
-                                ' detected default fullname combination %s', lead)
                     lead['firstName'] = ''
                     lead['lastName'] = ''
                 else:
