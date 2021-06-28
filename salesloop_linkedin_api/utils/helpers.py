@@ -617,7 +617,7 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
                     'fullname': i.get('fullname')
                 })
             else:
-                logger.warning('Not enough data to add user: %s', i)
+                logger.warning('Not enough data to add user: %s', i.get('profileLink'))
 
     else:
         parsed_items = []
