@@ -1304,6 +1304,43 @@ class Linkedin(object):
 
         return output_regions
 
+    def reformat_results(self, results):
+        # search public ids if not exists, use same method like in scrapy search
+        processed_results = []
+        for i, lead in enumerate(results):
+            try:
+                if lead.get('entityUrn') and not lead.get('publicIdentifier'):
+                    profile = self.get_profile(urn_id=lead.get('entityUrn'))
+                    lead['publicIdentifier'] = profile.get('publicIdentifier')
+
+                    # fill additional fields
+                    lead['headline'] = profile.get('headline')
+
+                    if 'currentPositions' in lead:
+                        for position in lead['currentPositions']:
+                            if 'companyName' in position:
+                                lead['companyName'] = position['companyName']
+
+                            if 'title' in position:
+                                lead['position'] = position['title']
+                            break
+
+                    processed_results.append(lead)
+                else:
+                    processed_results.append(lead)
+
+            except Exception as e:
+                processed_results.append(lead)
+                logger.warning('Failed get profile data for %s lead', lead,
+                               exc_info=e)
+
+            # evade limit each N requests
+            if i > 0 and randrange(0, 100) < 10:
+                sleep(randrange(10, 15))
+
+        return processed_results
+
+    # TODO: remove this, when ve fix VQ
     def reformat_api_results(self):
         # search public ids if not exists, use same method like in scrapy search
         for i, lead in enumerate(self.results):
