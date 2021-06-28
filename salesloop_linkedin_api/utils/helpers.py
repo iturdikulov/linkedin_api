@@ -488,9 +488,8 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
                     fullname = lead.get('title')
 
                 if xstr(fullname).lower().strip() == 'linkedin member':
+                    logger.debug('Reset lead fullname, detected default fullname combination %s', fullname)
                     fullname = None
-                    logger.info('Reset lead fullname,'
-                                ' detected default fullname combination %s', lead)
 
             if (not lead.get('firstName') or not lead.get('lastName')) and fullname:
                 fullname_parts = fullname.split(' ')
