@@ -987,10 +987,10 @@ class Linkedin(object):
             },
             timeout=timeout)
 
-        data = request_sales_api_identity.json()
+        sales_api_identity_data = request_sales_api_identity.json()
 
-        if data.get('elements'):
-            element = data['elements'][0]
+        if sales_api_identity_data.get('elements'):
+            element = sales_api_identity_data['elements'][0]
             contractData = {'viewerDeviceType': 'DESKTOP',
                             'name': element['name'],
                             'identity': {'agnosticIdentity': element['agnosticIdentity'],
@@ -1031,12 +1031,10 @@ class Linkedin(object):
                            'X-Restli-Protocol-Version': '2.0.0',
                            'X-Requested-With': 'XMLHttpRequest'}
 
-                logger.info('Logging through %s url, using %s headers',
-                            salesApiEnterpriseAuthenticationUrl, headers)
-
                 request_enterprise_auth = self._fetch(salesApiEnterpriseAuthenticationUrl,
                                                       raw_url=True, headers=headers, timeout=timeout)
 
+                logger.info('Sales API - logged through %s url, using %s headers', salesApiEnterpriseAuthenticationUrl, headers)
                 return request_enterprise_auth
 
     def get_leads(self, search_url, is_sales=False, timeout=None, get_raw=False,
