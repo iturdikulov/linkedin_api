@@ -947,15 +947,13 @@ class Linkedin(object):
             return get_id_from_urn(entityUrn)
 
     def sales_login(self, timeout=None):
-        r1 = self._fetch('https://www.linkedin.com/sales/', raw_url=True, timeout=timeout)
-
-        logger.info('Get sales cookies - %s', self.client.session.cookies)
+        request_homepage = self._fetch('https://www.linkedin.com/sales/', raw_url=True, timeout=timeout)
         cookies = requests.utils.dict_from_cookiejar(self.client.session.cookies)
         session_id = cookies.get('JSESSIONID').strip('\"')
         client_page_instance = None
 
         client_page_instance_data_groups = re.search(r'id="clientPageInstance">([\S\s]*?)<\/code>',
-                                                     r1.content.decode())
+                                                     request_homepage.content.decode())
 
         if client_page_instance_data_groups:
             client_page_instance = client_page_instance_data_groups.group(1).strip()
@@ -966,9 +964,11 @@ class Linkedin(object):
                          client_page_instance_data_groups)
             return [], None, {}
 
-        logger.info('r1 headers: %s', r1.headers)
+        if not session_id:
+            logger.error('Session id not found, cookies: %s', cookies)
+            return [], None, {}
 
-        r2 = self._fetch(
+        request_sales_api_identity = self._fetch(
             'https://www.linkedin.com/sales-api/salesApiIdentity?q=findLicensesByCurrentMember',
             raw_url=True,
             headers={
@@ -987,8 +987,7 @@ class Linkedin(object):
             },
             timeout=timeout)
 
-        logger.info('r2 headers: %s', r2.headers)
-        data = r2.json()
+        data = request_sales_api_identity.json()
 
         if data.get('elements'):
             element = data['elements'][0]
@@ -1002,7 +1001,7 @@ class Linkedin(object):
 
             SALES_API_AGONSITC_AUTH_URL = 'https://www.linkedin.com/sales-api/salesApiAgnosticAuthentication?%s' % (
             redirect,)
-            r3 = self._post(
+            request_api_agnostic = self._post(
                 SALES_API_AGONSITC_AUTH_URL,
                 raw_url=True,
                 headers={'Csrf-Token': session_id,
@@ -1016,13 +1015,12 @@ class Linkedin(object):
                 timeout=timeout
             )
 
-            logger.info('r3 headers: %s', r3.headers)
-            location = r3.headers.get('Location')
+            location = request_api_agnostic.headers.get('Location')
 
             if location and 'checkpoint/enterprise/login' in location:
-                r4 = self._fetch(location, raw_url=True, timeout=timeout)
+                request_enterprise_login = self._fetch(location, raw_url=True, timeout=timeout)
 
-                parsedURL = urlparse(r4.url)
+                parsedURL = urlparse(request_enterprise_login.url)
                 parsedUrlQs = parse_qs(parsedURL.query)
                 salesApiEnterpriseAuthenticationUrl = 'https://www.linkedin.com/sales-api/salesApiEnterpriseAuthentication?accountId=%s&appInstanceId=%s&budgetGroupId=%s&licenseType=%s&viewerDeviceType=DESKTOP'
                 salesApiEnterpriseAuthenticationUrl = salesApiEnterpriseAuthenticationUrl % (
@@ -1035,10 +1033,11 @@ class Linkedin(object):
 
                 logger.info('Logging through %s url, using %s headers',
                             salesApiEnterpriseAuthenticationUrl, headers)
-                r5 = self._fetch(salesApiEnterpriseAuthenticationUrl, raw_url=True, headers=headers,
-                                 timeout=timeout)
 
-                return r5
+                request_enterprise_auth = self._fetch(salesApiEnterpriseAuthenticationUrl,
+                                                      raw_url=True, headers=headers, timeout=timeout)
+
+                return request_enterprise_auth
 
     def get_leads(self, search_url, is_sales=False, timeout=None, get_raw=False,
                   send_sn_requests=True):
