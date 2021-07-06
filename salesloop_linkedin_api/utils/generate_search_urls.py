@@ -103,6 +103,7 @@ def generate_search_url(linkedin_api, company_leads,
             return None, None, None
 
         for lead in data:
+            id = str(lead['id'])
             company_name = lead.get('name')
             company_country_code = None
             company_id = None
@@ -120,6 +121,7 @@ def generate_search_url(linkedin_api, company_leads,
 
             if all([company_name, public_id, company_country_code]):
                 parsed_leads[public_id] = {
+                    'id': id,
                     'name': company_name,
                     'company_id': company_id,
                     'country_code': company_country_code,
