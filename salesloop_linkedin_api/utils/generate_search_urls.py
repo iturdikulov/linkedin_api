@@ -8,8 +8,10 @@ from urllib.parse import urlparse, quote, parse_qs
 import pycountry
 import re
 from application.config import Config
+from application.integrations.enums import ServiceType
 
 # TODO - optimize/convert to class?
+
 
 def generate_search_url(linkedin_api, company_leads,
                         title, linkedin_geo_codes_data,
@@ -18,9 +20,9 @@ def generate_search_url(linkedin_api, company_leads,
                         countries_codes=None,
                         max_workers=5,
                         maximum_companies=30,
-                        type='leadfeeder'):
+                        service_type=ServiceType.leadfeeder):
     """
-    :param type: Service type: leadfeeder or visitorqueue
+    :param service_type: Service type: leadfeeder or visitorqueue
     :param maximum_companies: limit maximum leads (companies) from services
     :param max_workers: maximum parallel requests to get company ID using LN Voyager API
     :param linkedin_api: linkedin api method
@@ -40,7 +42,7 @@ def generate_search_url(linkedin_api, company_leads,
         'linkedin_login_email': linkedin_api.username
     }
 
-    if type == 'leadfeeder':
+    if service_type == ServiceType.leadfeeder:
         data = company_leads.get('data')
         included_data = company_leads.get('included')
 
@@ -95,7 +97,7 @@ def generate_search_url(linkedin_api, company_leads,
                 logger.debug('Raised maximum companies - %s, stop.', maximum_companies,
                              extra=log_extra)
                 break
-    elif type == 'visitorqueue':
+    elif service_type == ServiceType.visitorqueue:
         data = company_leads
         if not data:
             return None, None, None
