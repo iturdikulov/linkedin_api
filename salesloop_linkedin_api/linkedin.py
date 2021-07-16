@@ -82,6 +82,11 @@ class Linkedin(object):
         """
         evade()
 
+        if uri == '/relationships/connectionsSummary/':
+            max_time = 20
+        else:
+            max_time = self._get_max_retry_time()
+
         @backoff.on_exception(backoff.expo,
                               (requests.exceptions.Timeout,
                                requests.exceptions.ProxyError,
@@ -89,7 +94,7 @@ class Linkedin(object):
                                requests.exceptions.ReadTimeout,
                                requests.exceptions.HTTPError,
                                requests.exceptions.ConnectionError),
-                              max_time=self._get_max_retry_time,
+                              max_time=max_time,
                               on_backoff=self.backoff_hdlr)
         def fetch_data():
             if raw_url:
