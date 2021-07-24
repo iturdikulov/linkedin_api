@@ -1,17 +1,20 @@
 import requests
 import pickle
 import logging
-logger = logging.getLogger()
 import salesloop_linkedin_api.settings as settings
-from traceback import print_exc
+
+logger = logging.getLogger()
+
 
 class ChallengeException(Exception):
     pass
 
+
 class UnauthorizedException(Exception):
     pass
 
-class Client(object):
+
+class Client:
     """
     Class to act as a client for the Linkedin API.
     """
