@@ -407,11 +407,11 @@ class Linkedin(object):
 
         return profile
 
-    def get_profile_connections(self, urn_id):
+    def get_profile_connections(self, urn_id, limit=None):
         """
         Return a list of profile ids connected to profile of given [urn_id]
         """
-        return self.search_people(connection_of=urn_id, network_depth="F")
+        return self.search_people(connection_of=urn_id, network_depth="F", limit=limit)
 
     def get_company_updates(
         self, public_id=None, urn_id=None, max_results=None, results=[]
