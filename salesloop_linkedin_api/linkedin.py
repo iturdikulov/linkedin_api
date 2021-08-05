@@ -613,7 +613,7 @@ class Linkedin(object):
             else:
                 item["id"] = item_id
         else:
-            item = None
+            item = {}
 
         events = item.get('events')
         if profile_urn_id and events and isinstance(events, list):
