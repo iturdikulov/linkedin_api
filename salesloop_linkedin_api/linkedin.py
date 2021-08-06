@@ -1097,7 +1097,7 @@ class Linkedin(object):
 
         return results
 
-    def connect_with_someone(self, profile_urn_id, message=None, get_json=False):
+    def connect_with_someone(self, profile_urn_id, message=None):
         """
         Send a message to a given conversation. If error, return true.
         generate_tracking_id is not equal to API, gene
@@ -1146,10 +1146,7 @@ class Linkedin(object):
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
         )
 
-        if get_json:
-            return res.status_code != 201, res.status_code, res.json()
-        else:
-            return res.status_code != 201, res.status_code
+        return res.status_code != 201, res.status_code
 
     def remove_connection(self, public_profile_id):
         res = self._post(
