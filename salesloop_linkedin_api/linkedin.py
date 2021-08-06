@@ -1233,7 +1233,6 @@ class Linkedin(object):
 
         return results
 
-
     def get_regions(self):
         """
         Get regions directly from linkedin, typehead API
@@ -1262,10 +1261,8 @@ class Linkedin(object):
                 'dnt': '1',
                 'x-li-lang': 'en_US',
                 'x-li-identity': 'dXJuOmxpOm1lbWJlcjo0MDAzMTE2Nzc',
-                'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36',
                 'x-li-page-instance': 'urn:li:page:d_sales2_search_people;g//MAJuSRwe6HvmrIEQK5g==',
                 'accept': '*/*',
-                'csrf-token': 'ajax:3360386482326297507',
                 'x-restli-protocol-version': '2.0.0',
                 'x-requested-with': 'XMLHttpRequest',
                 'sec-fetch-site': 'same-origin',
@@ -1273,7 +1270,6 @@ class Linkedin(object):
                 'sec-fetch-dest': 'empty',
                 'referer': 'https://www.linkedin.com/sales/search/people?preserveScrollPosition=true&selectedFilter=GE&viewAllFilters=true',
                 'accept-language': 'en-GB,en;q=0.9,ru;q=0.8,en-US;q=0.7',
-                'cookie': 'lissc=1; _ga=GA1.2.817185630.1595680069; bcookie="v=2&b267a042-616b-4b2f-8f12-4ae0b00f680c"; bscookie="v=1&202007251227483dda7178-a9b8-463e-87c5-fae71bfdf470AQGkrNKYdMPgidyycTCXDN0WiDwAQPLB"; AMCVS_14215E3D5995C57C0A495C55%40AdobeOrg=1; at_check=true; s_cc=true; s_sq=%5B%5BB%5D%5D; mbox=session#bc48aa41231441398889d03093010aed#1595681932|PC#bc48aa41231441398889d03093010aed.37_0#1611232078; aam_uuid=72341840729918861820283121381195274571; li_rm=AQEbogJ3c4XCfQAAAXOF8fMVKJL8RSpaPKWioqVI6ECB4vwm7knvwvQEaqm8AuZJBk3bnhFXv2NpPTtOWAR3mxNLDSpqKIjjCWADG0VwU7WH7uGhVgj3jTHl; spectroscopyId=a5078f81-bc27-41af-a711-227e63e115f5; _guid=f478b4d7-8a29-439f-b233-04efaeeabbd7; PLAY_LANG=en; sdsc=1%3A1SZM1shxDNbLt36wZwCgPgvN58iw%3D; g_state={"i_l":0}; visit=v=1&M; JSESSIONID="ajax:3360386482326297507"; PLAY_SESSION=eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjp7InNlc3Npb25faWQiOiI3MDNjYzllMC1lMjhjLTQ3YmUtYjM4Ny01ZGQ0ODhlOGRlNzZ8MTU5NzI0MTAzNiIsInJlY2VudGx5LXNlYXJjaGVkIjoiIiwicmVmZXJyYWwtdXJsIjoiaHR0cHM6Ly93d3cuZ29vZ2xlLmNvbS8iLCJhaWQiOiIiLCJSTlQtaWQiOiJ8MCIsInJlY2VudGx5LXZpZXdlZCI6IjUwfDYwIiwiQ1BULWlkIjoiTlhGwqbDmUBdwrZvw5rCrTLCi1wiw7HCrSIsImV4cGVyaWVuY2UiOiJicm93c2UiLCJpc19uYXRpdmUiOiJmYWxzZSIsIndoaXRlbGlzdCI6Int9IiwidHJrIjoiIn0sIm5iZiI6MTU5NzI0MTA0NSwiaWF0IjoxNTk3MjQxMDQ1fQ.z0gkmgyyEKS317w--nerjADioRN6p5hSL9Uzh_KHIWM; _gid=GA1.2.1667230570.1597332167; SID=2c815bd8-cc49-4861-8e8e-937459ff91a1; VID=V_2020_08_13_20_99; li_at=AQEDARfcRX0CJ3hDAAABc-nSTPUAAAF0Dd7Q9U0AxW5nioq7GQ3aOYtJ796SZ-ruP2WWLFmaFc6Ngp5GnpLZXgWSa9DOxRNRDFsbGi0xaBkJaYE2dCFby3EPXxQyNtrjlnha9TeuN6oZHaQGJf5sxNq4; liap=true; lang=v=2&lang=en-us; li_a=AQJ2PTEmc2FsZXNfY2lkPTc1NzYyNzUwNSUzQSUzQTIwNDQxNDIwNfj1Et6cQqlojVhAGuYFOZP3HTSk; UserMatchHistory=AQLUjq0xlql-RgAAAXPtlWl2l8b6Z_KYEARu7XWsgZeNuRfwprxW5Uz5C6Mb0UmRnUCvw-9NaQiFhgBsoxd6gdd5gTKIIktaPYNUdptn-31g4AJcx6ZBquMG8It1NVn0qCV6x47XiYquS-8MnMDD9TI8028MmnL2d5SM3_-G8kmUvyTUUnCaYKw2aIyCQgb1VZARP0de2bCZNqQR-7FqMtdz7Mjr1QXmC1GB8C9V-Ojy0--aoNZFblDUX04zZYCsjsQeyCM; UserMatchHistory=AQIeIn6vjq-1JwAAAXPtlXMDHX-673nLhbkEbC6BRunYdON5ArvFoHLYrk3Bf6OE3oOBvWMK0TUxMIvMluZbTOmm9RAoCdo7H4CLvkg_Aihg7g; li_oatml=AQGe_pm9dp8lvgAAAXPtlXUVVH6Zr49QbRZr3XA13k46feZnY8t0TQooOpSmj6o7MlySjoyfU1AoXJfxFKKIFmJoG-9j9XtL; AMCV_14215E3D5995C57C0A495C55%40AdobeOrg=-408604571%7CMCIDTS%7C18488%7CMCMID%7C72541238052820563650226013797033486976%7CMCAAMLH-1598023657%7C6%7CMCAAMB-1598023657%7CRKhpRz8krg2tLO6pguXWp5olkAcUniQYPHaMWWgdJ3xzPWQmdj0y%7CMCOPTOUT-1597426057s%7CNONE%7CvVersion%7C4.6.0%7CMCCIDH%7C1796929203; lidc="b=VB77:s=V:r=V:g=2573:u=275:i=1597418872:t=1597504802:v=1:sig=AQGUSYD1OP1Yl63RaXeJXY9EJXE4nZSr"',
             }
 
             params = (
@@ -1284,8 +1280,8 @@ class Linkedin(object):
                 ('query', region_name),
             )
 
-            res = requests.get('https://www.linkedin.com/sales-api/salesApiFacetTypeahead',
-                                    headers=headers, params=params)
+            res = self._fetch('https://www.linkedin.com/sales-api/salesApiFacetTypeahead',
+                                    headers=headers, params=params, raw_url=True)
 
             data = res.json()
             elements = data.get('elements', [])
