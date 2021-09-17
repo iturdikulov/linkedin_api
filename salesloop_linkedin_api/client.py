@@ -50,7 +50,16 @@ class Client:
         "Accept-Language": "en-us",
     }
 
-    def __init__(self, *, debug=False, refresh_cookies=False, proxies={}, cookies=None, api_cookies=None, ua=None):
+    def __init__(
+        self,
+        *,
+        debug=False,
+        refresh_cookies=False,
+        proxies=None,
+        cookies=None,
+        api_cookies=None,
+        ua=None,
+    ):
         self.session = requests.session()
         self.session.max_redirects = 5
 
@@ -86,7 +95,7 @@ class Client:
         res = requests.get(
             f"{Client.AUTH_BASE_URL}/uas/authenticate",
             headers=Client.AUTH_REQUEST_HEADERS,
-            proxies=self.proxies
+            proxies=self.proxies,
         )
 
         return res.cookies
