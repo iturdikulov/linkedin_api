@@ -106,9 +106,7 @@ class Client:
         """
         self.session.cookies = cookiejar
         cookiejar_dict = requests.utils.dict_from_cookiejar(cookiejar)
-        self.session.headers["csrf-token"] = cookiejar_dict["JSESSIONID"].strip(
-            '"'
-        )
+        self.session.headers["csrf-token"] = cookiejar_dict["JSESSIONID"].strip('"')
 
     @property
     def cookies(self):
@@ -116,7 +114,7 @@ class Client:
 
     def alternate_authenticate(self):
         self._set_session_cookies(self._request_session_cookies())
-        self.logger.info('Used cached cookies!')
+        self.logger.info("Used cached cookies!")
         self.api_cookies = pickle.dumps(self.session.cookies, pickle.HIGHEST_PROTOCOL)
         self.api_headers = pickle.dumps(self.session.headers, pickle.HIGHEST_PROTOCOL)
 
@@ -140,13 +138,13 @@ class Client:
             cookies=self.session.cookies,
             headers=Client.AUTH_REQUEST_HEADERS,
             proxies=self.proxies,
-            timeout=settings.LOGIN_TIMEOUT
+            timeout=settings.LOGIN_TIMEOUT,
         )
 
         data = res.json()
 
         if data and data["login_result"] != "PASS":
-            self.logger.warning('Linkedin auth error, username: %s, data: %s', username, data)
+            self.logger.warning("Linkedin auth error, username: %s, data: %s", username, data)
             raise ChallengeException(data["login_result"])
 
         if res.status_code == 401:
