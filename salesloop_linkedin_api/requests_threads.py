@@ -2,11 +2,12 @@
 # https://github.com/requests/requests-threads
 
 import inspect
+
+from requests import Session
+from twisted.internet import task
 from twisted.internet import threads
 from twisted.internet.defer import ensureDeferred
 from twisted.internet.error import ReactorAlreadyInstalledError
-from twisted.internet import task
-from requests import Session
 
 
 class AsyncSession(Session):
@@ -43,9 +44,11 @@ class AsyncSession(Session):
         if reactor is None:
             try:
                 import asyncio
+
                 loop = loop or asyncio.get_event_loop()
                 try:
                     from twisted.internet import asyncioreactor
+
                     asyncioreactor.install(loop)
                 except (ReactorAlreadyInstalledError, ImportError):
                     pass
@@ -55,6 +58,7 @@ class AsyncSession(Session):
             # Adjust the pool size, according to n.
             if n:
                 from twisted.internet import reactor
+
                 pool = reactor.getThreadPool()
                 pool.adjustPoolsize(0, n)
 
@@ -72,11 +76,13 @@ class AsyncSession(Session):
 
     def run(self, f):
         # Python 3 only.
-        if hasattr(inspect, 'iscoroutinefunction'):
+        if hasattr(inspect, "iscoroutinefunction"):
             # Is this a coroutine?
             if inspect.iscoroutinefunction(f):
+
                 def w(reactor):
                     return self.wrap(f())
+
                 # If so, convert coroutine to Deferred automatically.
                 return task.react(w)
         else:
