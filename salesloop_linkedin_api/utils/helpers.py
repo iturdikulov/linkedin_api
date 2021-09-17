@@ -1,16 +1,15 @@
-from time import sleep
-import lxml.html as LH
-import re
-from re import finditer
-from traceback import print_exc
-import logging
-from urllib.parse import urlparse, quote
-import json
-from time import sleep
-import random
-import string
 import base64
+import json
+import logging
+import random
+import re
+import string
+from re import finditer
+from time import sleep
+from traceback import print_exc
+from urllib.parse import urlparse, quote
 
+import lxml.html as LH
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('application')
