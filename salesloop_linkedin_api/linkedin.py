@@ -1,29 +1,37 @@
 """
 Provides linkedin api-related code
 """
+import json
+import logging
+import pickle
 import random
+import re
+from os.path import isfile
+from pathlib import Path
+from random import randrange
 from time import sleep
 from urllib import parse as urlparse
 from urllib.parse import urlencode
-import json
-from .utils.helpers import parse_search_hits, get_default_regions, default_evade, get_random_base64, get_leads_from_html, get_pagination_data
-from salesloop_linkedin_api.utils.helpers import get_id_from_urn
-from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url, \
-    is_filtered_default_search
-from pathlib import Path
-from salesloop_linkedin_api.client import Client
-from os.path import isfile
 from urllib.parse import urlparse, parse_qs
-import salesloop_linkedin_api.settings as settings
-import requests
-import re
-import pickle
-import logging
+
 import backoff
-from random import randrange
+import requests
+
+import salesloop_linkedin_api.settings as settings
+from salesloop_linkedin_api.client import Client
+from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url
+from salesloop_linkedin_api.utils.helpers import (
+    parse_search_hits,
+    get_default_regions,
+    default_evade,
+    get_random_base64,
+    get_leads_from_html,
+    get_pagination_data,
+    get_id_from_urn,
+)
 
 logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger('application')
+logger = logging.getLogger("application")
 
 
 class Linkedin(object):
