@@ -1,6 +1,8 @@
-import requests
-import pickle
 import logging
+import pickle
+
+import requests
+
 import salesloop_linkedin_api.settings as settings
 
 logger = logging.getLogger()
