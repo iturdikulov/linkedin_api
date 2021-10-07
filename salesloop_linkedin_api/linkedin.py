@@ -813,8 +813,7 @@ class Linkedin(object):
             f"/relationships/sentInvitationViewsV2", params=params
         )
 
-        if res.status_code != 200:
-            return []
+        res.raise_for_status()
 
         response_payload = res.json()
         return [element["invitation"] for element in response_payload["elements"]]
