@@ -219,9 +219,7 @@ class Linkedin(object):
             # NOTE: we could also check for the `total` returned in the response.
             # This is in data["data"]["paging"]["total"]
             if (
-                (
-                    limit > -1 and len(results) >= limit
-                )  # if our results exceed set limit
+                (limit > -1 and len(results) >= limit)  # if our results exceed set limit
                 or len(results) / count >= Linkedin._MAX_REPEATED_REQUESTS
             ) or len(new_elements) == 0:
                 break
@@ -444,9 +442,7 @@ class Linkedin(object):
         """
         return self.search_people(connection_of=urn_id, network_depth="F", limit=limit)
 
-    def get_company_updates(
-        self, public_id=None, urn_id=None, max_results=None, results=[]
-    ):
+    def get_company_updates(self, public_id=None, urn_id=None, max_results=None, results=[]):
         """
         Return a list of company posts
 
@@ -482,9 +478,7 @@ class Linkedin(object):
             public_id=public_id, urn_id=urn_id, results=results, max_results=max_results
         )
 
-    def get_profile_updates(
-        self, public_id=None, urn_id=None, max_results=None, results=[]
-    ):
+    def get_profile_updates(self, public_id=None, urn_id=None, max_results=None, results=[]):
         """
         Return a list of profile posts
 
