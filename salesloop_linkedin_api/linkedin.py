@@ -235,8 +235,9 @@ class Linkedin(object):
         Do a people search using voyager/api/search/dash/cluster
         """
 
-        url_params_str = '&'.join(
-            [f"{k}={v}" for k, v in generate_clusters_search_url(linkedin_url).items()])
+        url_params_str = "&".join(
+            [f"{k}={v}" for k, v in generate_clusters_search_url(linkedin_url).items()]
+        )
 
         res = self._fetch(
             f"/search/dash/clusters?{url_params_str}",
@@ -285,7 +286,7 @@ class Linkedin(object):
         if schools:
             filters.append(f'schools->{"|".join(schools)}')
         if title:
-            filters.append(f'title->{title}')
+            filters.append(f"title->{title}")
 
         params = {"filters": "List({})".format(",".join(filters))}
 
@@ -324,9 +325,7 @@ class Linkedin(object):
         [public_id] - public identifier i.e. tom-quirk-1928345
         [urn_id] - id provided by the related URN
         """
-        res = self._fetch(
-            f"/identity/profiles/{public_id or urn_id}/profileContactInfo"
-        )
+        res = self._fetch(f"/identity/profiles/{public_id or urn_id}/profileContactInfo")
         data = res.json()
 
         contact_info = {
@@ -363,9 +362,7 @@ class Linkedin(object):
         [urn_id] - id provided by the related URN
         """
         params = {"count": 100, "start": 0}
-        res = self._fetch(
-            f"/identity/profiles/{public_id or urn_id}/skills", params=params
-        )
+        res = self._fetch(f"/identity/profiles/{public_id or urn_id}/skills", params=params)
         data = res.json()
 
         skills = data.get("elements", [])
@@ -398,7 +395,7 @@ class Linkedin(object):
                     "com.linkedin.common.VectorImage"
                 ]["rootUrl"]
             profile["profile_id"] = get_id_from_urn(profile["miniProfile"]["entityUrn"])
-            profile['publicIdentifier'] = profile["miniProfile"].get("publicIdentifier")
+            profile["publicIdentifier"] = profile["miniProfile"].get("publicIdentifier")
 
             del profile["miniProfile"]
 
@@ -450,7 +447,7 @@ class Linkedin(object):
     def get_company_updates(
         self, public_id=None, urn_id=None, max_results=None, results=[]
     ):
-        """"
+        """
         Return a list of company posts
 
         [public_id] - public identifier ie - microsoft
@@ -488,7 +485,7 @@ class Linkedin(object):
     def get_profile_updates(
         self, public_id=None, urn_id=None, max_results=None, results=[]
     ):
-        """"
+        """
         Return a list of profile posts
 
         [public_id] - public identifier i.e. tom-quirk-1928345
@@ -601,18 +598,13 @@ class Linkedin(object):
                             "com.linkedin.voyager.messaging.create.MessageCreate": {
                                 "body": message_body,
                                 "attachments": [],
-                                "attributedBody": {
-                                    "attributes": [],
-                                    "text": message_body
-                                }
+                                "attributedBody": {"attributes": [], "text": message_body},
                             }
                         }
                     },
-                    "recipients": [
-                        entity_urn
-                    ],
-                    "subtype": "MEMBER_TO_MEMBER"
-                }
+                    "recipients": [entity_urn],
+                    "subtype": "MEMBER_TO_MEMBER",
+                },
             }
         )
 
@@ -638,7 +630,7 @@ class Linkedin(object):
         latest_reply_from_recipient = False
         only_first_message_found = None
 
-        if data.get('elements'):
+        if data.get("elements"):
             item = data["elements"][0]
             item_id = get_id_from_urn(item["entityUrn"])
             if get_id:
@@ -649,18 +641,21 @@ class Linkedin(object):
         else:
             item = {}
 
-        events = item.get('events')
+        events = item.get("events")
         if profile_urn_id and events and isinstance(events, list):
             latest_event = events[-1]
-            current_participant = latest_event.get('from', {}).get(
-                'com.linkedin.voyager.messaging.MessagingMember', {}).get('miniProfile', {})
+            current_participant = (
+                latest_event.get("from", {})
+                .get("com.linkedin.voyager.messaging.MessagingMember", {})
+                .get("miniProfile", {})
+            )
 
-            from_urn_id = current_participant.get('entityUrn')
+            from_urn_id = current_participant.get("entityUrn")
             if profile_urn_id == get_id_from_urn(from_urn_id):
                 latest_reply_from_recipient = True
 
-            first_message_urn = item.get('firstMessageUrn')
-            latest_message_urn = latest_event.get('entityUrn')
+            first_message_urn = item.get("firstMessageUrn")
+            latest_message_urn = latest_event.get("entityUrn")
 
             if first_message_urn and latest_message_urn:
                 if first_message_urn == latest_message_urn:
@@ -669,10 +664,10 @@ class Linkedin(object):
                     only_first_message_found = False
 
         return {
-            'details': item,
-            'total_events': item.get('totalEventCount'),
-            'latest_reply_from_recipient': latest_reply_from_recipient,
-            'only_first_message_found': only_first_message_found
+            "details": item,
+            "total_events": item.get("totalEventCount"),
+            "latest_reply_from_recipient": latest_reply_from_recipient,
+            "only_first_message_found": only_first_message_found,
         }
 
     def get_conversations(self, createdBefore=None):
@@ -680,15 +675,9 @@ class Linkedin(object):
         Return list of conversations the user is in.
         """
         if not createdBefore:
-            params = {
-                "keyVersion": "LEGACY_INBOX",
-                "count": 20
-            }
+            params = {"keyVersion": "LEGACY_INBOX", "count": 20}
         else:
-            params = {
-                "keyVersion": "LEGACY_INBOX",
-                "createdBefore": createdBefore
-            }
+            params = {"keyVersion": "LEGACY_INBOX", "createdBefore": createdBefore}
 
         res = self._fetch(f"/messaging/conversations", params=params)
 
@@ -702,7 +691,9 @@ class Linkedin(object):
 
         return res.json()
 
-    def send_message(self, conversation_urn_id=None, recipients=[], message_body=None, parse_urn_id=False):
+    def send_message(
+        self, conversation_urn_id=None, recipients=[], message_body=None, parse_urn_id=False
+    ):
         """
         Send a message to a given conversation. If error, return true.
 
@@ -744,9 +735,7 @@ class Linkedin(object):
                 "keyVersion": "LEGACY_INBOX",
                 "conversationCreate": message_event,
             }
-            res = self._post(
-                f"/messaging/conversations", params=params, data=json.dumps(payload)
-            )
+            res = self._post(f"/messaging/conversations", params=params, data=json.dumps(payload))
 
             return res.status_code == 201
 
@@ -756,14 +745,12 @@ class Linkedin(object):
         """
         payload = json.dumps({"patch": {"$set": {"read": True}}})
 
-        res = self._post(
-            f"/messaging/conversations/{conversation_urn_id}", data=payload
-        )
+        res = self._post(f"/messaging/conversations/{conversation_urn_id}", data=payload)
 
         return res.status_code != 200
 
     def get_user_profile(self):
-        """"
+        """
         Return current user profile
         """
         res = self._fetch(f"/me")
@@ -772,50 +759,55 @@ class Linkedin(object):
         return data
 
     def get_premium_subscription(self):
-        """"
+        """
         Return current user profile
         """
         random_page_instance_postfix = get_random_base64()
-        res = self._fetch(f"https://www.linkedin.com/psettings/premium-subscription?asJson=true",
-                          raw_url=True, headers={
-            'authority': 'www.linkedin.com',
-            'accept': 'application/json, text/javascript, */*; q=0.01',
-            'dnt': '1',
-            'x-requested-with': 'XMLHttpRequest',
-            'x-li-page-instance': f'urn:li:page:psettings-premium-subscription;{random_page_instance_postfix}',
-            'sec-fetch-site': 'same-origin',
-            'sec-fetch-mode': 'cors',
-            'sec-fetch-dest': 'empty',
-            'referer': 'https://www.linkedin.com/',
-            'accept-language': 'en,en-GB;q=0.9,en;q=0.8,en-US;q=0.7',
-        })
+        res = self._fetch(
+            f"https://www.linkedin.com/psettings/premium-subscription?asJson=true",
+            raw_url=True,
+            headers={
+                "authority": "www.linkedin.com",
+                "accept": "application/json, text/javascript, */*; q=0.01",
+                "dnt": "1",
+                "x-requested-with": "XMLHttpRequest",
+                "x-li-page-instance": f"urn:li:page:psettings-premium-subscription;{random_page_instance_postfix}",
+                "sec-fetch-site": "same-origin",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-dest": "empty",
+                "referer": "https://www.linkedin.com/",
+                "accept-language": "en,en-GB;q=0.9,en;q=0.8,en-US;q=0.7",
+            },
+        )
         data = res.json()
 
         return data
 
-
     def get_billings(self):
-        """"
-         Return current user billings
-         """
-        res = self._fetch(f"https://www.linkedin.com/psettings/premium-subscription/billings",
-                          raw_url=True, headers={
-            'authority': 'www.linkedin.com',
-            'pragma': 'no-cache',
-            'cache-control': 'no-cache',
-            'accept': '*/*',
-            'dnt': '1',
-            'x-requested-with': 'XMLHttpRequest',
-            'sec-fetch-site': 'same-origin',
-            'sec-fetch-mode': 'cors',
-            'sec-fetch-dest': 'empty',
-            'referer': 'https://www.linkedin.com/',
-        })
+        """ "
+        Return current user billings
+        """
+        res = self._fetch(
+            f"https://www.linkedin.com/psettings/premium-subscription/billings",
+            raw_url=True,
+            headers={
+                "authority": "www.linkedin.com",
+                "pragma": "no-cache",
+                "cache-control": "no-cache",
+                "accept": "*/*",
+                "dnt": "1",
+                "x-requested-with": "XMLHttpRequest",
+                "sec-fetch-site": "same-origin",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-dest": "empty",
+                "referer": "https://www.linkedin.com/",
+            },
+        )
         data = res.json()
         return data
 
     def get_user_panels(self):
-        """"
+        """
         Return current user profile
         """
         res = self._fetch(f"/identity/panels")
@@ -830,14 +822,12 @@ class Linkedin(object):
         """
         params = {
             "count": limit,
-            "invitationType": 'CONNECTION',
+            "invitationType": "CONNECTION",
             "q": "invitationType",
             "start": start,
         }
 
-        res = self._fetch(
-            f"/relationships/sentInvitationViewsV2", params=params
-        )
+        res = self._fetch(f"/relationships/sentInvitationViewsV2", params=params)
 
         res.raise_for_status()
 
@@ -855,9 +845,7 @@ class Linkedin(object):
             "q": "receivedInvitation",
         }
 
-        res = self._fetch(
-            f"/relationships/invitationViews", params=params
-        )
+        res = self._fetch(f"/relationships/invitationViews", params=params)
 
         if res.status_code != 200:
             return []
@@ -869,9 +857,7 @@ class Linkedin(object):
         """
         Return list of new invites
         """
-        res = self._fetch(
-            f"/relationships/invitationsSummary"
-        )
+        res = self._fetch(f"/relationships/invitationsSummary")
 
         if res.status_code != 200:
             return []
@@ -879,9 +865,7 @@ class Linkedin(object):
         response_payload = res.json()
         return response_payload
 
-    def reply_invitation(
-        self, invitation_entity_urn, invitation_shared_secret, action="accept"
-    ):
+    def reply_invitation(self, invitation_entity_urn, invitation_shared_secret, action="accept"):
         """
         Reply to an invite, the default is to accept the invitation.
         @Param: invitation_entity_urn: str
@@ -914,115 +898,122 @@ class Linkedin(object):
             else Linkedin._MAX_SEARCH_COUNT
         )
 
-        default_params = {
-            "count": count,
-            "start": len(results),
-            "sortType": "RECENTLY_ADDED"
-        }
+        default_params = {"count": count, "start": len(results), "sortType": "RECENTLY_ADDED"}
 
-        res = self._fetch(
-            f"/relationships/connections?" + urlencode(default_params)
-        )
+        res = self._fetch(f"/relationships/connections?" + urlencode(default_params))
 
         data = res.json()
         total_found = data.get("paging", {}).get("count")
 
         # recursive base case
         if (
-                len(data["elements"]) == 0
-                or (max_results and len(results) >= max_results)
-                or total_found is None
-                or (max_results is not None and len(results) / max_results >= Linkedin._MAX_REPEATED_REQUESTS)
+            len(data["elements"]) == 0
+            or (max_results and len(results) >= max_results)
+            or total_found is None
+            or (
+                max_results is not None
+                and len(results) / max_results >= Linkedin._MAX_REPEATED_REQUESTS
+            )
         ):
             if max_results and (len(results) > max_results):
                 results = results[:max_results]
 
             return results
 
-        if data and data.get('elements'):
-            connections_list = data.get('elements')
+        if data and data.get("elements"):
+            connections_list = data.get("elements")
             connections = []
             logger.debug('Found %d elements', len(connections_list))
             if only_urn:
                 for profile in connections_list:
-                    connections.append({
-                        'publicIdentifier': profile.get('miniProfile', {}).get('publicIdentifier'),
-                        'entityUrn': get_id_from_urn(profile['entityUrn'])
-                    })
+                    connections.append(
+                        {
+                            "publicIdentifier": profile.get("miniProfile", {}).get(
+                                "publicIdentifier"
+                            ),
+                            "entityUrn": get_id_from_urn(profile["entityUrn"]),
+                        }
+                    )
             else:
                 for profile in connections_list:
-                    current_profile_info = profile.get('miniProfile', {})
+                    current_profile_info = profile.get("miniProfile", {})
                     if current_profile_info:
-                        current_profile_info = {k: v for k, v in current_profile_info.items() if k not in
-                                                [
-                                                    'firstName',
-                                                    'lastName',
-                                                    'occupation',
-                                                    'picture',
-                                                ]}
+                        current_profile_info = {
+                            k: v
+                            for k, v in current_profile_info.items()
+                            if k
+                            not in [
+                                "firstName",
+                                "lastName",
+                                "occupation",
+                                "picture",
+                            ]
+                        }
                         connections.append(current_profile_info)
 
             results = results + connections
 
-        sleep(
-            random.randint(1, 40)
-        )
+        sleep(random.randint(1, 40))
 
-        return self.get_profile_connections_raw(max_results=max_results, results=results, only_urn=only_urn)
+        return self.get_profile_connections_raw(
+            max_results=max_results, results=results, only_urn=only_urn
+        )
 
     def get_current_profile_urn(self, public_id=None):
         """
         Get profile view statistics, including chart data.
         """
-        network_info = self._fetch(
-            f"/identity/profiles/{public_id}/networkinfo"
-        )
+        network_info = self._fetch(f"/identity/profiles/{public_id}/networkinfo")
 
         network_info_data = network_info.json()
-        entityUrn = network_info_data.get('entityUrn')
+        entityUrn = network_info_data.get("entityUrn")
 
         if entityUrn:
             return get_id_from_urn(entityUrn)
 
     def requiter_login(self, timeout=None):
         # Get session_id and client page instance data for login process
-        home_page_request = self._fetch('https://www.linkedin.com/talent/contract-chooser?autoLogin=true&'
-                                        'trk=nav_account_sub_nav_cap&lipi=urn%3Ali%3Apage%3Ad_flagship3_feed%3BfUOiERNPToCg3iRq9UyKew%3D%3D&licu=urn%3Ali%3Acontrol%3Ad_flagship3_feed-nav_recruiter', raw_url=True, timeout=timeout)
+        home_page_request = self._fetch(
+            "https://www.linkedin.com/talent/contract-chooser?autoLogin=true&"
+            "trk=nav_account_sub_nav_cap&lipi=urn%3Ali%3Apage%3Ad_flagship3_feed%3BfUOiERNPToCg3iRq9UyKew%3D%3D&licu=urn%3Ali%3Acontrol%3Ad_flagship3_feed-nav_recruiter",
+            raw_url=True,
+            timeout=timeout,
+        )
         home_page_request.raise_for_status()
 
         cookies = requests.utils.dict_from_cookiejar(self.client.session.cookies)
-        session_id = cookies.get('JSESSIONID').strip('"')
-        client_page_group = re.search(r'id="clientPageInstance">([\S\s]*?)</code>', home_page_request.content.decode())
+        session_id = cookies.get("JSESSIONID").strip('"')
+        client_page_group = re.search(
+            r'id="clientPageInstance">([\S\s]*?)</code>', home_page_request.content.decode()
+        )
 
         try:
-             client_page_instance = client_page_group.group(1).strip()
+            client_page_instance = client_page_group.group(1).strip()
         except IndexError:
-             client_page_instance = None
+            client_page_instance = None
 
-         # Send login request
+        # Send login request
         if session_id and client_page_instance:
             headers = {
-                'authority': 'www.linkedin.com',
-                'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="92"',
-                'x-restli-protocol-version': '2.0.0',
-                'x-li-lang': 'en_US',
-                'sec-ch-ua-mobile': '?0',
-                'x-li-page-instance': client_page_instance,
-                'content-type': 'application/json; charset=UTF-8',
-                'accept': 'application/json',
-                'csrf-token': session_id,
-                'x-li-track': '{"clientVersion":"1.1.7760","mpVersion":"1.1.7760","osName":"web","timezoneOffset":3,"timezone":"Europe/Moscow","mpName":"talent-solutions-web","displayDensity":2,"displayWidth":3840,"displayHeight":2160}',
-                'origin': 'https://www.linkedin.com',
-                'sec-fetch-site': 'same-origin',
-                'sec-fetch-mode': 'cors',
-                'sec-fetch-dest': 'empty',
-                'referer': 'https://www.linkedin.com/talent/contract-chooser',
-                'accept-language': 'en-US,en;q=0.9,ru;q=0.8',
+                "authority": "www.linkedin.com",
+                "sec-ch-ua": '" Not A;Brand";v="99", "Chromium";v="92"',
+                "x-restli-protocol-version": "2.0.0",
+                "x-li-lang": "en_US",
+                "sec-ch-ua-mobile": "?0",
+                "x-li-page-instance": client_page_instance,
+                "content-type": "application/json; charset=UTF-8",
+                "accept": "application/json",
+                "csrf-token": session_id,
+                "x-li-track": '{"clientVersion":"1.1.7760","mpVersion":"1.1.7760","osName":"web","timezoneOffset":3,"timezone":"Europe/Moscow","mpName":"talent-solutions-web","displayDensity":2,"displayWidth":3840,"displayHeight":2160}',
+                "origin": "https://www.linkedin.com",
+                "sec-fetch-site": "same-origin",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-dest": "empty",
+                "referer": "https://www.linkedin.com/talent/contract-chooser",
+                "accept-language": "en-US,en;q=0.9,ru;q=0.8",
             }
 
-            params = (
-                ('action', 'login'),
-            )
+            params = (("action", "login"),)
 
             data = '{"contract":"urn:li:ts_contract:309649621"}'
 
