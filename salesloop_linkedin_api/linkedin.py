@@ -1067,99 +1067,127 @@ class Linkedin(object):
         return False
 
     def sales_login(self, timeout=None):
-        request_homepage = self._fetch('https://www.linkedin.com/sales/', raw_url=True, timeout=timeout)
+        request_homepage = self._fetch(
+            "https://www.linkedin.com/sales/", raw_url=True, timeout=timeout
+        )
         cookies = requests.utils.dict_from_cookiejar(self.client.session.cookies)
-        session_id = cookies.get('JSESSIONID').strip('\"')
+        session_id = cookies.get("JSESSIONID").strip('"')
         client_page_instance = None
 
-        client_page_instance_data_groups = re.search(r'id="clientPageInstance">([\S\s]*?)<\/code>',
-                                                     request_homepage.content.decode())
+        client_page_instance_data_groups = re.search(
+            r'id="clientPageInstance">([\S\s]*?)<\/code>', request_homepage.content.decode()
+        )
 
         if client_page_instance_data_groups:
             client_page_instance = client_page_instance_data_groups.group(1).strip()
-            logger.info('Page instance: %s', client_page_instance)
+            logger.info("Page instance: %s", client_page_instance)
 
         if not client_page_instance:
-            logger.error('No client_page_instance_data_groups groups found %s',
-                         client_page_instance_data_groups)
+            logger.error(
+                "No client_page_instance_data_groups groups found %s",
+                client_page_instance_data_groups,
+            )
             return [], None, {}
 
         if not session_id:
-            logger.error('Session id not found, cookies: %s', cookies)
+            logger.error("Session id not found, cookies: %s", cookies)
             return [], None, {}
 
         request_sales_api_identity = self._fetch(
-            'https://www.linkedin.com/sales-api/salesApiIdentity?q=findLicensesByCurrentMember',
+            "https://www.linkedin.com/sales-api/salesApiIdentity?q=findLicensesByCurrentMember",
             raw_url=True,
             headers={
-                'dnt': '1',
-                'accept-encoding': 'gzip, deflate, br',
-                'x-li-lang': 'en_US',
-                'accept-language': 'en-US,en;q=0.9',
-                'x-requested-with': 'XMLHttpRequest',
-                'pragma': 'no-cache',
-                'accept': '*/*',
-                'cache-control': 'no-cache',
-                'x-restli-protocol-version': '2.0.0',
-                'authority': 'www.linkedin.com',
-                'referer': 'https://www.linkedin.com/sales/',
-                'Csrf-Token': session_id
+                "dnt": "1",
+                "accept-encoding": "gzip, deflate, br",
+                "x-li-lang": "en_US",
+                "accept-language": "en-US,en;q=0.9",
+                "x-requested-with": "XMLHttpRequest",
+                "pragma": "no-cache",
+                "accept": "*/*",
+                "cache-control": "no-cache",
+                "x-restli-protocol-version": "2.0.0",
+                "authority": "www.linkedin.com",
+                "referer": "https://www.linkedin.com/sales/",
+                "Csrf-Token": session_id,
             },
-            timeout=timeout)
+            timeout=timeout,
+        )
 
         sales_api_identity_data = request_sales_api_identity.json()
 
-        if sales_api_identity_data.get('elements'):
-            element = sales_api_identity_data['elements'][0]
-            contractData = {'viewerDeviceType': 'DESKTOP',
-                            'name': element['name'],
-                            'identity': {'agnosticIdentity': element['agnosticIdentity'],
-                                         'name': element['name']}}
+        if sales_api_identity_data.get("elements"):
+            element = sales_api_identity_data["elements"][0]
+            contractData = {
+                "viewerDeviceType": "DESKTOP",
+                "name": element["name"],
+                "identity": {
+                    "agnosticIdentity": element["agnosticIdentity"],
+                    "name": element["name"],
+                },
+            }
 
-            redirect = '/sales/search'
-            redirect = urlencode({'redirect': redirect})
+            redirect = "/sales/search"
+            redirect = urlencode({"redirect": redirect})
 
-            SALES_API_AGONSITC_AUTH_URL = 'https://www.linkedin.com/sales-api/salesApiAgnosticAuthentication?%s' % (
-            redirect,)
+            SALES_API_AGONSITC_AUTH_URL = (
+                "https://www.linkedin.com/sales-api/salesApiAgnosticAuthentication?%s"
+                % (redirect,)
+            )
             request_api_agnostic = self._post(
                 SALES_API_AGONSITC_AUTH_URL,
                 raw_url=True,
-                headers={'Csrf-Token': session_id,
-                         'X-Restli-Protocol-Version': '2.0.0',
-                         'X-Requested-With': 'XMLHttpRequest',
-                         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                         'X-Li-Page-Instance': client_page_instance,
-                         'X-Li-Lang': 'en_US',
-                         'Referer': 'https://www.linkedin.com/sales/contract-chooser?redirect=%2Fsales%2Fsearch'},
+                headers={
+                    "Csrf-Token": session_id,
+                    "X-Restli-Protocol-Version": "2.0.0",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "X-Li-Page-Instance": client_page_instance,
+                    "X-Li-Lang": "en_US",
+                    "Referer": "https://www.linkedin.com/sales/contract-chooser?redirect=%2Fsales%2Fsearch",
+                },
                 data=json.dumps(contractData),
-                timeout=timeout
+                timeout=timeout,
             )
 
-            location = request_api_agnostic.headers.get('Location')
+            location = request_api_agnostic.headers.get("Location")
 
-            if location and 'checkpoint/enterprise/login' in location:
+            if location and "checkpoint/enterprise/login" in location:
                 request_enterprise_login = self._fetch(location, raw_url=True, timeout=timeout)
 
                 parsedURL = urlparse(request_enterprise_login.url)
                 parsedUrlQs = parse_qs(parsedURL.query)
-                salesApiEnterpriseAuthenticationUrl = 'https://www.linkedin.com/sales-api/salesApiEnterpriseAuthentication?accountId=%s&appInstanceId=%s&budgetGroupId=%s&licenseType=%s&viewerDeviceType=DESKTOP'
+                salesApiEnterpriseAuthenticationUrl = "https://www.linkedin.com/sales-api/salesApiEnterpriseAuthentication?accountId=%s&appInstanceId=%s&budgetGroupId=%s&licenseType=%s&viewerDeviceType=DESKTOP"
                 salesApiEnterpriseAuthenticationUrl = salesApiEnterpriseAuthenticationUrl % (
-                    parsedUrlQs['accountId'][0], parsedUrlQs['appInstanceId'][0],
-                    parsedUrlQs['budgetGroupId'][0], parsedUrlQs['licenseType'][0])
+                    parsedUrlQs["accountId"][0],
+                    parsedUrlQs["appInstanceId"][0],
+                    parsedUrlQs["budgetGroupId"][0],
+                    parsedUrlQs["licenseType"][0],
+                )
 
-                headers = {'Csrf-Token': session_id,
-                           'X-Restli-Protocol-Version': '2.0.0',
-                           'X-Requested-With': 'XMLHttpRequest'}
+                headers = {
+                    "Csrf-Token": session_id,
+                    "X-Restli-Protocol-Version": "2.0.0",
+                    "X-Requested-With": "XMLHttpRequest",
+                }
 
-                request_enterprise_auth = self._fetch(salesApiEnterpriseAuthenticationUrl,
-                                                      raw_url=True, headers=headers, timeout=timeout)
+                request_enterprise_auth = self._fetch(
+                    salesApiEnterpriseAuthenticationUrl,
+                    raw_url=True,
+                    headers=headers,
+                    timeout=timeout,
+                )
 
-                logger.info('Sales API - logged through %s url, using %s headers', salesApiEnterpriseAuthenticationUrl, headers)
+                logger.info(
+                    "Sales API - logged through %s url, using %s headers",
+                    salesApiEnterpriseAuthenticationUrl,
+                    headers,
+                )
                 return request_enterprise_auth
 
-    def get_leads(self, search_url, is_sales=False, timeout=None, get_raw=False,
-                  send_sn_requests=True):
-        logger.info('Leads quick search with %s timeout. Is Sales %s.', timeout, is_sales)
+    def get_leads(
+        self, search_url, is_sales=False, timeout=None, get_raw=False, send_sn_requests=True
+    ):
+        logger.info("Leads quick search with %s timeout. Is Sales %s.", timeout, is_sales)
 
         if is_sales and send_sn_requests:
             self.sales_login(timeout=timeout)
@@ -1179,23 +1207,23 @@ class Linkedin(object):
             else:
                 search_hits = self.clusters_search_people(search_url)
 
-            parsed_users, \
-            pagination, \
-            unknown_profiles, \
-            limit_data = parse_search_hits(search_hits, is_sales=is_sales)
+            parsed_users, pagination, unknown_profiles, limit_data = parse_search_hits(
+                search_hits, is_sales=is_sales
+            )
 
             if not is_sales:
                 # TODO: remove this and merge into parse_search_hits
-                logger.info('Use custom pagination data parsing '
-                            'for default search (Compatibility)')
+                logger.info(
+                    "Use custom pagination data parsing " "for default search (Compatibility)"
+                )
 
                 pagination = get_pagination_data(html, is_sales=is_sales)
 
             if parsed_users:
                 # default pagination params can be useful for debugging
-                logger.debug('Override pagination, reason: we found parsed_users')
-                pagination['logged_in'] = True
-                pagination['results_length'] = len(parsed_users)
+                logger.debug("Override pagination, reason: we found parsed_users")
+                pagination["logged_in"] = True
+                pagination["results_length"] = len(parsed_users)
 
             return parsed_users, pagination, unknown_profiles, limit_data
 
