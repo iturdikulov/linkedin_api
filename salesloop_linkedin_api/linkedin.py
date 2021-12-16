@@ -1245,9 +1245,7 @@ class Linkedin(object):
         Send a message to a given conversation. If error, return true.
         generate_tracking_id is not equal to API, gene
         """
-        sleep(
-            random.randint(3, 5)
-        )  # sleep a random duration to try and evade suspention
+        sleep(random.randint(3, 5))  # sleep a random duration to try and evade suspention
 
         tracking_ids = [
             "/UUnvJmkTzOJJ06YAvOoBQ==",
@@ -1274,11 +1272,19 @@ class Linkedin(object):
             "1BMhTu89SxWBlo+J2/gdiA==",
             "VguB2Gl0R/W1EtAFy5AviA==",
             "fSyULbVWRDiyxBykagOmNg==",
-            "sb2mWmSGRTmRXc9WzH/Pfw=="
+            "sb2mWmSGRTmRXc9WzH/Pfw==",
         ]
 
         current_tracking_id = random.choice(tracking_ids)
-        payload = {"emberEntityName":"growth/invitation/norm-invitation","invitee":{"com.linkedin.voyager.growth.invitation.InviteeProfile":{"profileId":profile_urn_id}},"trackingId":current_tracking_id}
+        payload = {
+            "emberEntityName": "growth/invitation/norm-invitation",
+            "invitee": {
+                "com.linkedin.voyager.growth.invitation.InviteeProfile": {
+                    "profileId": profile_urn_id
+                }
+            },
+            "trackingId": current_tracking_id,
+        }
 
         if message:
             payload["message"] = message
@@ -1381,59 +1387,64 @@ class Linkedin(object):
         Get regions directly from linkedin, typehead API
         """
 
-        if isfile(f'all_regions_codes.json'):
-            print('Region exist, skip...')
+        if isfile(f"all_regions_codes.json"):
+            print("Region exist, skip...")
             return
 
-        regions_json = Path(__file__).parent / 'regions.json'
+        regions_json = Path(__file__).parent / "regions.json"
         input_regions = get_default_regions(regions_json)
-        self.logger.info('Found %d regions at %s', len(input_regions), regions_json)
+        self.logger.info("Found %d regions at %s", len(input_regions), regions_json)
         output_regions = {}
-        self.client.session.get('https://www.linkedin.com/sales/')
+        self.client.session.get("https://www.linkedin.com/sales/")
         cookies = self.client.session.cookies.get_dict()
-        session_id = cookies.get('JSESSIONID').strip('\"')
+        session_id = cookies.get("JSESSIONID").strip('"')
 
         for i, region in enumerate(input_regions):
-            region_name = region.get('name')
-            region_code = region.get('code')
+            region_name = region.get("name")
+            region_code = region.get("code")
             # This headers usually outdated, need generate each times...
             headers = {
-                'authority': 'www.linkedin.com',
-                'pragma': 'no-cache',
-                'cache-control': 'no-cache',
-                'dnt': '1',
-                'x-li-lang': 'en_US',
-                'x-li-identity': 'dXJuOmxpOm1lbWJlcjo0MDAzMTE2Nzc',
-                'x-li-page-instance': 'urn:li:page:d_sales2_search_people;g//MAJuSRwe6HvmrIEQK5g==',
-                'accept': '*/*',
-                'x-restli-protocol-version': '2.0.0',
-                'x-requested-with': 'XMLHttpRequest',
-                'sec-fetch-site': 'same-origin',
-                'sec-fetch-mode': 'cors',
-                'sec-fetch-dest': 'empty',
-                'referer': 'https://www.linkedin.com/sales/search/people?preserveScrollPosition=true&selectedFilter=GE&viewAllFilters=true',
-                'accept-language': 'en-GB,en;q=0.9,ru;q=0.8,en-US;q=0.7',
+                "authority": "www.linkedin.com",
+                "pragma": "no-cache",
+                "cache-control": "no-cache",
+                "dnt": "1",
+                "x-li-lang": "en_US",
+                "x-li-identity": "dXJuOmxpOm1lbWJlcjo0MDAzMTE2Nzc",
+                "x-li-page-instance": "urn:li:page:d_sales2_search_people;g//MAJuSRwe6HvmrIEQK5g==",
+                "accept": "*/*",
+                "x-restli-protocol-version": "2.0.0",
+                "x-requested-with": "XMLHttpRequest",
+                "sec-fetch-site": "same-origin",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-dest": "empty",
+                "referer": "https://www.linkedin.com/sales/search/people?preserveScrollPosition=true&selectedFilter=GE&viewAllFilters=true",
+                "accept-language": "en-GB,en;q=0.9,ru;q=0.8,en-US;q=0.7",
             }
 
             params = (
-                ('q', 'query'),
-                ('start', '0'),
-                ('type', 'BING_GEO'),
-                ('count', '25'),
-                ('query', region_name),
+                ("q", "query"),
+                ("start", "0"),
+                ("type", "BING_GEO"),
+                ("count", "25"),
+                ("query", region_name),
             )
 
-            res = self._fetch('https://www.linkedin.com/sales-api/salesApiFacetTypeahead',
-                                    headers=headers, params=params, raw_url=True)
+            res = self._fetch(
+                "https://www.linkedin.com/sales-api/salesApiFacetTypeahead",
+                headers=headers,
+                params=params,
+                raw_url=True,
+            )
 
             data = res.json()
-            elements = data.get('elements', [])
+            elements = data.get("elements", [])
             subregions = []
             for element in elements:
                 if element:
                     subregions.append(element)
-                    self.logger.info('Region %d of %d - %s, %s', i, len(input_regions),
-                                     region, element)
+                    self.logger.info(
+                        "Region %d of %d - %s, %s", i, len(input_regions), region, element
+                    )
 
             output_regions[region_code] = subregions
             logger.debug(output_regions[region_code])
@@ -1447,20 +1458,20 @@ class Linkedin(object):
         processed_results = []
         for i, lead in enumerate(results):
             try:
-                if lead.get('entityUrn') and not lead.get('publicIdentifier'):
-                    profile = self.get_profile(urn_id=lead.get('entityUrn'))
-                    lead['publicIdentifier'] = profile.get('publicIdentifier')
+                if lead.get("entityUrn") and not lead.get("publicIdentifier"):
+                    profile = self.get_profile(urn_id=lead.get("entityUrn"))
+                    lead["publicIdentifier"] = profile.get("publicIdentifier")
 
                     # fill additional fields
-                    lead['headline'] = profile.get('headline')
+                    lead["headline"] = profile.get("headline")
 
-                    if 'currentPositions' in lead:
-                        for position in lead['currentPositions']:
-                            if 'companyName' in position:
-                                lead['companyName'] = position['companyName']
+                    if "currentPositions" in lead:
+                        for position in lead["currentPositions"]:
+                            if "companyName" in position:
+                                lead["companyName"] = position["companyName"]
 
-                            if 'title' in position:
-                                lead['position'] = position['title']
+                            if "title" in position:
+                                lead["position"] = position["title"]
                             break
 
                     processed_results.append(lead)
@@ -1469,8 +1480,7 @@ class Linkedin(object):
 
             except Exception as e:
                 processed_results.append(lead)
-                logger.warning('Failed get profile data for %s lead', lead,
-                               exc_info=e)
+                logger.warning("Failed get profile data for %s lead", lead, exc_info=e)
 
             # evade limit each N requests
             if i > 0 and randrange(0, 100) < 10:
@@ -1483,25 +1493,24 @@ class Linkedin(object):
         # search public ids if not exists, use same method like in scrapy search
         for i, lead in enumerate(self.results):
             try:
-                if lead.get('entityUrn') and not lead.get('publicIdentifier'):
-                    profile = self.get_profile(urn_id=lead.get('entityUrn'))
-                    lead['publicIdentifier'] = profile.get('publicIdentifier')
+                if lead.get("entityUrn") and not lead.get("publicIdentifier"):
+                    profile = self.get_profile(urn_id=lead.get("entityUrn"))
+                    lead["publicIdentifier"] = profile.get("publicIdentifier")
 
                     # fill additional fields
-                    lead['headline'] = profile.get('headline')
+                    lead["headline"] = profile.get("headline")
 
-                    if 'currentPositions' in lead:
-                        for position in lead['currentPositions']:
-                            if 'companyName' in position:
-                                lead['companyName'] = position['companyName']
+                    if "currentPositions" in lead:
+                        for position in lead["currentPositions"]:
+                            if "companyName" in position:
+                                lead["companyName"] = position["companyName"]
 
-                            if 'title' in position:
-                                lead['position'] = position['title']
+                            if "title" in position:
+                                lead["position"] = position["title"]
                             break
 
             except Exception as e:
-                logger.warning('Failed get profile data for %s lead', lead,
-                               exc_info=e)
+                logger.warning("Failed get profile data for %s lead", lead, exc_info=e)
 
             # evade limit each N requests
             if i > 0 and randrange(0, 100) < 10:
