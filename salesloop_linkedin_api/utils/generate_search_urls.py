@@ -1,5 +1,10 @@
 import json
-from salesloop_linkedin_api.utils.helpers import get_id_from_urn, logger, quote_query_param, fast_evade
+from salesloop_linkedin_api.utils.helpers import (
+    get_id_from_urn,
+    logger,
+    quote_query_param,
+    fast_evade,
+)
 from concurrent.futures import ThreadPoolExecutor
 from requests_futures.sessions import FuturesSession
 import pickle
@@ -13,14 +18,18 @@ from application.integrations.enums import ServiceType
 # TODO - optimize/convert to class?
 
 
-def generate_search_url(linkedin_api, company_leads,
-                        title, linkedin_geo_codes_data,
-                        get_companies=True,
-                        has_sn=None,
-                        countries_codes=None,
-                        max_workers=5,
-                        maximum_companies=30,
-                        service_type=ServiceType.leadfeeder):
+def generate_search_url(
+    linkedin_api,
+    company_leads,
+    title,
+    linkedin_geo_codes_data,
+    get_companies=True,
+    has_sn=None,
+    countries_codes=None,
+    max_workers=5,
+    maximum_companies=30,
+    service_type=ServiceType.leadfeeder,
+):
     """
     :param service_type: Service type: leadfeeder or visitorqueue
     :param maximum_companies: limit maximum leads (companies) from services
@@ -37,14 +46,11 @@ def generate_search_url(linkedin_api, company_leads,
 
     parsed_leads = {}
     skipped_leads = []
-    log_extra = {
-        'ctx': 'generate_search_url',
-        'linkedin_login_email': linkedin_api.username
-    }
+    log_extra = {"ctx": "generate_search_url", "linkedin_login_email": linkedin_api.username}
 
     if service_type == ServiceType.leadfeeder:
-        data = company_leads.get('data')
-        included_data = company_leads.get('included')
+        data = company_leads.get("data")
+        included_data = company_leads.get("included")
 
         if not data or not included_data:
             return None, None, None
@@ -53,49 +59,59 @@ def generate_search_url(linkedin_api, company_leads,
             company_id = None
 
             # Location field
-            id = lead['id']
+            id = lead["id"]
             country_code = None
             country = None
             region = None
             city = None
             public_id = None
-            lead_company_name = lead.get('attributes', {}).get('name')
-            lead_linkedin_url = lead.get('attributes', {}).get('linkedin_url')
+            lead_company_name = lead.get("attributes", {}).get("name")
+            lead_linkedin_url = lead.get("attributes", {}).get("linkedin_url")
             if lead_linkedin_url:
-                public_id = urlparse(lead_linkedin_url).path.rpartition('/')[-1]
+                public_id = urlparse(lead_linkedin_url).path.rpartition("/")[-1]
 
             if public_id:
-                leadfeeder_location_id = lead.get('relationships', {}).get(
-                    'location', {}).get('data', {}).get('id')
+                leadfeeder_location_id = (
+                    lead.get("relationships", {}).get("location", {}).get("data", {}).get("id")
+                )
 
                 if leadfeeder_location_id:
-                    location = next(iter([location for location in included_data if
-                                          location['id'] == leadfeeder_location_id]), {})
+                    location = next(
+                        iter(
+                            [
+                                location
+                                for location in included_data
+                                if location["id"] == leadfeeder_location_id
+                            ]
+                        ),
+                        {},
+                    )
 
-                    country_code = location.get('attributes', {}).get('country_code')
-                    country = location.get('attributes', {}).get('country')
-                    region = location.get('attributes', {}).get('region')
-                    city = location.get('attributes', {}).get('city')
+                    country_code = location.get("attributes", {}).get("country_code")
+                    country = location.get("attributes", {}).get("country")
+                    region = location.get("attributes", {}).get("region")
+                    city = location.get("attributes", {}).get("city")
 
                 if public_id.isnumeric():
                     company_id = int(public_id)
 
                 parsed_leads[public_id] = {
-                    'id': id,
-                    'name': lead_company_name,
-                    'company_id': company_id,
-                    'country_code': country_code.lower(),
-                    'valid': company_id is not None,
-                    'country': country,
-                    'region': region,
-                    'city': city
+                    "id": id,
+                    "name": lead_company_name,
+                    "company_id": company_id,
+                    "country_code": country_code.lower(),
+                    "valid": company_id is not None,
+                    "country": country,
+                    "region": region,
+                    "city": city,
                 }
             else:
                 skipped_leads.append(lead_company_name)
 
             if len(parsed_leads) >= maximum_companies:
-                logger.debug('Raised maximum companies - %s, stop.', maximum_companies,
-                             extra=log_extra)
+                logger.debug(
+                    "Raised maximum companies - %s, stop.", maximum_companies, extra=log_extra
+                )
                 break
     elif service_type == ServiceType.visitorqueue:
         data = company_leads
@@ -103,68 +119,86 @@ def generate_search_url(linkedin_api, company_leads,
             return None, None, None
 
         for lead in data:
-            id = str(lead['id'])
-            company_name = lead.get('name')
+            id = str(lead["id"])
+            company_name = lead.get("name")
             company_country_code = None
             company_id = None
             public_id = None
 
-            if lead.get('country'):
-                company_country = pycountry.countries.get(name=lead.get('country'))
+            if lead.get("country"):
+                company_country = pycountry.countries.get(name=lead.get("country"))
                 if company_country:
                     company_country_code = company_country.alpha_2.lower()
 
-            for url in lead.get('social_urls', []):
-                if 'linkedin.com' in url:
-                    public_id = urlparse(url).path.rpartition('/')[-1]
+            for url in lead.get("social_urls", []):
+                if "linkedin.com" in url:
+                    public_id = urlparse(url).path.rpartition("/")[-1]
                     break
 
             if all([company_name, public_id, company_country_code]):
                 parsed_leads[public_id] = {
-                    'id': id,
-                    'name': company_name,
-                    'company_id': company_id,
-                    'country_code': company_country_code,
-                    'valid': company_id is not None,
-                    'social_urls': lead.get('social_urls', [])
+                    "id": id,
+                    "name": company_name,
+                    "company_id": company_id,
+                    "country_code": company_country_code,
+                    "valid": company_id is not None,
+                    "social_urls": lead.get("social_urls", []),
                 }
             else:
                 skipped_leads.append(company_name)
 
             if len(parsed_leads) > maximum_companies:
-                logger.debug('Raised maximum companies - %s, stop.', maximum_companies,
-                             extra=log_extra)
+                logger.debug(
+                    "Raised maximum companies - %s, stop.", maximum_companies, extra=log_extra
+                )
                 break
     else:
-        raise Exception('Unknown leads type ')
+        raise Exception("Unknown leads type ")
 
     if skipped_leads:
-        logger.debug('Skipped %d company leads: %s', len(skipped_leads), skipped_leads, extra=log_extra)
+        logger.debug(
+            "Skipped %d company leads: %s", len(skipped_leads), skipped_leads, extra=log_extra
+        )
 
     if parsed_leads:
         parsed_leads_names = {lead_name: lead for lead_name, lead in parsed_leads.items()}
-        logger.debug('Found %d company leads: %s. Predefined country codes: %s',
-                     len(parsed_leads_names), parsed_leads_names, countries_codes, extra=log_extra)
+        logger.debug(
+            "Found %d company leads: %s. Predefined country codes: %s",
+            len(parsed_leads_names),
+            parsed_leads_names,
+            countries_codes,
+            extra=log_extra,
+        )
 
-    return generate_search_url_leads(linkedin_api, parsed_leads, title,
-                                     linkedin_geo_codes_data, get_companies=get_companies,
-                                     has_sn=has_sn, countries_codes=countries_codes,
-                                     max_workers=max_workers)
+    return generate_search_url_leads(
+        linkedin_api,
+        parsed_leads,
+        title,
+        linkedin_geo_codes_data,
+        get_companies=get_companies,
+        has_sn=has_sn,
+        countries_codes=countries_codes,
+        max_workers=max_workers,
+    )
 
 
-def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_codes_data,
-                              get_companies=True,
-                              has_sn=None,
-                              countries_codes=None,
-                              max_workers=5):
-    log_extra = {
-        'ctx': 'generate_search_url',
-        'linkedin_login_email': linkedin_api.username
-    }
+def generate_search_url_leads(
+    linkedin_api,
+    parsed_leads,
+    title,
+    linkedin_geo_codes_data,
+    get_companies=True,
+    has_sn=None,
+    countries_codes=None,
+    max_workers=5,
+):
+    log_extra = {"ctx": "generate_search_url", "linkedin_login_email": linkedin_api.username}
 
-    logger.debug(f'Generate search URL with {len(parsed_leads)} leads,'
-                 f' {title} title and {countries_codes} countries codes',
-                 extra=log_extra)
+    logger.debug(
+        f"Generate search URL with {len(parsed_leads)} leads,"
+        f" {title} title and {countries_codes} countries codes",
+        extra=log_extra,
+    )
 
     DEFAULT_SEARCH_PARAMS = {
         "facetCurrentCompany": None,
@@ -175,15 +209,15 @@ def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_co
     }
 
     SALES_SEARCH_DEFAULT_PARAMS = {
-        'companyIncluded': None,  # 'Microsoft:1035',
-        'companyTimeScope': 'CURRENT',  # 'CURRENT',
-        'doFetchHeroCard': 'false',  # 'false',
-        'geoIncluded': None,  # '103644278',
+        "companyIncluded": None,  # 'Microsoft:1035',
+        "companyTimeScope": "CURRENT",  # 'CURRENT',
+        "doFetchHeroCard": "false",  # 'false',
+        "geoIncluded": None,  # '103644278',
         # 'keywords': None,           # 'css',
-        'logHistory': 'true',  # 'true',
-        'page': '1',  # '1',
-        'titleIncluded': None,
-        'titleTimeScope': 'CURRENT'
+        "logHistory": "true",  # 'true',
+        "page": "1",  # '1',
+        "titleIncluded": None,
+        "titleTimeScope": "CURRENT",
     }
 
     linkedin_api_cookies = pickle.loads(linkedin_api.api_cookies)
@@ -191,47 +225,55 @@ def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_co
     linkedin_api_proxies = linkedin_api.api_proxies
 
     with FuturesSession(executor=ThreadPoolExecutor(max_workers=max_workers)) as session:
-        search_timeout = int(environ['LINKEDIN_API_SEARCH_TIMEOUT'])
-        locations_number = len(set([lead_data.get('country_code') for lead, lead_data in parsed_leads.items()]))
+        search_timeout = int(environ["LINKEDIN_API_SEARCH_TIMEOUT"])
+        locations_number = len(
+            set([lead_data.get("country_code") for lead, lead_data in parsed_leads.items()])
+        )
 
-        logger.debug('Getting companies data with %d workers. Parsed leads %d, Locations number %d',
-                     max_workers, len(parsed_leads), locations_number)
+        logger.debug(
+            "Getting companies data with %d workers. Parsed leads %d, Locations number %d",
+            max_workers,
+            len(parsed_leads),
+            locations_number,
+        )
         futures = []
         for i, (company_name, company_data) in enumerate(parsed_leads.items()):
-            if not company_data.get('company_id'):
+            if not company_data.get("company_id"):
                 params = {
                     "decorationId": "com.linkedin.voyager.deco.organization.web.WebFullCompanyMain-12",
                     "q": "universalName",
                     "universalName": company_name,
                 }
 
-                res = session.get(f"https://www.linkedin.com/voyager/api/organization/companies",
-                                  params=params,
-                                  cookies=linkedin_api_cookies,
-                                  headers=linkedin_api_headers,
-                                  proxies=linkedin_api_proxies,
-                                  timeout=search_timeout)
+                res = session.get(
+                    f"https://www.linkedin.com/voyager/api/organization/companies",
+                    params=params,
+                    cookies=linkedin_api_cookies,
+                    headers=linkedin_api_headers,
+                    proxies=linkedin_api_proxies,
+                    timeout=search_timeout,
+                )
 
                 futures.append((company_name, res))
                 if i < len(parsed_leads) - 1:
                     fast_evade()
 
-                logger.debug('Added %s company name to futures', company_name)
+                logger.debug("Added %s company name to futures", company_name)
 
         for company_name, future in futures:
             try:
                 future_data = future.result()
                 data = future_data.json()
                 company_linkedin_data = data["elements"][0]
-                company_id = get_id_from_urn(company_linkedin_data.get('entityUrn'))
-                logger.debug('Found %s company id', company_id)
+                company_id = get_id_from_urn(company_linkedin_data.get("entityUrn"))
+                logger.debug("Found %s company id", company_id)
 
                 # TODO do something if company_id not found!
                 if company_id and company_id.isnumeric():
-                    parsed_leads[company_name]['company_id'] = int(company_id)
-                    parsed_leads[company_name]['valid'] = True
+                    parsed_leads[company_name]["company_id"] = int(company_id)
+                    parsed_leads[company_name]["valid"] = True
             except Exception as e:
-                logger.warning('Failed get company! %s', company_name, exc_info=e)
+                logger.warning("Failed get company! %s", company_name, exc_info=e)
 
     if parsed_leads:
         search_urls_list = []
@@ -242,20 +284,21 @@ def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_co
         url_title = quote(title)
 
         if countries_codes:
-            logger.debug('Use predefined country codes: %d',
-                         len(countries_codes))
+            logger.debug("Use predefined country codes: %d", len(countries_codes))
             regions = [f"{country_code}:0" for country_code in countries_codes]
-            sales_regions = [linkedin_geo_codes_data.get(country_code.upper(), {}).get('id')
-                             for country_code in countries_codes]
+            sales_regions = [
+                linkedin_geo_codes_data.get(country_code.upper(), {}).get("id")
+                for country_code in countries_codes
+            ]
         else:
             regions = []
             sales_regions = []
 
         # generate sub search urls
         for company_name, lead in parsed_leads.items():
-            company_id = lead.get('company_id')
+            company_id = lead.get("company_id")
             if not company_id:
-                logger.warning('no company id found, parsing error? %s', lead)
+                logger.warning("no company id found, parsing error? %s", lead)
                 continue
 
             # default search params
@@ -266,34 +309,40 @@ def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_co
             # sales search params
             if has_sn:
                 # SALES NAV URL LOGIC
-                sales_companies_ids.append(f'{company_name}:{company_id}')
+                sales_companies_ids.append(f"{company_name}:{company_id}")
 
-                if lead.get('country_code') or countries_codes:
+                if lead.get("country_code") or countries_codes:
                     # generate single url
                     url_default_params = SALES_SEARCH_DEFAULT_PARAMS
 
                     if countries_codes:
                         # regions exist, overwrite leads locations
-                        url_default_params['geoIncluded'] = quote_query_param(sales_regions,
-                                                                              is_sales=True)
+                        url_default_params["geoIncluded"] = quote_query_param(
+                            sales_regions, is_sales=True
+                        )
                     else:
                         # use lead location, append location to generate all regions
                         country_code_id = linkedin_geo_codes_data.get(
-                            lead.get('country_code').upper(), {}).get('id')
+                            lead.get("country_code").upper(), {}
+                        ).get("id")
 
                         if country_code_id:
                             sales_regions.append(country_code_id)
                         else:
-                            logger.warning('Unknown code - %s', country_code_id)
+                            logger.warning("Unknown code - %s", country_code_id)
 
-                        url_default_params['geoIncluded'] = quote_query_param(country_code_id,
-                                                                              is_sales=True)
+                        url_default_params["geoIncluded"] = quote_query_param(
+                            country_code_id, is_sales=True
+                        )
 
-                    url_default_params['companyIncluded'] = quote_query_param(f'{company_name}:{company_id}',
-                                                                              is_sales=True)
-                    url_default_params['titleIncluded'] = url_title
-                    query_data = '&'.join(["{}={}".format(k, v) for k, v in url_default_params.items()])
-                    sub_search_url = f'https://www.linkedin.com/sales/search/people/?{query_data}'
+                    url_default_params["companyIncluded"] = quote_query_param(
+                        f"{company_name}:{company_id}", is_sales=True
+                    )
+                    url_default_params["titleIncluded"] = url_title
+                    query_data = "&".join(
+                        ["{}={}".format(k, v) for k, v in url_default_params.items()]
+                    )
+                    sub_search_url = f"https://www.linkedin.com/sales/search/people/?{query_data}"
             else:
                 # DEFAULT URL LOGIC
                 sub_url_default_params = DEFAULT_SEARCH_PARAMS
@@ -303,68 +352,77 @@ def generate_search_url_leads(linkedin_api, parsed_leads, title, linkedin_geo_co
                     # regions exist, overwrite leads locations
                     sub_url_default_params["facetGeoRegion"] = quote_query_param(regions)
                     geo_urns = [
-                        linkedin_geo_codes_data.get(region.replace(':0', '').upper(), {}).get('id')
-                        for region in regions if region]
+                        linkedin_geo_codes_data.get(region.replace(":0", "").upper(), {}).get("id")
+                        for region in regions
+                        if region
+                    ]
                 else:
                     # use lead location, append location to generate all regions
                     regions.append(f"{lead.get('country_code')}:0")
-                    sub_url_default_params["facetGeoRegion"] = quote_query_param(f"{lead.get('country_code')}:0")
-                    geo_urns = [linkedin_geo_codes_data.get(lead.get('country_code').upper(), {}).get('id')]
+                    sub_url_default_params["facetGeoRegion"] = quote_query_param(
+                        f"{lead.get('country_code')}:0"
+                    )
+                    geo_urns = [
+                        linkedin_geo_codes_data.get(lead.get("country_code").upper(), {}).get("id")
+                    ]
 
                 if geo_urns:
                     sub_url_default_params["geoUrn"] = quote_query_param(geo_urns)
 
                 sub_url_default_params["title"] = url_title
-                query_data = '&'.join(["{}={}".format(k, v) for k, v in sub_url_default_params.items()])
-                sub_search_url = f'https://www.linkedin.com/search/results/people/?{query_data}'
+                query_data = "&".join(
+                    ["{}={}".format(k, v) for k, v in sub_url_default_params.items()]
+                )
+                sub_search_url = f"https://www.linkedin.com/search/results/people/?{query_data}"
 
             # Fill search urls list
             if sub_search_url:
-                lead['search_url'] = sub_search_url
+                lead["search_url"] = sub_search_url
                 if get_companies:
-                    search_urls_list.append((sub_search_url,
-                                             lead.get('name')))
+                    search_urls_list.append((sub_search_url, lead.get("name")))
                 else:
                     search_urls_list.append(sub_search_url)
 
         # generate merged url
         if has_sn:
             url_default_params = SALES_SEARCH_DEFAULT_PARAMS
-            url_default_params['companyIncluded'] = quote_query_param(sales_companies_ids, is_sales=True)
-            url_default_params['geoIncluded'] = quote_query_param(sales_regions, is_sales=True)
-            url_default_params['titleIncluded'] = url_title
-            query_data = '&'.join(["{}={}".format(k, v) for k, v in url_default_params.items()])
-            search_url = f'https://www.linkedin.com/sales/search/people/?{query_data}'
+            url_default_params["companyIncluded"] = quote_query_param(
+                sales_companies_ids, is_sales=True
+            )
+            url_default_params["geoIncluded"] = quote_query_param(sales_regions, is_sales=True)
+            url_default_params["titleIncluded"] = url_title
+            query_data = "&".join(["{}={}".format(k, v) for k, v in url_default_params.items()])
+            search_url = f"https://www.linkedin.com/sales/search/people/?{query_data}"
         else:
             url_default_params = DEFAULT_SEARCH_PARAMS
             url_default_params["facetCurrentCompany"] = quote_query_param(companies_ids)
             url_default_params["facetGeoRegion"] = quote_query_param(regions)
 
-            geo_urns = [linkedin_geo_codes_data.get(region.replace(':0', '').upper(), {}).get('id')
-                        for region in regions if region]
+            geo_urns = [
+                linkedin_geo_codes_data.get(region.replace(":0", "").upper(), {}).get("id")
+                for region in regions
+                if region
+            ]
             url_default_params["geoUrn"] = quote_query_param(geo_urns)
 
             url_default_params["title"] = url_title
-            query_data = '&'.join(["{}={}".format(k, v) for k, v in url_default_params.items()])
-            search_url = f'https://www.linkedin.com/search/results/people/?{query_data}'
+            query_data = "&".join(["{}={}".format(k, v) for k, v in url_default_params.items()])
+            search_url = f"https://www.linkedin.com/search/results/people/?{query_data}"
 
     else:
-        logger.error('No parsed leads failed!')
-        raise Exception('No parsed leads failed!')
+        logger.error("No parsed leads failed!")
+        raise Exception("No parsed leads failed!")
 
     return parsed_leads, search_url, search_urls_list
 
 
 def is_filtered_default_search(original_url):
-    queries_keys_ignore = [
-        'keywords',
-        'origin',
-        'page'
-    ]
+    queries_keys_ignore = ["keywords", "origin", "page"]
     parsed = urlparse(original_url)
     queries = parse_qs(parsed.query)
-    queries_keys = [query_key for query_key in queries.keys()
-                    if query_key not in queries_keys_ignore]
+    queries_keys = [
+        query_key for query_key in queries.keys() if query_key not in queries_keys_ignore
+    ]
 
     if len(queries_keys) > 0:
         return True
@@ -374,12 +432,12 @@ def is_filtered_default_search(original_url):
 
 def generate_clusters_search_url(original_url):
     queries_keys_ignore = [
-        'keywords',
-        'origin',
-        'page',
-        'flagshipSearchIntent',
-        'resultType',
-        'includeFiltersInResponse'
+        "keywords",
+        "origin",
+        "page",
+        "flagshipSearchIntent",
+        "resultType",
+        "includeFiltersInResponse",
     ]
 
     parsed = urlparse(original_url)
@@ -396,26 +454,44 @@ def generate_clusters_search_url(original_url):
 
     # replace facetXxxx to xxxx
     for query_key in queries_keys:
-        if 'facet' in query_key:
-            new_query_key = re.sub('^facet', '', query_key.strip())
+        if "facet" in query_key:
+            new_query_key = re.sub("^facet", "", query_key.strip())
             new_query_key = new_query_key[0].lower() + new_query_key[1:]
             queries[new_query_key] = queries.pop(query_key)
 
     # rename known fields
-    if 'school' in queries:
-        queries['schoolFilter'] = queries.pop('school')
+    if "school" in queries:
+        queries["schoolFilter"] = queries.pop("school")
 
     # remove geoRegion - conflict with geoUrn
-    if 'geoRegion' in queries and 'geoUrn' in queries:
-        queries.pop('geoRegion')
+    if "geoRegion" in queries and "geoUrn" in queries:
+        queries.pop("geoRegion")
 
-    queries_ordered_list = ['firstName', 'lastName', 'title', 'company',
-                            'contactInterest', 'network', 'facetNetwork', 'industry', 'connectionOf',
-                            'currentCompany', 'pastCompany', 'profileLanguage',
-                            'schoolFreetext', 'serviceCategory', 'facetGeoRegion', 'geoUrn', 'schoolFilter',
-                            'resultType', 'includeFiltersInResponse']
+    queries_ordered_list = [
+        "firstName",
+        "lastName",
+        "title",
+        "company",
+        "contactInterest",
+        "network",
+        "facetNetwork",
+        "industry",
+        "connectionOf",
+        "currentCompany",
+        "pastCompany",
+        "profileLanguage",
+        "schoolFreetext",
+        "serviceCategory",
+        "facetGeoRegion",
+        "geoUrn",
+        "schoolFilter",
+        "resultType",
+        "includeFiltersInResponse",
+    ]
 
-    ordered_queries = {key[0].lower() + key[1:]: queries[key] for key in queries_ordered_list if queries.get(key)}
+    ordered_queries = {
+        key[0].lower() + key[1:]: queries[key] for key in queries_ordered_list if queries.get(key)
+    }
 
     # add unknown values, except keywords & origin
     for key in queries.keys():
@@ -426,46 +502,51 @@ def generate_clusters_search_url(original_url):
     for query_key, query_list in ordered_queries.items():
         try:
             for query_value in query_list:
-                if '[' in query_value:
+                if "[" in query_value:
                     query_values = json.loads(query_value)
 
-                    if query_key == 'geoRegion':
-                        regions = [code.split(':')[0] for code in query_values if ':' in code]
-                        query_values = [Config.LINKEDIN_GEO_CODES_DATA.get(region.upper(), {}).get('id') for region in regions]
-                        query_key = 'geoUrn'  # rename query key
+                    if query_key == "geoRegion":
+                        regions = [code.split(":")[0] for code in query_values if ":" in code]
+                        query_values = [
+                            Config.LINKEDIN_GEO_CODES_DATA.get(region.upper(), {}).get("id")
+                            for region in regions
+                        ]
+                        query_key = "geoUrn"  # rename query key
 
-                    query_values_str = ','.join(str(x) for x in query_values)
+                    query_values_str = ",".join(str(x) for x in query_values)
                 else:
                     query_values_str = query_value
 
-                if query_key in ['schoolFreetext', 'connectionOf', 'title']:
-                    query_values_str = query_values_str.replace('"', '')
+                if query_key in ["schoolFreetext", "connectionOf", "title"]:
+                    query_values_str = query_values_str.replace('"', "")
 
                 # replace space to %20, to get equal search url like in chrome (probably not needed)
-                query_values_str = quote(query_values_str, safe=',')
+                query_values_str = quote(query_values_str, safe=",")
                 query_parameters.append(f"{query_key}:List({query_values_str})")
 
         except json.JSONDecodeError:
-            logger.warning('Failed decode query_value in query_list: %s', query_list)
+            logger.warning("Failed decode query_value in query_list: %s", query_list)
 
-    query_parameters.append('resultType:List(PEOPLE)')
+    query_parameters.append("resultType:List(PEOPLE)")
 
     url_params_query = "("
 
     # Add keywords if exist
-    search_keywords = ''.join(ordered_search_params.get('keywords', ['']))
+    search_keywords = "".join(ordered_search_params.get("keywords", [""]))
     if search_keywords:
         url_params_query += f"keywords:{quote(search_keywords)},"
 
     # Add other required params
-    url_params_query += f"flagshipSearchIntent:{''.join(ordered_search_params.get('flagshipSearchIntent', ['SEARCH_SRP']))}," \
-                        f"queryParameters:({','.join(query_parameters)})," \
-                        f"includeFiltersInResponse:false"
+    url_params_query += (
+        f"flagshipSearchIntent:{''.join(ordered_search_params.get('flagshipSearchIntent', ['SEARCH_SRP']))},"
+        f"queryParameters:({','.join(query_parameters)}),"
+        f"includeFiltersInResponse:false"
+    )
 
     url_params_query += ")"
 
     search_start = 0
-    query_page = ''.join(ordered_search_params.get('page', ''))
+    query_page = "".join(ordered_search_params.get("page", ""))
     if query_page.isnumeric():
         search_start = int(query_page)
         if search_start > 1:
@@ -474,11 +555,11 @@ def generate_clusters_search_url(original_url):
             search_start = 0
 
     url_params = {
-        'decorationId': 'com.linkedin.voyager.dash.deco.search.SearchClusterCollection-92',
-        'origin': ''.join(ordered_search_params.get('origin', ['OTHER'])),
-        'q': 'all',
-        'query': url_params_query,
-        'start': str(search_start)
+        "decorationId": "com.linkedin.voyager.dash.deco.search.SearchClusterCollection-92",
+        "origin": "".join(ordered_search_params.get("origin", ["OTHER"])),
+        "q": "all",
+        "query": url_params_query,
+        "start": str(search_start),
     }
 
     return url_params
