@@ -38,22 +38,34 @@ class Linkedin(object):
     """
     Class for accessing Linkedin API.
     """
+
     _MAX_UPDATE_COUNT = 100  # max seems to be 100
     _MAX_SEARCH_COUNT = 49  # max seems to be 49
-    _MAX_REPEATED_REQUESTS = (
-        200
-    )  # VERY conservative max requests count to avoid rate-limit
+    _MAX_REPEATED_REQUESTS = 200  # VERY conservative max requests count to avoid rate-limit
     _DEFAULT_GET_TIMEOUT = settings.REQUEST_TIMEOUT
     _DEFAULT_POST_TIMEOUT = settings.REQUEST_TIMEOUT
 
-    def __init__(self, username, password, *, refresh_cookies=False, debug=False, proxies={},
-                 api_cookies=None,
-                 cached_login=False,
-                 ua=None,
-                 default_retry_max_time=600):
+    def __init__(
+        self,
+        username,
+        password,
+        *,
+        refresh_cookies=False,
+        debug=False,
+        proxies={},
+        api_cookies=None,
+        cached_login=False,
+        ua=None,
+        default_retry_max_time=600,
+    ):
         self.logger = logger
-        self.client = Client(refresh_cookies=refresh_cookies, debug=debug, proxies=proxies, api_cookies=api_cookies,
-                             ua=ua)
+        self.client = Client(
+            refresh_cookies=refresh_cookies,
+            debug=debug,
+            proxies=proxies,
+            api_cookies=api_cookies,
+            ua=ua,
+        )
         self.username = username
 
         logger.info('Initialize basic linkedin api class with %.2f max_retry_time. '
