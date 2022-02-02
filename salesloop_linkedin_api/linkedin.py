@@ -1487,7 +1487,9 @@ class Linkedin(object):
         # search public ids if not exists, use same method like in scrapy search
         for i, lead in enumerate(self.results):
             try:
-                if lead.get("entityUrn") and not lead.get("publicIdentifier"):
+                if lead.get("entityUrn") and (not lead.get("publicIdentifier")
+                                              or not lead.get("companyName")):
+
                     profile = self.get_profile(urn_id=lead.get("entityUrn"))
                     lead["publicIdentifier"] = profile.get("publicIdentifier")
 
@@ -1502,6 +1504,19 @@ class Linkedin(object):
                             if "title" in position:
                                 lead["position"] = position["title"]
                             break
+
+                    # fill company name based on experience field
+                    # (can override info from currentPositions)
+                    experience = profile.get('experience')
+                    if experience:
+                        for position in experience:
+                            if "companyName" in position:
+                                lead["companyName"] = position["companyName"]
+
+                            if "title" in position:
+                                lead["position"] = position["title"]
+                            break
+
 
             except Exception as e:
                 logger.warning("Failed get profile data for %s lead", lead, exc_info=e)
