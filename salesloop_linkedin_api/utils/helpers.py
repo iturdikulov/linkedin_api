@@ -4,6 +4,7 @@ import logging
 import random
 import re
 import string
+from os import getenv
 from re import finditer
 from time import sleep
 from traceback import print_exc
@@ -13,6 +14,8 @@ import lxml.html as LH
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("application")
+EVADE_MIN_TIMEOUT = float(getenv("EVADE_MIN_TIMEOUT", 2.0))
+EVADE_MAX_TIMEOUT = float(getenv("EVADE_MIN_TIMEOUT", 5.0))
 
 
 def get_random_base64(length=16):
@@ -30,7 +33,8 @@ def default_evade():
     A catch-all method to try and evade suspension from Linkedin.
     Currently, just delays the request by a random (bounded) time
     """
-    sleep(random.uniform(2, 5))  # sleep a random duration to try and evade suspention
+    sleep(random.uniform(EVADE_MIN_TIMEOUT,
+                         EVADE_MAX_TIMEOUT))  # sleep a random duration to try and evade suspention
 
 
 def fast_evade():
