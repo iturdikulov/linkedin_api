@@ -102,7 +102,7 @@ class Linkedin(object):
             "{kwargs}".format(**details)
         )
 
-    def _fetch(self, uri, evade=default_evade, raw_url=False, **kwargs):
+    def _fetch(self, uri, evade=default_evade, raw_url=False, raise_for_status=False, **kwargs):
         """
         GET request to Linkedin API
         """
@@ -136,6 +136,10 @@ class Linkedin(object):
                 # Use default timeout
                 kwargs["timeout"] = Linkedin._DEFAULT_GET_TIMEOUT
             response = self.client.session.get(url, **kwargs)
+
+            if raise_for_status:
+                response.raise_for_status()
+
             return response
 
         return fetch_data()
@@ -241,8 +245,9 @@ class Linkedin(object):
         res = self._fetch(
             f"/search/dash/clusters?{url_params_str}",
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
+            raise_for_status=True,
         )
-        res.raise_for_status()
+
         data = res.json()
         return [data]
 
