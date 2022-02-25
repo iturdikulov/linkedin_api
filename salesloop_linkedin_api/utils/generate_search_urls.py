@@ -278,7 +278,6 @@ def generate_search_url_leads(
     if parsed_leads:
         search_urls_list = []
         companies_ids = []
-
         sales_companies_ids = []
 
         url_title = quote(title)
