@@ -135,7 +135,8 @@ class Linkedin(object):
             if not kwargs.get("timeout"):
                 # Use default timeout
                 kwargs["timeout"] = Linkedin._DEFAULT_GET_TIMEOUT
-            return self.client.session.get(url, **kwargs)
+            response = self.client.session.get(url, **kwargs)
+            return response
 
         return fetch_data()
 
@@ -1503,8 +1504,9 @@ class Linkedin(object):
         # search public ids if not exists, use same method like in scrapy search
         for i, lead in enumerate(self.results):
             try:
-                if lead.get("entityUrn") and (not lead.get("publicIdentifier")
-                                              or not lead.get("companyName")):
+                if lead.get("entityUrn") and (
+                    not lead.get("publicIdentifier") or not lead.get("companyName")
+                ):
 
                     profile = self.get_profile(urn_id=lead.get("entityUrn"))
                     lead["publicIdentifier"] = profile.get("publicIdentifier")
@@ -1523,7 +1525,7 @@ class Linkedin(object):
 
                     # fill company name based on experience field
                     # (can override info from currentPositions)
-                    experience = profile.get('experience')
+                    experience = profile.get("experience")
                     if experience:
                         for position in experience:
                             if "companyName" in position:
@@ -1532,7 +1534,6 @@ class Linkedin(object):
                             if "title" in position:
                                 lead["position"] = position["title"]
                             break
-
 
             except Exception as e:
                 logger.warning("Failed get profile data for %s lead", lead, exc_info=e)
