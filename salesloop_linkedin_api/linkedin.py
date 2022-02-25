@@ -578,6 +578,22 @@ class Linkedin(object):
 
         return company
 
+    def get_company_id(self, public_id):
+        """
+
+        Args:
+            public_id: company identifier
+
+        Returns:
+            numeric company id or None
+        """
+        company = self.get_company(public_id)
+        if company:
+            company_id = get_id_from_urn(company.get("entityUrn"))
+
+            if company_id and company_id.isnumeric():
+                return company_id
+
     def create_conversation(self, entity_urn, message_body):
         """
         Create conversation
