@@ -1505,9 +1505,10 @@ class Linkedin(object):
         return processed_results
 
     # TODO: remove this, when ve fix VQ
-    def reformat_api_results(self):
+    def reformat_api_results(self, linkedin_login_id=None):
         # search public ids if not exists, use same method like in scrapy search
         for i, lead in enumerate(self.results):
+            lead["linkedin_login_id"] = linkedin_login_id
             try:
                 if lead.get("entityUrn") and (
                     not lead.get("publicIdentifier") or not lead.get("companyName")
