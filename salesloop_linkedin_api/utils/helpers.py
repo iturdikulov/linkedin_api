@@ -705,22 +705,19 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
 
     else:
         parsed_items = []
-        for data in parsed_search_hits:
-            try:
-                if not pagination and data.get("paging"):
-                    pagination = data.get("paging")
-                    results_length = pagination.get("count", 0)
+        try:
+            if not pagination and parsed_search_hits.get("paging"):
+                pagination = parsed_search_hits.get("paging")
+                results_length = pagination.get("total", 0)
 
-                if data.get("elements"):
-                    for element in data.get("elements"):
-                        parsed_items.append(element)
+            if parsed_search_hits.get("elements"):
+                for element in parsed_search_hits.get("elements"):
+                    parsed_items.append(element)
 
-                current_entity_run = data.get("memberResolutionResult", {}).get("entityUrn")
-
-                if current_entity_run and "urn:li:fs_salesProfile" in current_entity_run:
-                    logged_in = True
-            except Exception as e:
-                logger.warning("Unknown sales search parse error", exc_info=e)
+            if pagination:
+                logged_in = True
+        except Exception as e:
+            logger.warning("Unknown sales search parse error", exc_info=e)
 
         if parsed_items:
             for lead in parsed_items:

@@ -18,6 +18,7 @@ import backoff
 import requests
 
 import salesloop_linkedin_api.settings as settings
+from application.utils import generate_sales_search_url
 from salesloop_linkedin_api.client import Client
 from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url
 from salesloop_linkedin_api.utils.helpers import (
@@ -25,7 +26,6 @@ from salesloop_linkedin_api.utils.helpers import (
     get_default_regions,
     default_evade,
     get_random_base64,
-    get_leads_from_html,
     get_pagination_data,
     get_id_from_urn,
 )
@@ -250,6 +250,30 @@ class Linkedin(object):
 
         data = res.json()
         return [data]
+
+    def cluster_sales_search_people(self, linkedin_url):
+        generated_url = generate_sales_search_url(linkedin_url)
+        random_page_instance_postfix = get_random_base64()
+        res = self._fetch(
+            generated_url,
+            headers={
+                "authority": "www.linkedin.com",
+                "dnt": "1",
+                "x-li-lang": "en_US",
+                "sec-ch-ua-mobile": "?0",
+                "x-li-page-instance": f"urn:li:page:d_sales2_search_people;{random_page_instance_postfix}",
+                "x-restli-protocol-version": "2.0.0",
+                "accept": "*/*",
+                "sec-fetch-site": "same-origin",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-dest": "empty",
+                "referer": linkedin_url,
+            },
+            raw_url=True,
+        )
+        res.raise_for_status()
+        data = res.json()
+        return data
 
     def search_people(
         self,
@@ -1091,7 +1115,7 @@ class Linkedin(object):
         client_page_instance = None
 
         client_page_instance_data_groups = re.search(
-            r'id="clientPageInstance">([\S\s]*?)<\/code>', request_homepage.content.decode()
+            r'name="bprPageInstance" content="([\S\s]*?)"', request_homepage.content.decode()
         )
 
         if client_page_instance_data_groups:
@@ -1219,7 +1243,7 @@ class Linkedin(object):
             return html
         else:
             if is_sales:
-                search_hits = get_leads_from_html(html, is_sales=True)
+                search_hits = self.cluster_sales_search_people(search_url)
             else:
                 search_hits = self.clusters_search_people(search_url)
 
