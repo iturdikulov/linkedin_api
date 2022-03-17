@@ -18,7 +18,7 @@ import backoff
 import requests
 
 import salesloop_linkedin_api.settings as settings
-from application.utils import generate_sales_search_url
+from application.utlis_sales_search import generate_sales_search_url
 from salesloop_linkedin_api.client import Client
 from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url
 from salesloop_linkedin_api.utils.helpers import (
