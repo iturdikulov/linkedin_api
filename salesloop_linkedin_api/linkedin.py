@@ -1037,7 +1037,6 @@ class Linkedin(object):
         if session_id and client_page_instance:
             headers = {
                 "authority": "www.linkedin.com",
-                "sec-ch-ua": '" Not A;Brand";v="99", "Chromium";v="92"',
                 "x-restli-protocol-version": "2.0.0",
                 "x-li-lang": "en_US",
                 "sec-ch-ua-mobile": "?0",
