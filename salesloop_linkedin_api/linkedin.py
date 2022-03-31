@@ -655,6 +655,45 @@ class Linkedin(object):
 
         return res.status_code != 201
 
+    def event_bodies(self, receiver_urn_id, user_elements):
+        """
+        Args:
+            user_elements: conversation event data
+            receiver_urn_id: user urn id
+            sender: get event bodies from sender
+
+        Returns:
+            event_body: last message from receiver
+        """
+        receiver_messages = []
+        sender_messages = []
+        conversation_urn_id = None
+
+        for element in user_elements:
+            # Step 1. Users who replied to our message
+            for event in element.get("events", []):
+                event_body = (
+                    event.get("eventContent", {})
+                    .get("com.linkedin.voyager.messaging.event.MessageEvent", {})
+                    .get("attributedBody", {})
+                    .get("text")
+                )
+
+                if event_body:
+                    current_participant = (
+                        event.get("from", {})
+                        .get("com.linkedin.voyager.messaging.MessagingMember", {})
+                        .get("miniProfile", {})
+                    )
+                    urn_id = get_id_from_urn(current_participant.get("entityUrn"))
+                    conversation_urn_id = get_id_from_urn(element["entityUrn"])
+                    if receiver_urn_id == urn_id:
+                        receiver_messages.append(event_body)
+                    else:
+                        sender_messages.append(event_body)
+
+        return receiver_messages, sender_messages, conversation_urn_id
+
     def get_conversation_details(self, profile_urn_id, get_id=False):
         """
         Return the conversation (or "message thread") details for a given [public_profile_id]
