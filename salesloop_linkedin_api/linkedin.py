@@ -706,6 +706,7 @@ class Linkedin(object):
         )
 
         data = res.json()
+        elements = data.get("elements", [])
         latest_reply_from_recipient = False
         only_first_message_found = None
 
@@ -742,11 +743,18 @@ class Linkedin(object):
                 else:
                     only_first_message_found = False
 
+        receiver_messages, sender_messages, conversation_urn_id = self.event_bodies(
+            profile_urn_id, elements
+        )
+
         return {
             "details": item,
             "total_events": item.get("totalEventCount"),
             "latest_reply_from_recipient": latest_reply_from_recipient,
             "only_first_message_found": only_first_message_found,
+            "receiver_messages": receiver_messages,
+            "sender_messages": sender_messages,
+            "conversation_urn_id": conversation_urn_id,
         }
 
     def get_conversations(self, createdBefore=None):
