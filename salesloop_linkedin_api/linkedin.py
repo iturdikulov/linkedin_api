@@ -1431,7 +1431,12 @@ class Linkedin(object):
             return {}
 
         data = res.json()
-        return data.get("data", {})
+        data = data.get("data", {})
+        if data:
+            distance = data.get("distance", {}).get("value")
+            data["approved"] = distance == "DISTANCE_1"
+
+        return data
 
     def search_companies(self, keywords=None, **kwargs):
         """Perform a LinkedIn search for companies.
