@@ -1551,6 +1551,10 @@ class Linkedin(object):
         for i, lead in enumerate(results):
             try:
                 if lead.get("entityUrn") and not lead.get("publicIdentifier"):
+                    # evade limit each N requests
+                    if i > 0 and i % randrange(4, 6) == 0:
+                        sleep(randrange(15, 25))
+
                     profile = self.get_profile(urn_id=lead.get("entityUrn"))
                     lead["publicIdentifier"] = profile.get("publicIdentifier")
 
@@ -1590,6 +1594,10 @@ class Linkedin(object):
                 if lead.get("entityUrn") and (
                     not lead.get("publicIdentifier") or not lead.get("companyName")
                 ):
+
+                    # evade limit each N requests
+                    if i > 0 and i % randrange(4, 6) == 0:
+                        sleep(randrange(15, 25))
 
                     profile = self.get_profile(urn_id=lead.get("entityUrn"))
                     lead["publicIdentifier"] = profile.get("publicIdentifier")
