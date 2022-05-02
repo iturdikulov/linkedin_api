@@ -1547,6 +1547,7 @@ class Linkedin(object):
     def reformat_results(self, results):
         # search public ids if not exists, use same method like in scrapy search
         processed_results = []
+        reformat_max_errors = 6
         for i, lead in enumerate(results):
             try:
                 if lead.get("entityUrn") and not lead.get("publicIdentifier"):
@@ -1571,17 +1572,18 @@ class Linkedin(object):
 
             except Exception as e:
                 processed_results.append(lead)
+                reformat_max_errors -= 1
                 logger.warning("Failed get profile data for %s lead", lead, exc_info=e)
 
-            # evade limit each N requests
-            if i > 0 and randrange(0, 100) < 10:
-                sleep(randrange(10, 15))
+            if reformat_max_errors <= 0:
+                raise Exception("Too many reformat errors, break parsing...")
 
         return processed_results
 
     # TODO: remove this, when ve fix VQ
     def reformat_api_results(self, linkedin_login_id=None):
         # search public ids if not exists, use same method like in scrapy search
+        reformat_max_errors = 6
         for i, lead in enumerate(self.results):
             lead["linkedin_login_id"] = linkedin_login_id
             try:
@@ -1618,7 +1620,7 @@ class Linkedin(object):
 
             except Exception as e:
                 logger.warning("Failed get profile data for %s lead", lead, exc_info=e)
+                reformat_max_errors -= 1
 
-            # evade limit each N requests
-            if i > 0 and randrange(0, 100) < 10:
-                sleep(randrange(10, 15))
+            if reformat_max_errors <= 0:
+                raise Exception("Too many reformat errors, break parsing...")
