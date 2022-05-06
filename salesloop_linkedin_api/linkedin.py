@@ -1,6 +1,7 @@
 """
 Provides linkedin api-related code
 """
+import base64
 import json
 import logging
 import pickle
@@ -32,6 +33,20 @@ from salesloop_linkedin_api.utils.helpers import (
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("application")
+
+
+def generate_tracking_id():
+    """Generates and returns a random trackingId
+    :return: Random trackingId string
+    :rtype: str
+    """
+    random_int_array = [random.randrange(256) for _ in range(16)]
+    rand_byte_array = bytearray(random_int_array)
+    return str(base64.b64encode(rand_byte_array))[2:-1]
+
+
+class LinkedinInvitesRateLimit(Exception):
+    pass
 
 
 class Linkedin(object):
@@ -1333,43 +1348,16 @@ class Linkedin(object):
         """
         sleep(random.randint(3, 5))  # sleep a random duration to try and evade suspention
 
-        tracking_ids = [
-            "/UUnvJmkTzOJJ06YAvOoBQ==",
-            "b5sl31fLRsSu9sj07UuEGg==",
-            "TbuG5+8HROWK3secP9ANyA==",
-            "W0l2S+Y+RGOtvgBL8urqCw==",
-            "D0Ol4WlyRG+CkKOWfmh3Eg==",
-            "cHuko5LqRHqhfgVwFRMznA==",
-            "+NKO3yrsRQWapoeO+n89bQ==",
-            "HVoT0u/4QV+R1Na0/y2QFQ==",
-            "LtE5LU6JTr2LxsTYD178gA==",
-            "MYw79hqeRMmIUHoXJeKZvQ==",
-            "q7WIXHYCQLq6r0vv3yPGUg==",
-            "MujhS4ehRZGxxG67j5fNuA==",
-            "ve0MfXubQA2LtrlyjW5fyg==",
-            "K2yBASVLRQ6AfsAUeTUdOg==",
-            "HK4tIiAwRr6COtryOy83dQ==",
-            "R7A4hMDpQUipIHCCaFW1Dg==",
-            "bQ0o99T2TJuhwuiDtCBZbw==",
-            "RBnQ8W7DSPiXFIRtQI5W2w==",
-            "XY5LRCUmSIOCnRAny+k5DQ==",
-            "M3mF+N91Tru8KEScK8xWAw==",
-            "vytODa2SR0iMsXxClvBu6g==",
-            "1BMhTu89SxWBlo+J2/gdiA==",
-            "VguB2Gl0R/W1EtAFy5AviA==",
-            "fSyULbVWRDiyxBykagOmNg==",
-            "sb2mWmSGRTmRXc9WzH/Pfw==",
-        ]
-
-        current_tracking_id = random.choice(tracking_ids)
         payload = {
-            "emberEntityName": "growth/invitation/norm-invitation",
-            "invitee": {
-                "com.linkedin.voyager.growth.invitation.InviteeProfile": {
-                    "profileId": profile_urn_id
-                }
-            },
-            "trackingId": current_tracking_id,
+            "invitation": {
+                "emberEntityName": "growth/invitation/norm-invitation",
+                "invitee": {
+                    "com.linkedin.voyager.growth.invitation.InviteeProfile": {
+                        "profileId": profile_urn_id
+                    }
+                },
+                "trackingId": generate_tracking_id(),
+            }
         }
 
         if message:
@@ -1378,8 +1366,18 @@ class Linkedin(object):
         res = self._post(
             f"/growth/normInvitations",
             data=json.dumps(payload),
+            params={
+                "action": "verifyQuotaAndCreate",
+            },
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
         )
+
+        response_data = res.json()
+        if response_data.get("data", "code") == "FUSE_LIMIT_EXCEEDED":
+            raise LinkedinInvitesRateLimit()
+        elif not response_data.get("data", {}).get("value", {}).get("invitationId").isnumeric():
+            logger.warning("Failed to connect, unknown response detected: %s", response_data)
+            return False, res.status_code
 
         return res.status_code != 201, res.status_code
 
