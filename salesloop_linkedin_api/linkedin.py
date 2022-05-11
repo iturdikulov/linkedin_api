@@ -1375,7 +1375,9 @@ class Linkedin(object):
         response_data = res.json()
         if response_data.get("data", "code") == "FUSE_LIMIT_EXCEEDED":
             raise LinkedinInvitesRateLimit()
-        elif not response_data.get("data", {}).get("value", {}).get("invitationId").isnumeric():
+        elif not isinstance(
+            response_data.get("data", {}).get("value", {}).get("invitationId"), int
+        ):
             logger.warning("Failed to connect, unknown response detected: %s", response_data)
             return False, res.status_code
 
