@@ -135,7 +135,6 @@ class Linkedin(object):
                 requests.exceptions.ProxyError,
                 requests.exceptions.SSLError,
                 requests.exceptions.ReadTimeout,
-                requests.exceptions.HTTPError,
                 requests.exceptions.ConnectionError,
             ),
             max_time=max_time,
