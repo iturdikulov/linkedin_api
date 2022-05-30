@@ -1380,7 +1380,9 @@ class Linkedin(object):
             logger.warning("Failed to connect, unknown response detected: %s", response_data)
             return False, res.status_code
 
-        return res.status_code != 201 or res.status_code != 200, res.status_code
+        # Used false status code for backwards compatibility with tests
+        connection_failed = res.status_code not in (200, 201)
+        return connection_failed, res.status_code
 
     def remove_connection(self, public_profile_id):
         res = self._post(
