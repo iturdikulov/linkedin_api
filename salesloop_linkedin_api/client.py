@@ -50,8 +50,6 @@ class Client:
         "Accept-Language": "en-us",
     }
 
-    CACHE_REQUESTS = settings.CACHE_REQUESTS
-
     def __init__(
         self,
         *,
