@@ -1,8 +1,9 @@
 import logging
 import pickle
+from datetime import timedelta
 
 import requests
-
+from requests_cache import CachedSession
 import salesloop_linkedin_api.settings as settings
 
 logger = logging.getLogger()
@@ -59,15 +60,32 @@ class Client:
         cookies=None,
         api_cookies=None,
         ua=None,
+        use_request_cache=False
     ):
-        self.session = requests.session()
+        self.logger = logger
+
+        if use_request_cache:
+            self.logger.info("Use cached requests session")
+            self.session = CachedSession(
+                'requests_cache',
+                use_cache_dir=True,                 # Save files in the default user cache dir
+                cache_control=True,                 # Use Cache-Control headers for expiration, if available
+                expire_after=timedelta(days=1),     # Otherwise expire responses after one day
+                allowable_methods=['GET', 'POST'],  # Cache POST requests to avoid sending the same data twice
+                allowable_codes=[200, 400],         # Cache 400 responses as a solemn reminder of your failures
+                ignored_parameters=['api_key'],     # Don't match this param or save it in the cache
+                match_headers=True,                 # Match all request headers
+                stale_if_error=False,               # In case of request errors, use stale cache data if possible
+            )
+        else:
+            self.session = requests.session()
+
         self.session.max_redirects = 5
 
         self.session.proxies.update(proxies)
         logging.basicConfig(level=logging.DEBUG if debug else logging.INFO)
 
         self.proxies = proxies
-        self.logger = logger
         self._use_cookie_cache = not refresh_cookies
         self._cookies = cookies
         self.api_cookies = api_cookies
