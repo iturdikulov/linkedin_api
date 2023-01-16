@@ -11,14 +11,16 @@ class APIRequestType(Enum):
     """
     Type of API endpoint
     """
-    search = 0
+    growth = 0
     relationships = 1
-    company = 2
-    connect = 3
-    messages = 4
-    auth = 5
-    current_user = 6
-    unknown = 7
+    companies = 2
+    search = 3
+    feed = 4
+    messaging = 5
+    identity = 6
+    uas = 7
+    other = 8
+    unknown = 9
 
     @classmethod
     def get_url_endpoint(cls, url):
