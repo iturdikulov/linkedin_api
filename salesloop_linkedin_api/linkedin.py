@@ -7,6 +7,7 @@ import logging
 import pickle
 import random
 import re
+from datetime import datetime
 from os.path import isfile
 from pathlib import Path
 from random import randrange
@@ -21,6 +22,7 @@ import requests
 import salesloop_linkedin_api.settings as settings
 from application.utlis_sales_search import generate_sales_search_url
 from salesloop_linkedin_api.client import Client
+from salesloop_linkedin_api.statistic import APIRequestType, APIRequestAmount
 from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url
 from salesloop_linkedin_api.utils.helpers import (
     parse_search_hits,
@@ -109,6 +111,13 @@ class Linkedin(object):
         self.limit_data = None
         self.results_success_urls = []
 
+        # Count each request and save amount per X timerange
+        self.requests_amount = APIRequestAmount()
+
+        # First and last request timestamps
+        self.requests_start_timestamp = None
+        self.requests_end_timestamp = None
+
     def _get_max_retry_time(self):
         return self.default_retry_max_time
 
@@ -156,6 +165,12 @@ class Linkedin(object):
             if raise_for_status:
                 response.raise_for_status()
 
+            request_type = APIRequestType.get_request_type(url)
+            self.requests_amount[request_type] += 1
+            if not self.requests_start_timestamp:
+                self.requests_start_timestamp = datetime.utcnow()
+
+            self.requests_end_timestamp = datetime.utcnow()
             return response
 
         return fetch_data()
