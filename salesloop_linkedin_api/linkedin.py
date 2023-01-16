@@ -128,6 +128,14 @@ class Linkedin(object):
             "{kwargs}".format(**details)
         )
 
+    def _update_statistics(self, url):
+        request_type = APIRequestType.get_request_type(url)
+        self.requests_amount[request_type] += 1
+        if not self.requests_start_timestamp:
+            self.requests_start_timestamp = datetime.utcnow()
+
+        self.requests_end_timestamp = datetime.utcnow()
+
     def _fetch(self, uri, evade=default_evade, raw_url=False, raise_for_status=False, **kwargs):
         """
         GET request to Linkedin API
@@ -165,12 +173,7 @@ class Linkedin(object):
             if raise_for_status:
                 response.raise_for_status()
 
-            request_type = APIRequestType.get_request_type(url)
-            self.requests_amount[request_type] += 1
-            if not self.requests_start_timestamp:
-                self.requests_start_timestamp = datetime.utcnow()
-
-            self.requests_end_timestamp = datetime.utcnow()
+            self._update_statistics(url)
             return response
 
         return fetch_data()
@@ -203,7 +206,9 @@ class Linkedin(object):
             if not kwargs.get("timeout"):
                 # Use default timeout
                 kwargs["timeout"] = Linkedin._DEFAULT_POST_TIMEOUT
-            return self.client.session.post(url, **kwargs)
+            data = self.client.session.post(url, **kwargs)
+            self._update_statistics(url)
+            return data
 
         return post_data()
 
