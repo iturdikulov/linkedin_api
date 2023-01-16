@@ -4,6 +4,8 @@ from datetime import datetime
 from enum import Enum
 from urllib.parse import urlparse
 
+from salesloop_linkedin_api.settings import REQUESTS_TYPES
+
 logger = logging.getLogger()
 
 
@@ -20,9 +22,8 @@ class APIRequestType(Enum):
     feed = 5
     messaging = 6
     identity = 7
-    other = 8
-    uas = 9
-    unknown = 10
+    uas = 8
+    other = 9
 
     @classmethod
     def get_url_endpoint(cls, url):
@@ -50,8 +51,11 @@ class APIRequestType(Enum):
             endpoint string like "search/blended"
         """
         endpoint = cls.get_url_endpoint(url)
-        logger.debug(f"Detected this url endpoint: {endpoint}")
-        return cls.unknown
+        for request_type, request_tuple in REQUESTS_TYPES.items():
+            if endpoint in request_tuple:
+                return cls[request_type]
+
+        raise Exception(f"Found unknown url: {url}")
 
 
 class APIRequestAmount:
