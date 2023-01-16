@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime
 from enum import Enum
 from urllib.parse import urlparse
@@ -8,10 +9,10 @@ logger = logging.getLogger()
 
 class APIRequestType(Enum):
     """
-    Type of api endpoint
+    Type of API endpoint
     """
-    profile = 0
-    search_results = 1
+    search = 0
+    relationships = 1
     company = 2
     connect = 3
     messages = 4
@@ -22,12 +23,31 @@ class APIRequestType(Enum):
     @classmethod
     def get_url_endpoint(cls, url):
         path = urlparse(url).path
-        return path.rpartition('/')[0]
+        if not path:
+            raise SyntaxError(f"Invalid url detected: {url}")
+
+        path_parts = re.sub('^/voyager/api/', '', path).strip('/').split('/')
+
+        if len(path_parts) == 1:
+            return path_parts[0]
+        else:
+            return f"{path_parts[0]}/{path_parts[1]}"
 
     @classmethod
     def get_request_type(cls, url):
+        """
+        Based on url detect endpoint
+        Requests types are based on this https://linkedin.api-docs.io/v1.0
+
+        Args:
+            url: LinkedIn url
+
+        Returns:
+            endpoint string like "search/blended"
+        """
         endpoint = cls.get_url_endpoint(url)
         logger.debug(f"Detected this url endpoint: {endpoint}")
+        return cls.unknown
 
 
 class APIRequestAmount:
@@ -37,18 +57,14 @@ class APIRequestAmount:
     Usage:
     api_requests = APIRequestAmount()
     api_requests[profile] += 1
-    api_requests.requests_end_timestamp = datetime.utcnow()
     """
     def __init__(self):
-        self.requests_start_timestamp = datetime.utcnow()
-        self.requests_end_timestamp = None
-
         # Set initial values per each request type
         self.record = {i.name: 0 for i in APIRequestType}
 
-    def __getitem__(self, key):
-        return self.record[key.name]
+    def __getitem__(self, request_type):
+        return self.record[request_type.name]
 
-    def __setitem__(self, key, value):
-        self.record[key.name] = value
+    def __setitem__(self, request_type, value):
+        self.record[request_type.name] = value
 
