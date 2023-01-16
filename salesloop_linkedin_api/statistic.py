@@ -11,6 +11,7 @@ class APIRequestType(Enum):
     """
     Type of API endpoint
     """
+
     growth = 0
     jobs = 1
     relationships = 2
@@ -29,7 +30,7 @@ class APIRequestType(Enum):
         if not path:
             raise SyntaxError(f"Invalid url detected: {url}")
 
-        path_parts = re.sub('^/voyager/api/', '', path).strip('/').split('/')
+        path_parts = re.sub("^/voyager/api/", "", path).strip("/").split("/")
 
         if len(path_parts) == 1:
             return path_parts[0]
@@ -61,6 +62,7 @@ class APIRequestAmount:
     api_requests = APIRequestAmount()
     api_requests[profile] += 1
     """
+
     def __init__(self):
         # Set initial values per each request type
         self.record = {i.name: 0 for i in APIRequestType}
@@ -70,4 +72,3 @@ class APIRequestAmount:
 
     def __setitem__(self, request_type, value):
         self.record[request_type.name] = value
-
