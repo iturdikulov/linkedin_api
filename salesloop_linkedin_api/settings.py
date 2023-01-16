@@ -20,6 +20,7 @@ REQUESTS_TYPES = {
         "relationships/badge",
         "relationships/peopleYouMayKnow",
         "relationships/invitationsSummary",
+        "relationships/connectionsSummary",
         "relationships/connections",
     ),
     "companies": ("entities/companies", "organization/companies"),
@@ -65,6 +66,7 @@ REQUESTS_TYPES = {
         "mux",
         "typeahead/hits",
         "legoWidgetImpressionEvents",
+        "psettings/premium-subscription",
     ),
-    "uas": ("uas/authenticate"),
+    "uas": ("uas/authenticate",),
 }
