@@ -23,8 +23,14 @@ REQUESTS_TYPES = {
         "relationships/connectionsSummary",
         "relationships/connections",
     ),
-    "companies": ("entities/companies", "organization/companies"),
-    "search": ("search/history", "search/hits", "/search/blended", "/search/dash"),
+    "companies": ("entities/companies", "organization/companies",),
+    "search": (
+        "search/history",
+        "search/hits",
+        "search/blended",
+        "search/results",
+        "search/dash",
+    ),
     "feed": (
         "feed/updates",
         "feed/urlpreview",
