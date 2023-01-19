@@ -159,7 +159,7 @@ class Linkedin(object):
             self.rds.set(
                 f"ln.api:{self.linkedin_login_id}:{self.session_id}",
                 json.dumps(self.requests_amount),
-                ex=2592000,
+                ex=settings.STATISTICS_TTL
             )
         else:
             logger.warning("No linkedin_login_id provided, skipping statistics store in redis")

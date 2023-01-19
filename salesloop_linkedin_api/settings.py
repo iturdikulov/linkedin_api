@@ -4,6 +4,9 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 LOGIN_TIMEOUT = float(os.getenv("LINKEDIN_API_LOGIN_TIMEOUT", 220))
 REQUEST_TIMEOUT = float(os.getenv("LINKEDIN_API_REQUEST_TIMEOUT", 220))
 
+# statistics TTL 1 month, stored in redis
+STATISTICS_TTL = int(os.getenv("LINKEDIN_API_STATISTICS_TTL", 2592000))
+
 # Based on https://linkedin.api-docs.io/v1.0
 REQUESTS_TYPES = {
     "growth": (
