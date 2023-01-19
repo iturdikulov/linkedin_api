@@ -53,7 +53,7 @@ class LinkedinInvitesRateLimit(Exception):
 
 class Linkedin(object):
     """
-    Class for accessing Linkedin API.
+    Class for accessing LinkedIn API.
     """
 
     _MAX_UPDATE_COUNT = 100  # max seems to be 100
