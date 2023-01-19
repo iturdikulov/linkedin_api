@@ -7,9 +7,8 @@ REQUEST_TIMEOUT = float(os.getenv("LINKEDIN_API_REQUEST_TIMEOUT", 220))
 # Based on https://linkedin.api-docs.io/v1.0
 REQUESTS_TYPES = {
     "growth": (
-        "voyagerGrowthEmailConfirmationTask",
-        "growth/pageContent/voyager_abi_flow",
-        "growth/channels/{param1}",
+        "growth/pageContent",
+        "growth/channels",
         "growth/normInvitations",
     ),
     "jobs": ("entities/jobs",),
@@ -66,9 +65,9 @@ REQUESTS_TYPES = {
         "takeovers",
         "pushRegistration",
         "appUniverse",
-        "/lite/rum-track",
-        "/csp/sct",
-        "/li/track",
+        "lite/rum-track",
+        "csp/sct",
+        "li/track",
         "mux",
         "typeahead/hits",
         "legoWidgetImpressionEvents",
