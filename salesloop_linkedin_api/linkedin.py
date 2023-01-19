@@ -157,7 +157,7 @@ class Linkedin(object):
         # ttl is 1 month
         if self.linkedin_login_id:
             self.rds.set(
-                f"ln.api.{self.username}.{self.session_id}",
+                f"ln.api:{self.linkedin_login_id}:{self.session_id}",
                 json.dumps(self.requests_amount),
                 ex=2592000,
             )
