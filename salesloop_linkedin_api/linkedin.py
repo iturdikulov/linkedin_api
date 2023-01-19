@@ -77,7 +77,8 @@ class Linkedin(object):
         cached_login=False,
         ua=None,
         default_retry_max_time=600,
-        use_request_cache=False
+        use_request_cache=False,
+        linkedin_login_id=None,
     ):
         self.logger = logger
         self.client = Client(
@@ -131,6 +132,7 @@ class Linkedin(object):
 
         # Unique session id, based on UUID
         self.session_id = uuid.uuid4()
+        self.linkedin_login_id = linkedin_login_id
 
     def _get_max_retry_time(self):
         return self.default_retry_max_time
@@ -152,10 +154,15 @@ class Linkedin(object):
 
         # Write statistics to redis, key contains username and uuid of the task
         # ln.api -> LinkedIn API statistics
-        self.rds.hset(
-            f"ln.api:{self.username}:{self.session_id}",
-            mapping=self.requests_amount
-        )
+        # ttl is 1 month
+        if self.linkedin_login_id:
+            self.rds.set(
+                f"ln.api.{self.username}.{self.session_id}",
+                json.dumps(self.requests_amount),
+                ex=2592000,
+            )
+        else:
+            logger.warning("No linkedin_login_id provided, skipping statistics store in redis")
 
     def _fetch(self, uri, evade=default_evade, raw_url=False, raise_for_status=False, **kwargs):
         """
