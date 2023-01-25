@@ -1,5 +1,4 @@
 import os
-from enum import Enum
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 LOGIN_TIMEOUT = float(os.getenv("LINKEDIN_API_LOGIN_TIMEOUT", 220))
@@ -101,12 +100,14 @@ BASE_REQUESTS_LIMITS = {
     "uas": (100, 100, 100),
 }
 
-def get_account_requests_limits(connections_number, is_premium):
+
+def get_account_requests_limits(connections_number: int,
+                                is_premium: bool):
     """
     Get account requests limits based on connections_number and is_premium
     Args:
-        connections_number:
-        is_premium:
+        connections_number: number of connections
+        is_premium: is LinkedIn premium account
 
     Returns: dict - requests limits per request type
 
