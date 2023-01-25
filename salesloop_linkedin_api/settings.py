@@ -87,17 +87,18 @@ REQUESTS_TYPES = {
 # 1. New account
 # 2. Account with 5000 connections
 # 3. Account with 5000 connections and premium subscription
+# TODO: use actual values
 BASE_REQUESTS_LIMITS = {
-    "growth": (1, 1, 1),
-    "jobs": (1, 1, 1),
-    "relationships": (1, 1, 1),
-    "companies": (1, 1, 1),
-    "search": (1, 1, 1),
-    "feed": (1, 1, 1),
-    "messaging": (1, 1, 1),
-    "identity": (1, 1, 1),
-    "other": (1, 1, 1),
-    "uas": (1, 1, 1),
+    "growth": (100, 100, 100),
+    "jobs": (100, 100, 100),
+    "relationships": (100, 100, 100),
+    "companies": (100, 100, 100),
+    "search": (100, 100, 100),
+    "feed": (100, 100, 100),
+    "messaging": (100, 100, 100),
+    "identity": (100, 100, 100),
+    "other": (100, 100, 100),
+    "uas": (100, 100, 100),
 }
 
 def get_account_requests_limits(connections_number, is_premium):
