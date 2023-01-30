@@ -92,7 +92,7 @@ BASE_REQUESTS_LIMITS = {
     "jobs": (100, 100, 100),
     "relationships": (100, 100, 100),
     "companies": (100, 100, 100),
-    "search": (100, 100, 100),
+    "search": (500, 500, 500),
     "feed": (100, 100, 100),
     "messaging": (100, 100, 100),
     "identity": (100, 100, 100),
