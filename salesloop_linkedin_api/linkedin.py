@@ -7,6 +7,9 @@ import logging
 import pickle
 import random
 import re
+import uuid
+from datetime import datetime
+from os import environ
 from os.path import isfile
 from pathlib import Path
 from random import randrange
@@ -17,10 +20,12 @@ from urllib.parse import urlparse, parse_qs
 
 import backoff
 import requests
+from redis.client import StrictRedis
 
 import salesloop_linkedin_api.settings as settings
 from application.utlis_sales_search import generate_sales_search_url
 from salesloop_linkedin_api.client import Client
+from salesloop_linkedin_api.statistic import APIRequestType
 from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url
 from salesloop_linkedin_api.utils.helpers import (
     parse_search_hits,
@@ -51,7 +56,7 @@ class LinkedinInvitesRateLimit(Exception):
 
 class Linkedin(object):
     """
-    Class for accessing Linkedin API.
+    Class for accessing LinkedIn API.
     """
 
     _MAX_UPDATE_COUNT = 100  # max seems to be 100
@@ -72,7 +77,8 @@ class Linkedin(object):
         cached_login=False,
         ua=None,
         default_retry_max_time=600,
-        use_request_cache=False
+        use_request_cache=False,
+        linkedin_login_id=None,
     ):
         self.logger = logger
         self.client = Client(
@@ -109,6 +115,25 @@ class Linkedin(object):
         self.limit_data = None
         self.results_success_urls = []
 
+        # Count each request and save amount per X timerange
+        self.requests_amount = {
+            k: 0 for k in settings.REQUESTS_TYPES.keys()
+        }
+        self.requests_amount["start_timestamp"] = None
+        self.requests_amount["end_timestamp"] = None
+
+        # First and last request timestamps
+        self.requests_start_timestamp = None
+        self.requests_end_timestamp = None
+
+        redis_url = urlparse(environ["BROKER_URL"])
+        redis_host, redis_port = redis_url.netloc.split(":")
+        self.rds = StrictRedis(redis_host, port=redis_port, decode_responses=True, charset="utf-8")
+
+        # Unique session id, based on UUID
+        self.session_id = uuid.uuid4()
+        self.linkedin_login_id = linkedin_login_id
+
     def _get_max_retry_time(self):
         return self.default_retry_max_time
 
@@ -118,6 +143,26 @@ class Linkedin(object):
             "calling function {target} with args {args} and kwargs "
             "{kwargs}".format(**details)
         )
+
+    def _update_statistics(self, url):
+        request_type = APIRequestType.get_request_type(url)
+        self.requests_amount[request_type] += 1
+        if not self.requests_amount["start_timestamp"]:
+            self.requests_amount["start_timestamp"] = int(datetime.utcnow().timestamp())
+
+        self.requests_amount["end_timestamp"] = int(datetime.utcnow().timestamp())
+
+        # Write statistics to redis, key contains username and uuid of the task
+        # ln.api -> LinkedIn API statistics
+        # ttl is 1 month
+        if self.linkedin_login_id:
+            self.rds.set(
+                f"ln.api:{self.linkedin_login_id}:{self.session_id}",
+                json.dumps(self.requests_amount),
+                ex=settings.STATISTICS_TTL
+            )
+        else:
+            logger.warning("No linkedin_login_id provided, skipping statistics store in redis")
 
     def _fetch(self, uri, evade=default_evade, raw_url=False, raise_for_status=False, **kwargs):
         """
@@ -156,6 +201,7 @@ class Linkedin(object):
             if raise_for_status:
                 response.raise_for_status()
 
+            self._update_statistics(url)
             return response
 
         return fetch_data()
@@ -188,7 +234,9 @@ class Linkedin(object):
             if not kwargs.get("timeout"):
                 # Use default timeout
                 kwargs["timeout"] = Linkedin._DEFAULT_POST_TIMEOUT
-            return self.client.session.post(url, **kwargs)
+            data = self.client.session.post(url, **kwargs)
+            self._update_statistics(url)
+            return data
 
         return post_data()
 
