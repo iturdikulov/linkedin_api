@@ -164,7 +164,7 @@ class Linkedin(object):
         else:
             logger.warning("No linkedin_login_id provided, skipping statistics store in redis")
 
-    def _fetch(self, uri, evade=default_evade, raw_url=False, raise_for_status=False, **kwargs):
+    def _fetch(self, uri, evade=default_evade, raw_url=False, **kwargs):
         """
         GET request to LinkedIn API
         """
@@ -196,13 +196,12 @@ class Linkedin(object):
             if not kwargs.get("timeout"):
                 # Use default timeout
                 kwargs["timeout"] = Linkedin._DEFAULT_GET_TIMEOUT
-            response = self.client.session.get(url, **kwargs)
 
-            if raise_for_status:
-                response.raise_for_status()
+            fetch_response = self.client.session.get(url, **kwargs)
+            fetch_response.raise_for_status()
 
             self._update_statistics(url)
-            return response
+            return fetch_response
 
         return fetch_data()
 
@@ -234,9 +233,13 @@ class Linkedin(object):
             if not kwargs.get("timeout"):
                 # Use default timeout
                 kwargs["timeout"] = Linkedin._DEFAULT_POST_TIMEOUT
-            data = self.client.session.post(url, **kwargs)
+
+            post_response = self.client.session.post(url, **kwargs)
+            post_response.raise_for_status()
+
+            # Update statistics if request was successful
             self._update_statistics(url)
-            return data
+            return post_response
 
         return post_data()
 
