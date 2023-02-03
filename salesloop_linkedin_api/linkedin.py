@@ -166,7 +166,7 @@ class Linkedin(object):
 
     def _fetch(self, uri, evade=default_evade, raw_url=False, raise_for_status=False, **kwargs):
         """
-        GET request to Linkedin API
+        GET request to LinkedIn API
         """
         evade()
 
@@ -208,7 +208,7 @@ class Linkedin(object):
 
     def _post(self, uri, evade=default_evade, raw_url=False, **kwargs):
         """
-        POST request to Linkedin API
+        POST request to LinkedIn API
         """
         evade()
 
