@@ -84,21 +84,21 @@ REQUESTS_TYPES = {
     "uas": ("uas/authenticate",),
 }
 
-# Maximum number of requests per day
+# Maximum number of requests per DAY
 # we use these multiples to calculate the requests limits
-# 1. New account
-# 2. Account with 5000 connections
-# 3. Account with 5000 connections and premium subscription
+# 1. New account (xxx*, xxx, xxx)
+# 2. Account with 5000 connections (xxx, xxx*, xxx)
+# 3. Account with 5000 connections and premium subscription (xxx, xxx, xxx*)
 # TODO: use actual values
 BASE_REQUESTS_LIMITS = {
     "growth": (200, 200, 200),
     "jobs": (200, 200, 200),
     "relationships": (200, 200, 200),
     "companies": (200, 200, 200),
-    "search": (500, 500, 500),
+    "search": (2000, 2000, 2000),
     "feed": (200, 200, 200),
     "messaging": (200, 200, 200),
-    "identity": (200, 200, 200),
+    "identity": (90 * 24, 90 * 24, 90 * 24),
     "other": (200, 200, 200),
     "uas": (200, 200, 200),
 }
