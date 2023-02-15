@@ -27,7 +27,10 @@ REQUESTS_TYPES = {
         "relationships/connectionsSummary",
         "relationships/connections",
     ),
-    "companies": ("entities/companies", "organization/companies",),
+    "companies": (
+        "entities/companies",
+        "organization/companies",
+    ),
     "search": (
         "search/history",
         "search/hits",
@@ -88,21 +91,20 @@ REQUESTS_TYPES = {
 # 3. Account with 5000 connections and premium subscription
 # TODO: use actual values
 BASE_REQUESTS_LIMITS = {
-    "growth": (100, 100, 100),
-    "jobs": (100, 100, 100),
-    "relationships": (100, 100, 100),
-    "companies": (100, 100, 100),
+    "growth": (200, 200, 200),
+    "jobs": (200, 200, 200),
+    "relationships": (200, 200, 200),
+    "companies": (200, 200, 200),
     "search": (500, 500, 500),
-    "feed": (100, 100, 100),
-    "messaging": (100, 100, 100),
-    "identity": (100, 100, 100),
-    "other": (100, 100, 100),
-    "uas": (100, 100, 100),
+    "feed": (200, 200, 200),
+    "messaging": (200, 200, 200),
+    "identity": (200, 200, 200),
+    "other": (200, 200, 200),
+    "uas": (200, 200, 200),
 }
 
 
-def get_account_requests_limits(connections_number: int,
-                                is_premium: bool):
+def get_account_requests_limits(connections_number: int, is_premium: bool):
     """
     Get account requests limits based on connections_number and is_premium
     Args:
@@ -128,5 +130,3 @@ def get_account_requests_limits(connections_number: int,
             account_requests_limits[request_type] = limits[old]
 
     return account_requests_limits
-
-
