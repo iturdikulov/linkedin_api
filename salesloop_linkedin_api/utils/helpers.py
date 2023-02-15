@@ -863,61 +863,6 @@ def get_leads_from_html(html, is_sales=False):
         logger.warning("No search hits in html with %d length", len(html))
     return search_hits_list
 
-
-def get_pagination_data(html, is_sales=False):
-    parsed_search_hits = get_leads_from_html(html, is_sales=is_sales)
-    users_data = None
-    pagination = {}
-    results_length = 0
-    logged_in = False
-
-    if not is_sales:
-        for data in parsed_search_hits:
-            try:
-                data_type = data.get("data", {}).get("$type")
-
-                if data_type == "com.linkedin.restli.common.CollectionResponse" and not users_data:
-                    users_data = data
-                else:
-                    logger.debug("Data type: %s", data_type)
-
-                if data_type == "com.linkedin.voyager.common.Me":
-                    logged_in = True
-
-            except Exception as e:
-                logger.warning(f"Failed parse item... {data}. {repr(e)}")
-
-        if users_data:
-            paging = users_data.get("data", {}).get("paging")
-            if paging and not pagination:
-                pagination = paging
-                results_length = pagination.get("total", 0)
-
-    else:
-        parsed_items = []
-        for data in parsed_search_hits:
-            try:
-                if not pagination and data.get("paging"):
-                    pagination = data.get("paging")
-                    results_length = pagination.get("count", 0)
-
-                if data.get("elements"):
-                    for element in data.get("elements"):
-                        parsed_items.append(element)
-
-                current_entity_run = data.get("memberResolutionResult", {}).get("entityUrn")
-
-                if current_entity_run and "urn:li:fs_salesProfile" in current_entity_run:
-                    logged_in = True
-            except Exception as e:
-                logger.warning("Unknown sales search parse error", exc_info=e)
-
-    pagination["results_length"] = results_length
-    pagination["logged_in"] = logged_in
-
-    return pagination
-
-
 def xstr(s):
     return str(s or "")
 
