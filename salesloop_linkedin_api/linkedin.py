@@ -32,7 +32,6 @@ from salesloop_linkedin_api.utils.helpers import (
     get_default_regions,
     default_evade,
     get_random_base64,
-    get_pagination_data,
     get_id_from_urn,
 )
 
@@ -87,7 +86,7 @@ class Linkedin(object):
             proxies=proxies,
             api_cookies=api_cookies,
             ua=ua,
-            use_request_cache=use_request_cache
+            use_request_cache=use_request_cache,
         )
         self.username = username
 
@@ -116,9 +115,7 @@ class Linkedin(object):
         self.results_success_urls = []
 
         # Count each request and save amount per X timerange
-        self.requests_amount = {
-            k: 0 for k in settings.REQUESTS_TYPES.keys()
-        }
+        self.requests_amount = {k: 0 for k in settings.REQUESTS_TYPES.keys()}
         self.requests_amount["start_timestamp"] = None
         self.requests_amount["end_timestamp"] = None
 
@@ -159,7 +156,7 @@ class Linkedin(object):
             self.rds.set(
                 f"ln.api:{self.linkedin_login_id}:{self.session_id}",
                 json.dumps(self.requests_amount),
-                ex=settings.STATISTICS_TTL
+                ex=settings.STATISTICS_TTL,
             )
         else:
             logger.warning("No linkedin_login_id provided, skipping statistics store in redis")
@@ -1362,14 +1359,6 @@ class Linkedin(object):
             parsed_users, pagination, unknown_profiles, limit_data = parse_search_hits(
                 search_hits, is_sales=is_sales
             )
-
-            if not is_sales:
-                # TODO: remove this and merge into parse_search_hits
-                logger.info(
-                    "Use custom pagination data parsing " "for default search (Compatibility)"
-                )
-
-                pagination = get_pagination_data(html, is_sales=is_sales)
 
             if parsed_users:
                 # default pagination params can be useful for debugging
