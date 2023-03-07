@@ -37,6 +37,8 @@ REQUESTS_TYPES = {
         "search/blended",
         "search/results",
         "search/dash",
+        "sales/search",
+        "sales-api/salesApiLeadSearch",
     ),
     "feed": (
         "feed/updates",
@@ -64,6 +66,7 @@ REQUESTS_TYPES = {
         "identity/profiles",
         "identity/wvmpCards",
         "identity/panels",
+        "sales-api/salesApiIdentity",
     ),
     "other": (
         "legoWidgetActionEvents",
@@ -81,7 +84,12 @@ REQUESTS_TYPES = {
         "legoWidgetImpressionEvents",
         "psettings/premium-subscription",
     ),
-    "uas": ("uas/authenticate",),
+    "uas": (
+        "sales",
+        "uas/authenticate",
+        "sales-api/salesApiAgnosticAuthentication",
+        "sales-api/salesApiEnterpriseAuthentication",
+    ),
 }
 
 # Maximum number of requests per DAY
