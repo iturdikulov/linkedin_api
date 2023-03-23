@@ -33,7 +33,6 @@ from salesloop_linkedin_api.utils.helpers import (
     get_default_regions,
     default_evade,
     get_random_base64,
-    get_pagination_data,
     get_id_from_urn,
 )
 
@@ -88,7 +87,7 @@ class Linkedin(object):
             proxies=proxies,
             api_cookies=api_cookies,
             ua=ua,
-            use_request_cache=use_request_cache
+            use_request_cache=use_request_cache,
         )
         self.username = username
 
@@ -117,9 +116,7 @@ class Linkedin(object):
         self.results_success_urls = []
 
         # Count each request and save amount per X timerange
-        self.requests_amount = {
-            k: 0 for k in settings.REQUESTS_TYPES.keys()
-        }
+        self.requests_amount = {k: 0 for k in settings.REQUESTS_TYPES.keys()}
         self.requests_amount["start_timestamp"] = None
         self.requests_amount["end_timestamp"] = None
 
@@ -161,14 +158,14 @@ class Linkedin(object):
             self.rds.set(
                 f"ln.api:{self.linkedin_login_id}:{self.session_id}",
                 json.dumps(self.requests_amount),
-                ex=settings.STATISTICS_TTL
+                ex=settings.STATISTICS_TTL,
             )
         else:
             logger.warning("No linkedin_login_id provided, skipping statistics store in redis")
 
-    def _fetch(self, uri, evade=default_evade, raw_url=False, raise_for_status=False, **kwargs):
+    def _fetch(self, uri, evade=default_evade, raw_url=False, **kwargs):
         """
-        GET request to Linkedin API
+        GET request to LinkedIn API
         """
         evade()
 
@@ -198,19 +195,18 @@ class Linkedin(object):
             if not kwargs.get("timeout"):
                 # Use default timeout
                 kwargs["timeout"] = Linkedin._DEFAULT_GET_TIMEOUT
-            response = self.client.session.get(url, **kwargs)
 
-            if raise_for_status:
-                response.raise_for_status()
+            fetch_response = self.client.session.get(url, **kwargs)
+            fetch_response.raise_for_status()
 
             self._update_statistics(url)
-            return response
+            return fetch_response
 
         return fetch_data()
 
     def _post(self, uri, evade=default_evade, raw_url=False, **kwargs):
         """
-        POST request to Linkedin API
+        POST request to LinkedIn API
         """
         evade()
 
@@ -236,9 +232,13 @@ class Linkedin(object):
             if not kwargs.get("timeout"):
                 # Use default timeout
                 kwargs["timeout"] = Linkedin._DEFAULT_POST_TIMEOUT
-            data = self.client.session.post(url, **kwargs)
+
+            post_response = self.client.session.post(url, **kwargs)
+            post_response.raise_for_status()
+
+            # Update statistics if request was successful
             self._update_statistics(url)
-            return data
+            return post_response
 
         return post_data()
 
@@ -311,7 +311,6 @@ class Linkedin(object):
         res = self._fetch(
             f"/search/dash/clusters?{url_params_str}",
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
-            raise_for_status=True,
         )
 
         data = res.json()
@@ -1366,14 +1365,6 @@ class Linkedin(object):
             parsed_users, pagination, unknown_profiles, limit_data = parse_search_hits(
                 search_hits, is_sales=is_sales
             )
-
-            if not is_sales:
-                # TODO: remove this and merge into parse_search_hits
-                logger.info(
-                    "Use custom pagination data parsing " "for default search (Compatibility)"
-                )
-
-                pagination = get_pagination_data(html, is_sales=is_sales)
 
             if parsed_users:
                 # default pagination params can be useful for debugging

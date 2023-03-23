@@ -27,13 +27,18 @@ REQUESTS_TYPES = {
         "relationships/connectionsSummary",
         "relationships/connections",
     ),
-    "companies": ("entities/companies", "organization/companies",),
+    "companies": (
+        "entities/companies",
+        "organization/companies",
+    ),
     "search": (
         "search/history",
         "search/hits",
         "search/blended",
         "search/results",
         "search/dash",
+        "sales/search",
+        "sales-api/salesApiLeadSearch",
     ),
     "feed": (
         "feed/updates",
@@ -61,6 +66,7 @@ REQUESTS_TYPES = {
         "identity/profiles",
         "identity/wvmpCards",
         "identity/panels",
+        "sales-api/salesApiIdentity",
     ),
     "other": (
         "legoWidgetActionEvents",
@@ -78,31 +84,35 @@ REQUESTS_TYPES = {
         "legoWidgetImpressionEvents",
         "psettings/premium-subscription",
     ),
-    "uas": ("uas/authenticate",),
+    "uas": (
+        "sales",
+        "uas/authenticate",
+        "sales-api/salesApiAgnosticAuthentication",
+        "sales-api/salesApiEnterpriseAuthentication",
+    ),
 }
 
-# Maximum number of requests per day
+# Maximum number of requests per DAY
 # we use these multiples to calculate the requests limits
-# 1. New account
-# 2. Account with 5000 connections
-# 3. Account with 5000 connections and premium subscription
+# 1. New account (xxx*, xxx, xxx)
+# 2. Account with 5000 connections (xxx, xxx*, xxx)
+# 3. Account with 5000 connections and premium subscription (xxx, xxx, xxx*)
 # TODO: use actual values
 BASE_REQUESTS_LIMITS = {
-    "growth": (100, 100, 100),
-    "jobs": (100, 100, 100),
-    "relationships": (100, 100, 100),
-    "companies": (100, 100, 100),
-    "search": (500, 500, 500),
-    "feed": (100, 100, 100),
-    "messaging": (100, 100, 100),
-    "identity": (100, 100, 100),
-    "other": (100, 100, 100),
-    "uas": (100, 100, 100),
+    "growth": (200, 200, 200),
+    "jobs": (200, 200, 200),
+    "relationships": (200, 200, 200),
+    "companies": (200, 200, 200),
+    "search": (2000, 2000, 2000),
+    "feed": (200, 200, 200),
+    "messaging": (200, 200, 200),
+    "identity": (90 * 24, 90 * 24, 90 * 24),
+    "other": (200, 200, 200),
+    "uas": (200, 200, 200),
 }
 
 
-def get_account_requests_limits(connections_number: int,
-                                is_premium: bool):
+def get_account_requests_limits(connections_number: int, is_premium: bool):
     """
     Get account requests limits based on connections_number and is_premium
     Args:
@@ -128,5 +138,3 @@ def get_account_requests_limits(connections_number: int,
             account_requests_limits[request_type] = limits[old]
 
     return account_requests_limits
-
-
