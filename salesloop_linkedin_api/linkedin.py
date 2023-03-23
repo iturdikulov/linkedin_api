@@ -23,6 +23,7 @@ import requests
 from redis.client import StrictRedis
 
 import salesloop_linkedin_api.settings as settings
+from application.auto_throtle import AutoThrottleFunc
 from application.utlis_sales_search import generate_sales_search_url
 from salesloop_linkedin_api.client import Client
 from salesloop_linkedin_api.statistic import APIRequestType
@@ -133,6 +134,7 @@ class Linkedin(object):
         # Unique session id, based on UUID
         self.session_id = uuid.uuid4()
         self.linkedin_login_id = linkedin_login_id
+        self.auto_throttle = AutoThrottleFunc(is_request_func=True)
 
     def _get_max_retry_time(self):
         return self.default_retry_max_time
@@ -1353,9 +1355,13 @@ class Linkedin(object):
             return html
         else:
             if is_sales:
-                search_hits = self.cluster_sales_search_people(search_url)
+                search_function = self.cluster_sales_search_people
             else:
-                search_hits = self.clusters_search_people(search_url)
+                search_function = self.clusters_search_people
+
+            search_hits = self.auto_throttle.process(
+                search_function, search_url
+            )
 
             parsed_users, pagination, unknown_profiles, limit_data = parse_search_hits(
                 search_hits, is_sales=is_sales
