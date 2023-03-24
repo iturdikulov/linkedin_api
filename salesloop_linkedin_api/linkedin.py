@@ -131,7 +131,7 @@ class Linkedin(object):
         # Unique session id, based on UUID
         self.session_id = uuid.uuid4()
         self.linkedin_login_id = linkedin_login_id
-        self.auto_throttle = AutoThrottleFunc(is_request_func=True)
+        self.auto_throttle = AutoThrottleFunc()
 
     def _get_max_retry_time(self):
         return self.default_retry_max_time
