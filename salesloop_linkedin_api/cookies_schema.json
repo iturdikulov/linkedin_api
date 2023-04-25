@@ -1,0 +1,38 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "domain": {
+                "type": "string"
+            },
+            "expires": {
+                "type": "integer"
+            },
+            "httponly": {
+                "type": "boolean"
+            },
+            "name": {
+                "type": "string"
+            },
+            "path": {
+                "type": "string"
+            },
+            "secure": {
+                "type": "boolean"
+            },
+            "value": {
+                "type": "string"
+            }
+        },
+        "required": [
+            "domain",
+            "httponly",
+            "name",
+            "path",
+            "secure",
+            "value"
+        ]
+    }
+}
