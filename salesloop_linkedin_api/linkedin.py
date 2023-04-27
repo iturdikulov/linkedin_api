@@ -23,6 +23,7 @@ import requests
 from redis.client import StrictRedis
 
 import salesloop_linkedin_api.settings as settings
+from salesloop_linkedin_api.properties import LinkedinApFeatureAccess
 from application.auto_throtle import AutoThrottleFunc
 from application.utlis_sales_search import generate_sales_search_url
 from salesloop_linkedin_api.client import Client
@@ -1680,3 +1681,32 @@ class Linkedin(object):
 
             if reformat_max_errors <= 0:
                 raise Exception("Too many reformat errors, break parsing...")
+
+    def get_access_level(self):
+        """
+        Check if API access is valid.
+        """
+        # Check if we can access the network page
+        response = self._fetch("https://www.linkedin.com/network/", raw_url=True)
+        feature_access = LinkedinApFeatureAccess(linkedin=True, sales_nav=True, recruiter=True)
+        if response.status_code == 200:
+            access_levels = "voyagerPremiumDashFeatureAccess?" \
+                            "ids=List(urn:li:fsd_featureAccess:CAN_ACCESS_RECRUITER_ENTRY_POINT," \
+                            "urn:li:fsd_featureAccess:CAN_ACCESS_SALES_NAV_ENTRY_POINT)"
+            access_levels_response = self._fetch(access_levels).json()
+            linkedin_features = access_levels_response["included"]
+
+            # If we accessed to included data, this means we have access to the API
+            feature_access.linkedin = True
+
+            for feature_access in linkedin_features:
+                access_type = feature_access["featureAccessType"]
+                has_access = feature_access["hasAccess"]
+
+                if has_access and access_type == "CAN_ACCESS_SALES_NAV_ENTRY_POINT":
+                    feature_access.sales_nav = True
+                elif has_access and access_type == "CAN_ACCESS_RECRUITER_ENTRY_POINT":
+                    feature_access.recruiter = True
+
+        return feature_access
+
