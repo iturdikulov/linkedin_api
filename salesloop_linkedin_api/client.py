@@ -17,6 +17,10 @@ class UnauthorizedException(Exception):
     pass
 
 
+class LinkedinParsingError(Exception):
+    pass
+
+
 class Client:
     """
     Class to act as a client for the Linkedin API.
