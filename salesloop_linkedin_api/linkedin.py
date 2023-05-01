@@ -20,13 +20,15 @@ from urllib.parse import urlparse, parse_qs
 
 import backoff
 import requests
+from bs4 import BeautifulSoup
 from redis.client import StrictRedis
 
 import salesloop_linkedin_api.settings as settings
 from salesloop_linkedin_api.properties import LinkedinApFeatureAccess
 from application.auto_throtle import AutoThrottleFunc
 from application.utlis_sales_search import generate_sales_search_url
-from salesloop_linkedin_api.client import Client
+from application.integrations.linkedin import LinkedinLoginError
+from salesloop_linkedin_api.client import Client, LinkedinParsingError
 from salesloop_linkedin_api.statistic import APIRequestType
 from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url
 from salesloop_linkedin_api.utils.helpers import (
@@ -243,10 +245,12 @@ class Linkedin(object):
 
         return post_data()
 
-    def get_access_level(self):
+    def get_ln_user_metadata(self):
         """
-        Check if API access is valid.
+        Fetch basic metadata from Linkedin API.
+        Also used to check if we are logged in.
         """
+        metadata = {}
         feature_access = LinkedinApFeatureAccess(linkedin=False, sales_nav=False, recruiter=False)
 
         # Check if we can access the network page
@@ -282,7 +286,47 @@ class Linkedin(object):
                 elif has_access and access_type == "CAN_ACCESS_RECRUITER_ENTRY_POINT":
                     ln_feature.recruiter = True
 
-        return feature_access
+        if not feature_access.linkedin:
+            raise LinkedinLoginError("Linkedin account has no minimum access to Linkedin API")
+
+        metadata["feature_access"] = feature_access
+        metadata["email"] = self._parse_email_from_response(response.text)
+
+        return metadata
+
+
+    def _parse_email_from_response(self, response_text: str) -> str:
+        """
+        Parse email from response text
+        Args:
+            response_text: html response text, usually from home page
+
+        Returns:
+            email address
+
+        """
+        soup = BeautifulSoup(response_text, "lxml")
+        code_elements = soup.find_all('code')
+        email = None
+
+        for search_hit in code_elements:
+            try:
+                search_hit_data = json.loads(search_hit.get_text())
+                # Normal account
+                data = search_hit_data.get('data', {})
+                if data:
+                    data_type = data.get('$type')
+                    if data_type == 'com.linkedin.voyager.dash.contacts.SupportedEmail':
+                        email = data.get('emailAddress')
+                        if '@' in email:
+                            break
+            except Exception as e:
+                self.logger.warning(f"Error parsing email from response", exc_info=e)
+
+        if not email:
+            raise LinkedinParsingError("Could not parse email from response: %s", response_text)
+
+        return email
 
     def search(self, params, limit=-1, offset=0):
         """Perform a LinkedIn search.
