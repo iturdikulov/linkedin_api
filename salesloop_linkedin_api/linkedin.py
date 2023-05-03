@@ -317,16 +317,14 @@ class Linkedin(object):
                 if data:
                     data_type = data.get('$type')
                     if data_type == 'com.linkedin.voyager.dash.contacts.SupportedEmail':
-                        email = data.get('emailAddress')
-                        if '@' in email:
-                            break
+                        parsed_email = data.get('emailAddress')
+                        if '@' in parsed_email:
+                            return parsed_email
             except Exception as e:
                 self.logger.warning(f"Error parsing email from response", exc_info=e)
 
         if not email:
             raise LinkedinParsingError("Could not parse email from response: %s", response_text)
-
-        return email
 
     def search(self, params, limit=-1, offset=0):
         """Perform a LinkedIn search.
