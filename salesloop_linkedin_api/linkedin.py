@@ -1424,6 +1424,9 @@ class Linkedin(object):
     ):
         logger.info("Leads quick search with %s timeout. Is Sales %s.", timeout, is_sales)
 
+        if search_url.startswith('https://www.linkedin.com/sales/search'):
+            is_sales = True
+
         if is_sales and send_sn_requests:
             self.sales_login(timeout=timeout)
 
