@@ -26,6 +26,7 @@ from redis.client import StrictRedis
 import salesloop_linkedin_api.settings as settings
 from salesloop_linkedin_api.properties import LinkedinApFeatureAccess
 from application.auto_throtle import AutoThrottleFunc
+from application.integrations.linkedin import LinkedinLoginError, LinkedinUnauthorized
 from application.utlis_sales_search import generate_sales_search_url
 from application.integrations.linkedin import LinkedinLoginError
 from salesloop_linkedin_api.client import Client, LinkedinParsingError
@@ -256,6 +257,10 @@ class Linkedin(object):
         # Check if we can access the network page
         response = self._fetch("https://www.linkedin.com/mynetwork/", raw_url=True)
         if response.status_code == 200:
+            metadata["email"] = self._parse_email_from_response(response.text)
+
+            if not metadata["email"]:
+                raise LinkedinUnauthorized("Unable to parse email from response")
 
             default_params = {
                 "ids": "List("
@@ -290,7 +295,6 @@ class Linkedin(object):
             raise LinkedinLoginError("Linkedin account has no minimum access to Linkedin API")
 
         metadata["feature_access"] = feature_access
-        metadata["email"] = self._parse_email_from_response(response.text)
 
         return metadata
 
