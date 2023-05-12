@@ -257,9 +257,9 @@ class Linkedin(object):
         # Check if we can access the network page
         response = self._fetch("https://www.linkedin.com/mynetwork/", raw_url=True)
         if response.status_code == 200:
-            metadata["email"] = self._parse_email_from_response(response.text)
-
-            if not metadata["email"]:
+            try:
+                metadata["email"] = self._parse_email_from_response(response.text)
+            except LinkedinParsingError:
                 raise LinkedinUnauthorized("Unable to parse email from response")
 
             default_params = {
