@@ -286,10 +286,11 @@ class Linkedin(object):
                 access_type = ln_feature["featureAccessType"]
                 has_access = ln_feature["hasAccess"]
 
+                # TODO: add test for this, to check if can actually parse ln_features
                 if has_access and access_type == "CAN_ACCESS_SALES_NAV_ENTRY_POINT":
-                    ln_feature.sales_nav = True
+                    feature_access.sales_nav = True
                 elif has_access and access_type == "CAN_ACCESS_RECRUITER_ENTRY_POINT":
-                    ln_feature.recruiter = True
+                    feature_access.recruiter = True
 
         if not feature_access.linkedin:
             raise LinkedinLoginError("Linkedin account has no minimum access to Linkedin API")
