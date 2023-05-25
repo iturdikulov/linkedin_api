@@ -8,7 +8,7 @@
                 "type": "string"
             },
             "expires": {
-                "type": "integer"
+                "type": ["integer", "null"]
             },
             "httponly": {
                 "type": "boolean"
