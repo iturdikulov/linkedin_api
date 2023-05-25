@@ -27,6 +27,7 @@ import salesloop_linkedin_api.settings as settings
 from salesloop_linkedin_api.properties import LinkedinApFeatureAccess
 from application.auto_throtle import AutoThrottleFunc
 from application.integrations.linkedin import LinkedinLoginError, LinkedinUnauthorized
+from application.profile.cookie_converter import request_cookies_to_cookies_list
 from application.utlis_sales_search import generate_sales_search_url
 from application.integrations.linkedin import LinkedinLoginError
 from salesloop_linkedin_api.client import Client, LinkedinParsingError
@@ -269,6 +270,7 @@ class Linkedin(object):
                        ")",
             }
 
+            # Set access levels
             res = self._fetch(
                 f"/voyagerPremiumDashFeatureAccess?{urlencode(default_params, safe='(),')}",
                 headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
@@ -291,6 +293,10 @@ class Linkedin(object):
                     feature_access.sales_nav = True
                 elif has_access and access_type == "CAN_ACCESS_RECRUITER_ENTRY_POINT":
                     feature_access.recruiter = True
+
+            # Set cookies
+            metadata["session_cookies"] = request_cookies_to_cookies_list(
+                self.client.session.cookies)
 
         if not feature_access.linkedin:
             raise LinkedinLoginError("Linkedin account has no minimum access to Linkedin API")
