@@ -331,8 +331,8 @@ class Linkedin(object):
                         parsed_email = data.get('emailAddress')
                         if '@' in parsed_email:
                             return parsed_email.lower().strip()
-            except Exception as e:
-                self.logger.warning(f"Error parsing email from response", exc_info=e)
+            except json.decoder.JSONDecodeError:
+                self.logger.debug(f"Failed to parse code element, skip: {search_hit}")
 
         if not email:
             raise LinkedinParsingError("Could not parse email from response: %s", response_text)
