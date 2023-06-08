@@ -265,9 +265,9 @@ class Linkedin(object):
 
             default_params = {
                 "ids": "List("
-                       "urn:li:fsd_featureAccess:CAN_ACCESS_RECRUITER_ENTRY_POINT,"
-                       "urn:li:fsd_featureAccess:CAN_ACCESS_SALES_NAV_ENTRY_POINT"
-                       ")",
+                "urn:li:fsd_featureAccess:CAN_ACCESS_RECRUITER_ENTRY_POINT,"
+                "urn:li:fsd_featureAccess:CAN_ACCESS_SALES_NAV_ENTRY_POINT"
+                ")",
             }
 
             # Set access levels
@@ -296,7 +296,8 @@ class Linkedin(object):
 
             # Set cookies
             metadata["session_cookies"] = request_cookies_to_cookies_list(
-                self.client.session.cookies)
+                self.client.session.cookies
+            )
 
         if not feature_access.linkedin:
             raise LinkedinLoginError("Linkedin account has no minimum access to Linkedin API")
@@ -317,19 +318,19 @@ class Linkedin(object):
 
         """
         soup = BeautifulSoup(response_text, "lxml")
-        code_elements = soup.find_all('code')
+        code_elements = soup.find_all("code")
         email = None
 
         for search_hit in code_elements:
             try:
                 search_hit_data = json.loads(search_hit.get_text())
                 # Normal account
-                data = search_hit_data.get('data', {})
+                data = search_hit_data.get("data", {})
                 if data:
-                    data_type = data.get('$type')
-                    if data_type == 'com.linkedin.voyager.dash.contacts.SupportedEmail':
-                        parsed_email = data.get('emailAddress')
-                        if '@' in parsed_email:
+                    data_type = data.get("$type")
+                    if data_type == "com.linkedin.voyager.dash.contacts.SupportedEmail":
+                        parsed_email = data.get("emailAddress")
+                        if "@" in parsed_email:
                             return parsed_email.lower().strip()
             except json.decoder.JSONDecodeError:
                 self.logger.debug(f"Failed to parse code element, skip: {search_hit}")
@@ -1435,7 +1436,7 @@ class Linkedin(object):
     ):
         logger.info("Leads quick search with %s timeout. Is Sales %s.", timeout, is_sales)
 
-        if search_url.startswith('https://www.linkedin.com/sales/search'):
+        if search_url.startswith("https://www.linkedin.com/sales/search"):
             is_sales = True
 
         if is_sales and send_sn_requests:
