@@ -1747,10 +1747,13 @@ class Linkedin(object):
                         sleep(randrange(15, 25))
 
                     profile = self.get_profile(urn_id=lead.get("entityUrn"))
-                    lead["publicIdentifier"] = profile.get("publicIdentifier")
+
+                    lead["publicIdentifier"] = profile["publicIdentifier"]
 
                     # fill additional fields
-                    lead["headline"] = profile.get("headline")
+                    lead["firstname"] = profile["firstName"]
+                    lead["lastname"] = profile["lastName"]
+                    lead["headline"] = profile["headline"]
 
                     if "currentPositions" in lead:
                         for position in lead["currentPositions"]:
