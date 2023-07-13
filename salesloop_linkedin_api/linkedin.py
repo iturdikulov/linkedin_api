@@ -1688,7 +1688,7 @@ class Linkedin(object):
         """
         # Check if we can access the network page
         response = self._fetch("https://www.linkedin.com/network/", raw_url=True)
-        feature_access = LinkedinApFeatureAccess(linkedin=True, sales_nav=True, recruiter=True)
+        feature_access = LinkedinApFeatureAccess(linkedin=False, sales_nav=False, recruiter=False)
         if response.status_code == 200:
             access_levels = "voyagerPremiumDashFeatureAccess?" \
                             "ids=List(urn:li:fsd_featureAccess:CAN_ACCESS_RECRUITER_ENTRY_POINT," \
