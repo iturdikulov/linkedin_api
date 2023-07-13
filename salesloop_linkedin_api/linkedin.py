@@ -243,6 +243,47 @@ class Linkedin(object):
 
         return post_data()
 
+    def get_access_level(self):
+        """
+        Check if API access is valid.
+        """
+        feature_access = LinkedinApFeatureAccess(linkedin=False, sales_nav=False, recruiter=False)
+
+        # Check if we can access the network page
+        response = self._fetch("https://www.linkedin.com/mynetwork/", raw_url=True)
+        if response.status_code == 200:
+
+            default_params = {
+                "ids": "List("
+                       "urn:li:fsd_featureAccess:CAN_ACCESS_RECRUITER_ENTRY_POINT,"
+                       "urn:li:fsd_featureAccess:CAN_ACCESS_SALES_NAV_ENTRY_POINT"
+                       ")",
+            }
+
+            res = self._fetch(
+                f"/voyagerPremiumDashFeatureAccess?{urlencode(default_params, safe='(),')}",
+                headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
+            )
+
+            res.raise_for_status()
+
+            access_levels_response = res.json()
+            linkedin_features = access_levels_response["included"]
+
+            # If we accessed to included data, this means we have access to the base API
+            feature_access.linkedin = True
+
+            for ln_feature in linkedin_features:
+                access_type = ln_feature["featureAccessType"]
+                has_access = ln_feature["hasAccess"]
+
+                if has_access and access_type == "CAN_ACCESS_SALES_NAV_ENTRY_POINT":
+                    ln_feature.sales_nav = True
+                elif has_access and access_type == "CAN_ACCESS_RECRUITER_ENTRY_POINT":
+                    ln_feature.recruiter = True
+
+        return feature_access
+
     def search(self, params, limit=-1, offset=0):
         """Perform a LinkedIn search.
         :param params: Search parameters (see code)
@@ -1681,32 +1722,4 @@ class Linkedin(object):
 
             if reformat_max_errors <= 0:
                 raise Exception("Too many reformat errors, break parsing...")
-
-    def get_access_level(self):
-        """
-        Check if API access is valid.
-        """
-        # Check if we can access the network page
-        response = self._fetch("https://www.linkedin.com/network/", raw_url=True)
-        feature_access = LinkedinApFeatureAccess(linkedin=False, sales_nav=False, recruiter=False)
-        if response.status_code == 200:
-            access_levels = "voyagerPremiumDashFeatureAccess?" \
-                            "ids=List(urn:li:fsd_featureAccess:CAN_ACCESS_RECRUITER_ENTRY_POINT," \
-                            "urn:li:fsd_featureAccess:CAN_ACCESS_SALES_NAV_ENTRY_POINT)"
-            access_levels_response = self._fetch(access_levels).json()
-            linkedin_features = access_levels_response["included"]
-
-            # If we accessed to included data, this means we have access to the API
-            feature_access.linkedin = True
-
-            for feature_access in linkedin_features:
-                access_type = feature_access["featureAccessType"]
-                has_access = feature_access["hasAccess"]
-
-                if has_access and access_type == "CAN_ACCESS_SALES_NAV_ENTRY_POINT":
-                    feature_access.sales_nav = True
-                elif has_access and access_type == "CAN_ACCESS_RECRUITER_ENTRY_POINT":
-                    feature_access.recruiter = True
-
-        return feature_access
 
