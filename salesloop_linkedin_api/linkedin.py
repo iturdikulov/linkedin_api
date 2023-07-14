@@ -82,7 +82,6 @@ class Linkedin(object):
         cached_login=False,
         ua=None,
         default_retry_max_time=600,
-        use_request_cache=False,
         linkedin_login_id=None,
     ):
         self.logger = logger
@@ -92,7 +91,6 @@ class Linkedin(object):
             proxies=proxies,
             api_cookies=api_cookies,
             ua=ua,
-            use_request_cache=use_request_cache,
         )
         self.username = username
 
