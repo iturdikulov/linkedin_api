@@ -89,7 +89,8 @@ REQUESTS_TYPES = {
         "uas/authenticate",
         "sales-api/salesApiAgnosticAuthentication",
         "sales-api/salesApiEnterpriseAuthentication",
-        "mynetwork",
+        "mynetwork",  # not sure right category
+        "voyagerPremiumDashFeatureAccess",  # not sure right category
     ),
 }
 
