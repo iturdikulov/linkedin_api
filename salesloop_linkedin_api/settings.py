@@ -89,6 +89,7 @@ REQUESTS_TYPES = {
         "uas/authenticate",
         "sales-api/salesApiAgnosticAuthentication",
         "sales-api/salesApiEnterpriseAuthentication",
+        "mynetwork",
     ),
 }
 
