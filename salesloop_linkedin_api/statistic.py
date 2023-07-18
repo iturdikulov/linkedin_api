@@ -1,6 +1,5 @@
 import logging
 import re
-from datetime import datetime
 from urllib.parse import urlparse
 
 from salesloop_linkedin_api.settings import REQUESTS_TYPES
@@ -43,4 +42,4 @@ class APIRequestType:
             if endpoint in request_tuple:
                 return request_type
 
-        raise Exception(f"Found unknown url/request type: {url}")
+        raise Exception(f"Found unknown url/request type: {url}, endpoint: {endpoint}")
