@@ -33,8 +33,9 @@ def default_evade():
     A catch-all method to try and evade suspension from Linkedin.
     Currently, just delays the request by a random (bounded) time
     """
-    sleep(random.uniform(EVADE_MIN_TIMEOUT,
-                         EVADE_MAX_TIMEOUT))  # sleep a random duration to try and evade suspention
+    sleep(
+        random.uniform(EVADE_MIN_TIMEOUT, EVADE_MAX_TIMEOUT)
+    )  # sleep a random duration to try and evade suspention
 
 
 def fast_evade():
@@ -196,7 +197,8 @@ def get_conversations_additional_data(conversations_data, logger=None):
                         skip_participant = True
 
                         logger.debug(
-                            f"Found user with event_body, User public_id: {public_id}, Picture: {display_picture_url}"
+                            f"Found user with event_body,"
+                            f" User public_id: {public_id}, Picture: {display_picture_url}"
                         )
 
             # Step 2. Users to whom we wrote message
@@ -237,7 +239,8 @@ def get_conversations_additional_data(conversations_data, logger=None):
                             public_ids_found.append(public_id)
 
                         logger.debug(
-                            f"Found user without event_body, User public_id: {public_id}, Picture: {display_picture_url}"
+                            f"Found user without event_body, "
+                            f"User public_id: {public_id}, Picture: {display_picture_url}"
                         )
 
     # Step 3. Remove users from conversations_users_participants
@@ -255,7 +258,8 @@ def get_conversations_additional_data(conversations_data, logger=None):
         if public_id in conversations_users_participants:
             del conversations_users_participants[public_id]
             logger.debug(
-                f"Removed {public_id} participant from conversations_users_participants (already replied?"
+                f"Removed {public_id} participant from conversations_users_participants"
+                f" (already replied?"
             )
 
     return (
@@ -271,7 +275,7 @@ def get_default_regions(path):
     try:
         with open(path) as f:
             regions = json.load(f)
-    except Exception as e:
+    except Exception:
         print_exc()
 
     return regions
@@ -339,9 +343,6 @@ def parse_default_search_data(elements):
 
 
 def parse_search_hits(search_hits, is_sales=False, search_start=0):
-    search_type = "SALES_SEARCH" if is_sales else "DEFAULT_SEARCH"
-    search_hit_data = None
-
     users_data = None
     users = {}
     parsed_users = []
@@ -393,12 +394,11 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
                 mini_profiles_skipped = []
                 for item in mini_profiles:
                     item_type = item.get("$type")
+                    skip_on_type = (
+                        "com.linkedin.voyager.dash.deco.relationships.ProfileWithIweWarned"
+                    )
 
-                    if item.get(
-                        "$recipeTypes"
-                    ) and "com.linkedin.voyager.dash.deco.relationships.ProfileWithIweWarned" in item.get(
-                        "$recipeTypes"
-                    ):
+                    if item.get("$recipeTypes") and skip_on_type in item.get("$recipeTypes"):
                         continue
 
                     if item_type in [
@@ -480,9 +480,9 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
                                         lead.get("publicIdentifier") in item.get("navigationUrl"),
                                     ]
                                 ):
-
                                     logger.debug(
-                                        "Fallback parser - found new user: public_id - %s, navigation url - %s",
+                                        "Fallback parser - found new user: public_id - %s, "
+                                        "navigation url - %s",
                                         lead.get("publicIdentifier"),
                                         item.get("navigationUrl"),
                                     )
@@ -796,7 +796,7 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
                             i["entityUrn"] = entityUrns[0]
                 if "currentPositions" in lead:
                     for position in lead["currentPositions"]:
-                        if position["current"] == True:
+                        if position["current"] is True:
                             if "companyName" in position:
                                 i["companyName"] = position["companyName"]
                             if "title" in position:
@@ -862,6 +862,7 @@ def get_leads_from_html(html, is_sales=False):
     else:
         logger.warning("No search hits in html with %d length", len(html))
     return search_hits_list
+
 
 def xstr(s):
     return str(s or "")
