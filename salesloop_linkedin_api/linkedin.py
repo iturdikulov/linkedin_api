@@ -14,9 +14,7 @@ from os.path import isfile
 from pathlib import Path
 from random import randrange
 from time import sleep
-from urllib import parse as urlparse
-from urllib.parse import urlencode
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlencode, urlparse, parse_qs
 
 import backoff
 import requests
@@ -24,13 +22,13 @@ from bs4 import BeautifulSoup
 from redis.client import StrictRedis
 
 import salesloop_linkedin_api.settings as settings
-from salesloop_linkedin_api.properties import LinkedinApFeatureAccess
 from application.auto_throtle import AutoThrottleFunc
 from application.integrations.linkedin import LinkedinLoginError, LinkedinUnauthorized
+from application.integrations.linkedin.linkedin_html_parser import LinkedinHTMLParser
 from application.profile.cookie_converter import request_cookies_to_cookies_list
 from application.utlis_sales_search import generate_sales_search_url
-from application.integrations.linkedin import LinkedinLoginError
 from salesloop_linkedin_api.client import Client, LinkedinParsingError
+from salesloop_linkedin_api.properties import LinkedinApFeatureAccess
 from salesloop_linkedin_api.statistic import APIRequestType
 from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url
 from salesloop_linkedin_api.utils.helpers import (
@@ -304,7 +302,6 @@ class Linkedin(object):
 
         return metadata
 
-
     def _parse_email_from_response(self, response_text: str) -> str:
         """
         Parse email from response text
@@ -362,7 +359,8 @@ class Linkedin(object):
                 "origin": "GLOBAL_SEARCH_HEADER",
                 "q": "all",
                 "start": len(results) + offset,
-                "queryContext": "List(spellCorrectionEnabled->true,relatedSearchesEnabled->true,kcardTypes->PROFILE|COMPANY)",
+                "queryContext": "List(spellCorrectionEnabled->true,"
+                "relatedSearchesEnabled->true,kcardTypes->PROFILE|COMPANY)",
             }
             default_params.update(params)
 
@@ -376,7 +374,8 @@ class Linkedin(object):
             elements = data.get("data", {}).get("elements", [])
             for i in range(len(elements)):
                 new_elements.extend(elements[i]["elements"])
-                # not entirely sure what extendedElements generally refers to - keyword search gives back a single job?
+                # not entirely sure what extendedElements generally
+                # refers to - keyword search gives back a single job?
                 # new_elements.extend(data["data"]["elements"][i]["extendedElements"])
             results.extend(new_elements)
 
@@ -420,7 +419,8 @@ class Linkedin(object):
                 "dnt": "1",
                 "x-li-lang": "en_US",
                 "sec-ch-ua-mobile": "?0",
-                "x-li-page-instance": f"urn:li:page:d_sales2_search_people;{random_page_instance_postfix}",
+                "x-li-page-instance": f"urn:li:page:d_sales2_search_people;"
+                f"{random_page_instance_postfix}",
                 "x-restli-protocol-version": "2.0.0",
                 "accept": "*/*",
                 "sec-fetch-site": "same-origin",
@@ -498,7 +498,7 @@ class Linkedin(object):
 
     def get_connections_summary(self):
         res = self._fetch(
-            f"/relationships/connectionsSummary/",
+            "/relationships/connectionsSummary/",
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
         )
         data = res.json()
@@ -646,7 +646,7 @@ class Linkedin(object):
             "start": len(results),
         }
 
-        res = self._fetch(f"/feed/updates", params=params)
+        res = self._fetch("/feed/updates", params=params)
 
         data = res.json()
 
@@ -682,7 +682,7 @@ class Linkedin(object):
             "start": len(results),
         }
 
-        res = self._fetch(f"/feed/updates", params=params)
+        res = self._fetch("/feed/updates", params=params)
 
         data = res.json()
 
@@ -707,7 +707,7 @@ class Linkedin(object):
         """
         Get profile view statistics, including chart data.
         """
-        res = self._fetch(f"/identity/wvmpCards")
+        res = self._fetch("/identity/wvmpCards")
 
         data = res.json()
 
@@ -755,7 +755,7 @@ class Linkedin(object):
             "universalName": public_id,
         }
 
-        res = self._fetch(f"/organization/companies", params=params)
+        res = self._fetch("/organization/companies", params=params)
 
         data = res.json()
 
@@ -792,7 +792,8 @@ class Linkedin(object):
                 "keyVersion": "LEGACY_INBOX",
                 "conversationCreate": {
                     "eventCreate": {
-                        # "originToken": "3c809d5d-c58a-49b8-801d-9d42607db1c5", TODO: UNKNOWN FILED, just skipped
+                        # TODO: UNKNOWN FILED, just skipped
+                        # "originToken": "3c809d5d-c58a-49b8-801d-9d42607db1c5",
                         "value": {
                             "com.linkedin.voyager.messaging.create.MessageCreate": {
                                 "body": message_body,
@@ -808,7 +809,7 @@ class Linkedin(object):
         )
 
         res = self._post(
-            f"/messaging/conversations?action=create",
+            "/messaging/conversations?action=create",
             data=payload,
         )
 
@@ -925,7 +926,7 @@ class Linkedin(object):
         else:
             params = {"keyVersion": "LEGACY_INBOX", "createdBefore": createdBefore}
 
-        res = self._fetch(f"/messaging/conversations", params=params)
+        res = self._fetch("/messaging/conversations", params=params)
 
         return res.json()
 
@@ -981,7 +982,7 @@ class Linkedin(object):
                 "keyVersion": "LEGACY_INBOX",
                 "conversationCreate": message_event,
             }
-            res = self._post(f"/messaging/conversations", params=params, data=json.dumps(payload))
+            res = self._post("/messaging/conversations", params=params, data=json.dumps(payload))
 
             return res.status_code == 201
 
@@ -999,7 +1000,7 @@ class Linkedin(object):
         """
         Return current user profile
         """
-        res = self._fetch(f"/me")
+        res = self._fetch("/me")
         data = res.json()
 
         return data
@@ -1010,14 +1011,15 @@ class Linkedin(object):
         """
         random_page_instance_postfix = get_random_base64()
         res = self._fetch(
-            f"https://www.linkedin.com/psettings/premium-subscription?asJson=true",
+            "https://www.linkedin.com/psettings/premium-subscription?asJson=true",
             raw_url=True,
             headers={
                 "authority": "www.linkedin.com",
                 "accept": "application/json, text/javascript, */*; q=0.01",
                 "dnt": "1",
                 "x-requested-with": "XMLHttpRequest",
-                "x-li-page-instance": f"urn:li:page:psettings-premium-subscription;{random_page_instance_postfix}",
+                "x-li-page-instance": f"urn:li:page:psettings-premium-subscription;"
+                f"{random_page_instance_postfix}",
                 "sec-fetch-site": "same-origin",
                 "sec-fetch-mode": "cors",
                 "sec-fetch-dest": "empty",
@@ -1034,7 +1036,7 @@ class Linkedin(object):
         Return current user billings
         """
         res = self._fetch(
-            f"https://www.linkedin.com/psettings/premium-subscription/billings",
+            "https://www.linkedin.com/psettings/premium-subscription/billings",
             raw_url=True,
             headers={
                 "authority": "www.linkedin.com",
@@ -1056,7 +1058,7 @@ class Linkedin(object):
         """
         Return current user profile
         """
-        res = self._fetch(f"/identity/panels")
+        res = self._fetch("/identity/panels")
         data = res.json()
         return data
 
@@ -1073,7 +1075,7 @@ class Linkedin(object):
             "start": start,
         }
 
-        res = self._fetch(f"/relationships/sentInvitationViewsV2", params=params)
+        res = self._fetch("/relationships/sentInvitationViewsV2", params=params)
 
         res.raise_for_status()
 
@@ -1091,7 +1093,7 @@ class Linkedin(object):
             "q": "receivedInvitation",
         }
 
-        res = self._fetch(f"/relationships/invitationViews", params=params)
+        res = self._fetch("/relationships/invitationViews", params=params)
 
         if res.status_code != 200:
             return []
@@ -1103,7 +1105,7 @@ class Linkedin(object):
         """
         Return list of new invites
         """
-        res = self._fetch(f"/relationships/invitationsSummary")
+        res = self._fetch("/relationships/invitationsSummary")
 
         if res.status_code != 200:
             return []
@@ -1146,7 +1148,7 @@ class Linkedin(object):
 
         default_params = {"count": count, "start": len(results), "sortType": "RECENTLY_ADDED"}
 
-        res = self._fetch(f"/relationships/connections?" + urlencode(default_params))
+        res = self._fetch("/relationships/connections?" + urlencode(default_params))
 
         data = res.json()
         total_found = data.get("paging", {}).get("count")
@@ -1250,7 +1252,6 @@ class Linkedin(object):
                 "content-type": "application/json; charset=UTF-8",
                 "accept": "application/json",
                 "csrf-token": session_id,
-                "x-li-track": '{"clientVersion":"1.1.7760","mpVersion":"1.1.7760","osName":"web","timezoneOffset":3,"timezone":"Europe/Moscow","mpName":"talent-solutions-web","displayDensity":2,"displayWidth":3840,"displayHeight":2160}',
                 "origin": "https://www.linkedin.com",
                 "sec-fetch-site": "same-origin",
                 "sec-fetch-mode": "cors",
@@ -1283,12 +1284,13 @@ class Linkedin(object):
                 "accept": "application/json, text/javascript, */*; q=0.01",
                 "x-requested-with": "XMLHttpRequest",
                 "sec-ch-ua-mobile": "?0",
-                "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36",
-                "x-li-page-instance": "urn:li:page:cap-fe-desktop-smart-search;91R1nNZUSG2OL9PFYurpzA==",
+                "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36",
+                "x-li-page-instance": "urn:li:page:cap-fe-desktop-smart-search;"
+                "91R1nNZUSG2OL9PFYurpzA==",
                 "sec-fetch-site": "same-origin",
                 "sec-fetch-mode": "cors",
                 "sec-fetch-dest": "empty",
-                "referer": "https://www.linkedin.com/recruiter/smartsearch?searchHistoryId=4708802586&searchCacheKey=51061984-9df6-4d16-a893-f55a991ce73e%2CD4lv&searchRequestId=9cda4b28-a5e6-41b7-879a-35c2fc962c26%2CjK_s&searchSessionId=4708802586&linkContext=Controller%3AsmartSearch%2CAction%3Asearch%2CID%3A4708802586&doExplain=false&origin=&start=0",
                 "accept-language": "en-US,en;q=0.9,ru;q=0.8",
             }
 
@@ -1302,7 +1304,7 @@ class Linkedin(object):
                 ("start", "0"),
             )
 
-            response = self._fetch(
+            self._fetch(
                 "https://www.linkedin.com/recruiter/api/smartsearch",
                 headers=headers,
                 params=params,
@@ -1451,17 +1453,22 @@ class Linkedin(object):
             return html
         else:
             if is_sales:
-                search_function = self.cluster_sales_search_people
+                search_hits = self.cluster_sales_search_people(search_url)
+                parsed_users, pagination, unknown_profiles, limit_data = parse_search_hits(
+                    search_hits, is_sales=is_sales
+                )
             else:
-                search_function = self.clusters_search_people
+                search_html = self._fetch(
+                    search_url,
+                    raw_url=True,
+                ).text
+                html_parser = LinkedinHTMLParser(search_html)
+                html_parser.get_search_results_json()
 
-            search_hits = self.auto_throttle.process(
-                search_function, search_url
-            )
-
-            parsed_users, pagination, unknown_profiles, limit_data = parse_search_hits(
-                search_hits, is_sales=is_sales
-            )
+                pagination = html_parser.get_paging()
+                parsed_users = html_parser.parse_users()
+                unknown_profiles = []
+                limit_data = {}
 
             if parsed_users:
                 # default pagination params can be useful for debugging
@@ -1507,7 +1514,7 @@ class Linkedin(object):
             payload["message"] = message
 
         res = self._post(
-            f"/growth/normInvitations",
+            "/growth/normInvitations",
             data=json.dumps(payload),
             params={
                 "action": "verifyQuotaAndCreate",
@@ -1623,7 +1630,7 @@ class Linkedin(object):
         Get regions directly from linkedin, typehead API
         """
 
-        if isfile(f"all_regions_codes.json"):
+        if isfile("all_regions_codes.json"):
             print("Region exist, skip...")
             return
 
@@ -1633,7 +1640,7 @@ class Linkedin(object):
         output_regions = {}
         self.client.session.get("https://www.linkedin.com/sales/")
         cookies = self.client.session.cookies.get_dict()
-        session_id = cookies.get("JSESSIONID").strip('"')
+        cookies.get("JSESSIONID").strip('"')
 
         for i, region in enumerate(input_regions):
             region_name = region.get("name")
@@ -1646,14 +1653,16 @@ class Linkedin(object):
                 "dnt": "1",
                 "x-li-lang": "en_US",
                 "x-li-identity": "dXJuOmxpOm1lbWJlcjo0MDAzMTE2Nzc",
-                "x-li-page-instance": "urn:li:page:d_sales2_search_people;g//MAJuSRwe6HvmrIEQK5g==",
+                "x-li-page-instance": "urn:li:page:d_sales2_search_people;"
+                "g//MAJuSRwe6HvmrIEQK5g==",
                 "accept": "*/*",
                 "x-restli-protocol-version": "2.0.0",
                 "x-requested-with": "XMLHttpRequest",
                 "sec-fetch-site": "same-origin",
                 "sec-fetch-mode": "cors",
                 "sec-fetch-dest": "empty",
-                "referer": "https://www.linkedin.com/sales/search/people?preserveScrollPosition=true&selectedFilter=GE&viewAllFilters=true",
+                "referer": "https://www.linkedin.com/sales/search/people?"
+                "preserveScrollPosition=true&selectedFilter=GE&viewAllFilters=true",
                 "accept-language": "en-GB,en;q=0.9,ru;q=0.8,en-US;q=0.7",
             }
 
@@ -1741,7 +1750,6 @@ class Linkedin(object):
                 if lead.get("entityUrn") and (
                     not lead.get("publicIdentifier") or not lead.get("companyName")
                 ):
-
                     # evade limit each N requests
                     if i > 0 and i % randrange(4, 6) == 0:
                         sleep(randrange(15, 25))
@@ -1782,4 +1790,3 @@ class Linkedin(object):
 
             if reformat_max_errors <= 0:
                 raise Exception("Too many reformat errors, break parsing...")
-
