@@ -1461,7 +1461,7 @@ class Linkedin(object):
                 search_html = self._fetch(
                     search_url,
                     raw_url=True,
-                ).text
+                ).content
                 html_parser = LinkedinHTMLParser(search_html)
                 html_parser.get_search_results_json()
 
