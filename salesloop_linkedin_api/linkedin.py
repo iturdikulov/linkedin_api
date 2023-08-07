@@ -24,7 +24,7 @@ from redis.client import StrictRedis
 import salesloop_linkedin_api.settings as settings
 from application.auto_throtle import AutoThrottleFunc
 from application.integrations.linkedin import LinkedinLoginError, LinkedinUnauthorized
-from application.integrations.linkedin.linkedin_html_parser import LinkedinHTMLParser
+from application.integrations.linkedin.linkedin_html_parser_people import LinkedinHTMLParser
 from application.profile.cookie_converter import request_cookies_to_cookies_list
 from application.utlis_sales_search import generate_sales_search_url
 from salesloop_linkedin_api.client import Client, LinkedinParsingError
@@ -1463,8 +1463,6 @@ class Linkedin(object):
                     raw_url=True,
                 ).content
                 html_parser = LinkedinHTMLParser(search_html)
-                html_parser.get_search_results_json()
-
                 pagination = html_parser.get_paging()
                 parsed_users = html_parser.parse_users()
                 unknown_profiles = []
