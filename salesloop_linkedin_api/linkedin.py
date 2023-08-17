@@ -747,20 +747,31 @@ class Linkedin(object):
         return school
 
     def get_company(self, public_id):
+        """Fetch data about a given LinkedIn company.
+
+        :param public_id: LinkedIn public ID for a company
+        :type public_id: str
+
+        :return: Company data
+        :rtype: dict
         """
-        Return data for a single company.
+        params = {
+            "decorationId": "com.linkedin.voyager.deco.organization.web.WebFullCompanyMain-12",
+            "q": "universalName",
+            "universalName": public_id,
+        }
 
-        [public_id] - public identifier i.e. univeristy-of-queensland
-        """
+        res = self._fetch(f"/organization/companies", params=params)
 
-        res = self._fetch(
-            f"https://www.linkedin.com/search/results/companies/?keywords={public_id}&origin=FACETED_SEARCH",
-            raw_url=True,
-        )
+        data = res.json()
 
-        html_parser = LinkedinHTMLParserCompany(res.text)
-        parsed_companies = html_parser.parse_companies()
-        return parsed_companies[0] if parsed_companies else None
+        if data and "status" in data and data["status"] != 200:
+            self.logger.info("request failed: {}".format(data["message"]))
+            return {}
+
+        company = data["elements"][0]
+
+        return company
 
     def get_company_id(self, public_id):
         """
