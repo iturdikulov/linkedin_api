@@ -1596,6 +1596,8 @@ class Linkedin(object):
 
     def search_companies(self, keywords=None):
         """Perform a LinkedIn search for companies.
+        NOTE: we search only 1st page, no recursive search
+
         :param keywords: A list of search keywords (str)
         :rtype: list
         """
