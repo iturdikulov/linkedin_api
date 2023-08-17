@@ -1594,40 +1594,19 @@ class Linkedin(object):
 
         return data
 
-    def search_companies(self, keywords=None, **kwargs):
+    def search_companies(self, keywords=None):
         """Perform a LinkedIn search for companies.
         :param keywords: A list of search keywords (str)
-        :type keywords: list, optional
-        :return: List of companies
         :rtype: list
         """
-        filters = ["resultType->COMPANIES"]
 
-        params = {
-            "filters": "List({})".format(",".join(filters)),
-            "queryContext": "List(spellCorrectionEnabled->true)",
-        }
+        res = self._fetch(
+            f"https://www.linkedin.com/search/results/companies/?keywords={keywords}&origin=FACETED_SEARCH",
+            raw_url=True,
+        )
 
-        if keywords:
-            params["keywords"] = keywords
-
-        data = self.search(params, **kwargs)
-
-        results = []
-        for item in data:
-            if item.get("type") != "COMPANY":
-                continue
-            results.append(
-                {
-                    "urn": item.get("targetUrn"),
-                    "urn_id": get_id_from_urn(item.get("targetUrn")),
-                    "name": item.get("title", {}).get("text"),
-                    "headline": item.get("headline", {}).get("text"),
-                    "subline": item.get("subline", {}).get("text"),
-                }
-            )
-
-        return results
+        html_parser = LinkedinHTMLParserCompany(res.text)
+        return html_parser.parse_companies()
 
     def get_regions(self):
         """
