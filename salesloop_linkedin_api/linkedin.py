@@ -24,6 +24,9 @@ from redis.client import StrictRedis
 import salesloop_linkedin_api.settings as settings
 from application.auto_throtle import AutoThrottleFunc
 from application.integrations.linkedin import LinkedinLoginError, LinkedinUnauthorized
+from application.integrations.linkedin.linkedin_html_parser_company import (
+    LinkedinHTMLParserCompany,
+)
 from application.integrations.linkedin.linkedin_html_parser_people import LinkedinHTMLParser
 from application.profile.cookie_converter import request_cookies_to_cookies_list
 from application.utlis_sales_search import generate_sales_search_url
@@ -749,23 +752,15 @@ class Linkedin(object):
 
         [public_id] - public identifier i.e. univeristy-of-queensland
         """
-        params = {
-            "decorationId": "com.linkedin.voyager.deco.organization.web.WebFullCompanyMain-12",
-            "q": "universalName",
-            "universalName": public_id,
-        }
 
-        res = self._fetch("/organization/companies", params=params)
+        res = self._fetch(
+            f"https://www.linkedin.com/search/results/companies/?keywords={public_id}&origin=FACETED_SEARCH",
+            raw_url=True,
+        )
 
-        data = res.json()
-
-        if data and "status" in data and data["status"] != 200:
-            self.logger.info("request failed: %s", data)
-            return {}
-
-        company = data["elements"][0]
-
-        return company
+        html_parser = LinkedinHTMLParserCompany(res.text)
+        parsed_companies = html_parser.parse_companies()
+        return parsed_companies[0] if parsed_companies else None
 
     def get_company_id(self, public_id):
         """
