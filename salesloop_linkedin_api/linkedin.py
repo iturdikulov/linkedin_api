@@ -28,6 +28,7 @@ from application.integrations.linkedin.linkedin_html_parser_company import (
     LinkedinHTMLParserCompany,
 )
 from application.integrations.linkedin.linkedin_html_parser_people import LinkedinHTMLParser
+from application.integrations.linkedin.utils import get_object_by_path
 from application.profile.cookie_converter import request_cookies_to_cookies_list
 from application.utlis_sales_search import generate_sales_search_url
 from salesloop_linkedin_api.client import Client, LinkedinParsingError
@@ -258,9 +259,10 @@ class Linkedin(object):
         response = self._fetch("https://www.linkedin.com/mynetwork/", raw_url=True)
         if response.status_code == 200:
             try:
-                metadata["email"] = self._parse_email_from_response(response.text)
+                user_metadata = self._parse_user_metadata(response.text)
+                metadata.update(user_metadata)
             except LinkedinParsingError:
-                raise LinkedinUnauthorized("Unable to parse email from response")
+                raise LinkedinUnauthorized("Unable to parse metadata/email from response")
 
             default_params = {
                 "ids": "List("
@@ -305,7 +307,7 @@ class Linkedin(object):
 
         return metadata
 
-    def _parse_email_from_response(self, response_text: str) -> str:
+    def _parse_user_metadata(self, response_text: str) -> dict:
         """
         Parse email from response text
         Args:
@@ -318,23 +320,45 @@ class Linkedin(object):
         soup = BeautifulSoup(response_text, "lxml")
         code_elements = soup.find_all("code")
         email = None
+        avatar = None
 
         for search_hit in code_elements:
             try:
                 search_hit_data = json.loads(search_hit.get_text())
-                # Normal account
+                # Normal account email
                 data = search_hit_data.get("data", {})
                 if data:
                     data_type = data.get("$type")
                     if data_type == "com.linkedin.voyager.dash.contacts.SupportedEmail":
                         parsed_email = data.get("emailAddress")
                         if "@" in parsed_email:
-                            return parsed_email.lower().strip()
+                            email = parsed_email.lower().strip()
+                    elif data_type == "com.linkedin.voyager.common.Me":
+                        # TODO: cover this with tests
+                        try:
+                            picture = get_object_by_path(
+                                search_hit_data,
+                                "included.0.picture"
+                            )
+                            segment = get_object_by_path(picture, "artifacts.2.fileIdentifyingUrlPathSegment")
+                            root_url = get_object_by_path(picture, "rootUrl")
+                        except (KeyError, IndexError):
+                            logger.warning("Could not parse avatar from search_hit_data: %s", search_hit_data)
+                            continue
+
+                        # Prefix with correct url
+                        avatar = f"{root_url}{segment}"
+
             except json.decoder.JSONDecodeError:
                 self.logger.debug(f"Failed to parse code element, skip: {search_hit}")
 
         if not email:
             raise LinkedinParsingError("Could not parse email from response: %s", response_text)
+
+        return {
+            "email": email,
+            "avatar": avatar,
+        }
 
     def search(self, params, limit=-1, offset=0):
         """Perform a LinkedIn search.
