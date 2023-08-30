@@ -319,9 +319,8 @@ class Linkedin(object):
         """
         soup = BeautifulSoup(response_text, "lxml")
         code_elements = soup.find_all("code")
-        email = None
-        avatar = None
 
+        avatar = None
         for search_hit in code_elements:
             try:
                 search_hit_data = json.loads(search_hit.get_text())
@@ -329,21 +328,19 @@ class Linkedin(object):
                 data = search_hit_data.get("data", {})
                 if data:
                     data_type = data.get("$type")
-                    if data_type == "com.linkedin.voyager.dash.contacts.SupportedEmail":
-                        parsed_email = data.get("emailAddress")
-                        if "@" in parsed_email:
-                            email = parsed_email.lower().strip()
-                    elif data_type == "com.linkedin.voyager.common.Me":
+                    if data_type == "com.linkedin.voyager.common.Me":
                         # TODO: cover this with tests
                         try:
                             picture = get_object_by_path(
                                 search_hit_data,
                                 "included.0.picture"
                             )
-                            segment = get_object_by_path(picture, "artifacts.2.fileIdentifyingUrlPathSegment")
+                            segment = get_object_by_path(picture,
+                                                         "artifacts.2.fileIdentifyingUrlPathSegment")
                             root_url = get_object_by_path(picture, "rootUrl")
                         except (KeyError, IndexError):
-                            logger.warning("Could not parse avatar from search_hit_data: %s", search_hit_data)
+                            logger.warning("Could not parse avatar from search_hit_data: %s",
+                                           search_hit_data)
                             continue
 
                         # Prefix with correct url
@@ -351,6 +348,16 @@ class Linkedin(object):
 
             except json.decoder.JSONDecodeError:
                 self.logger.debug(f"Failed to parse code element, skip: {search_hit}")
+
+        # TODO: cover this with tests
+        email = None
+        res = self._fetch(f"https://www.linkedin.com/mysettings-api/settingsApiSneakPeeks?category=SIGN_IN_AND_SECURITY&q=category", raw_url=True)
+        current_settings = res.json()
+
+        elements = current_settings["elements"]
+        for element in elements:
+            if element["settingCardKey"] == "manageEmailAddresses":
+                email = element["displayText"]
 
         if not email:
             raise LinkedinParsingError("Could not parse email from response: %s", response_text)
