@@ -351,8 +351,7 @@ class Linkedin(object):
 
         # TODO: cover this with tests
         email = None
-        res = self._fetch(f"https://www.linkedin.com/mysettings-api/settingsApiSneakPeeks?category=SIGN_IN_AND_SECURITY&q=category", raw_url=True)
-        current_settings = res.json()
+        current_settings = self._fetch(f"https://www.linkedin.com/mysettings-api/settingsApiSneakPeeks?category=SIGN_IN_AND_SECURITY&q=category", raw_url=True).json()
 
         elements = current_settings["elements"]
         for element in elements:
