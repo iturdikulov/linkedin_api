@@ -425,6 +425,7 @@ class Linkedin(object):
 
         return results
 
+    # TODO: remove this method
     def clusters_search_people(self, linkedin_url):
         """
         Do a people search using voyager/api/search/dash/cluster
