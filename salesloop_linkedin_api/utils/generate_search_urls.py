@@ -1,10 +1,8 @@
 import json
-from salesloop_linkedin_api.utils.helpers import (
-    get_id_from_urn,
-    logger,
-    quote_query_param,
-    fast_evade,
-)
+from urllib.parse import urlparse, parse_qs, quote_plus
+
+from collections import OrderedDict
+from json import JSONDecodeError
 from concurrent.futures import ThreadPoolExecutor
 from requests_futures.sessions import FuturesSession
 import pickle
@@ -15,9 +13,14 @@ import re
 from application.config import Config
 from application.integrations.enums import ServiceType
 
+from salesloop_linkedin_api.utils.helpers import (
+    get_id_from_urn,
+    logger,
+    quote_query_param,
+    fast_evade,
+)
+
 # TODO - optimize/convert to class?
-
-
 def generate_search_url(
     linkedin_api,
     company_leads,
@@ -429,6 +432,7 @@ def is_filtered_default_search(original_url):
         return False
 
 
+# TODO: outdated, need to remove
 def generate_clusters_search_url(original_url):
     queries_keys_ignore = [
         "keywords",
@@ -562,3 +566,70 @@ def generate_clusters_search_url(original_url):
     }
 
     return url_params
+
+def quote_value(value):
+    value = value[0]
+    try:
+        parsed_values = json.loads(value)
+        if isinstance(parsed_values, list):
+            return ",".join(parsed_values)
+        elif isinstance(parsed_values, str):
+            return quote_plus(value.strip('"'))
+        else:
+            return quote_plus(value)
+    except JSONDecodeError:
+        return quote_plus(value)
+
+def generate_grapqhl_search_url(original_url: str, offset: int = 0):
+    parsed_url = urlparse(original_url)
+    query_params = parse_qs(parsed_url.query)
+
+    if "keywords" in query_params:
+        keywords = query_params.pop("keywords")[0]
+    else:
+        keywords = ""
+
+    filtered_query_params = OrderedDict()
+    for k, v in query_params.items():
+        if k in ["sid", "origin"]:
+            continue
+
+        if k == "titleFreeText":
+            k = "title"
+
+        filtered_query_params[k] = v
+
+    query_str = ",".join(
+        [
+            f"(key:{key},value:List({quote_value(value)}))"
+            for key, value in filtered_query_params.items()
+        ]
+        + ["(key:resultType,value:List(PEOPLE))"]
+    )
+
+    default_params = {
+        "filters": f"List({query_str})",
+        "origin": "FACETED_SEARCH",
+        "keywords": keywords,
+        "start": offset,
+    }
+
+    keywords = (
+        f"keywords:{default_params['keywords']},"
+        if "keywords" in default_params
+        else ""
+    )
+
+    generated_url = (
+        f"https://www.linkedin.com/voyager/api"
+        f"/graphql?includeWebMetadata=true&variables=(start:{default_params['start']},origin:{default_params['origin']},"
+        f"query:("
+        f"{keywords}"
+        f"flagshipSearchIntent:SEARCH_SRP,"
+        f"queryParameters:{default_params['filters']},"
+        f"includeFiltersInResponse:false))&&queryId=voyagerSearchDashClusters"
+        f".2fe1ffb1e5ce6c37b5f5158bb827c60b"
+    )
+
+    return generated_url
+
