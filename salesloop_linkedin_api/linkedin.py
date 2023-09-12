@@ -27,7 +27,7 @@ from application.integrations.linkedin import LinkedinLoginError, LinkedinUnauth
 from application.integrations.linkedin.linkedin_html_parser_company import (
     LinkedinHTMLParserCompany,
 )
-from application.integrations.linkedin.linkedin_html_parser_people import LinkedinHTMLParser
+from application.integrations.linkedin.linkedin_html_parser_people import LinkedinJSONParser
 from application.integrations.linkedin.utils import get_object_by_path
 from application.profile.cookie_converter import request_cookies_to_cookies_list
 from application.utlis_sales_search import generate_sales_search_url
@@ -1499,7 +1499,7 @@ class Linkedin(object):
                     search_url,
                     raw_url=True,
                 ).content
-                html_parser = LinkedinHTMLParser(search_html)
+                html_parser = LinkedinJSONParser(search_html)
                 pagination = html_parser.get_paging()
                 parsed_users = html_parser.parse_users()
                 unknown_profiles = []
