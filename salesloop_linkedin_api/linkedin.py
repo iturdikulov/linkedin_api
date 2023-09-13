@@ -33,6 +33,7 @@ from application.profile.cookie_converter import request_cookies_to_cookies_list
 from application.utlis_sales_search import generate_sales_search_url
 from salesloop_linkedin_api.client import Client, LinkedinParsingError
 from salesloop_linkedin_api.properties import LinkedinApFeatureAccess
+from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url, generate_grapqhl_search_url
 from salesloop_linkedin_api.statistic import APIRequestType
 from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url
 from salesloop_linkedin_api.utils.helpers import (
@@ -1495,13 +1496,14 @@ class Linkedin(object):
                     search_hits, is_sales=is_sales
                 )
             else:
-                search_html = self._fetch(
+                search_url = generate_grapqhl_search_url(search_url)
+                search_json = self._fetch(
                     search_url,
                     raw_url=True,
-                ).content
-                html_parser = LinkedinJSONParser(search_html)
-                pagination = html_parser.get_paging()
-                parsed_users = html_parser.parse_users()
+                ).json()
+                search_parser = LinkedinJSONParser(search_json)
+                pagination = search_parser.get_paging()
+                parsed_users = search_parser.parse_users()
                 unknown_profiles = []
                 limit_data = {}
 
