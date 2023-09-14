@@ -616,7 +616,7 @@ def generate_grapqhl_search_url(original_url: str, offset: int = 0):
 
     default_params = {
         "filters": f"List({query_str})",
-        "origin": "FACETED_SEARCH",
+        "origin": "GLOBAL_SEARCH_HEADER",
         "keywords": quote(keywords),
         "start": offset,
     }
@@ -635,7 +635,7 @@ def generate_grapqhl_search_url(original_url: str, offset: int = 0):
         f"flagshipSearchIntent:SEARCH_SRP,"
         f"queryParameters:{default_params['filters']},"
         f"includeFiltersInResponse:false))&&queryId=voyagerSearchDashClusters"
-        f".2fe1ffb1e5ce6c37b5f5158bb827c60b"
+        f".b0928897b71bd00a5a7291755dcd64f0"
     )
 
     return generated_url
