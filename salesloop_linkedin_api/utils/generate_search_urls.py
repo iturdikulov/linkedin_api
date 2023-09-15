@@ -593,8 +593,6 @@ def generate_grapqhl_search_url(original_url: str, offset: int = 0):
         page = query_params.pop("page")
         if page and page[0].isnumeric() and int(page[0]) > 1:
             offset = (int(page[0]) - 1) * Config.LINKEDIN_SEARCH_DEFAULT_LEADS_PER_PAGE
-        else:
-            raise Exception("Unknown page value")
 
     filtered_query_params = OrderedDict()
     for k, v in query_params.items():
