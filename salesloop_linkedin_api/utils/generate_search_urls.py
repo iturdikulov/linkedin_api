@@ -623,7 +623,7 @@ def generate_grapqhl_search_url(original_url: str, offset: int = 0):
 
     keywords = (
         f"keywords:{default_params['keywords']},"
-        if "keywords" in default_params
+        if default_params.get("keywords")
         else ""
     )
 
