@@ -640,3 +640,30 @@ def generate_grapqhl_search_url(original_url: str, offset: int = 0):
 
     return generated_url
 
+
+def generate_graphql_companies_search_url(keywords) -> str:
+    """Generate graphql companies search url"""
+    filters = ["(key:resultType,value:List(COMPANIES))"]
+
+    params = {
+        "start": 0,
+        "filters": f"List({','.join(filters)})",
+        "queryContext": "List(spellCorrectionEnabled->true)",
+        "origin": "FACETED_SEARCH"
+    }
+
+    # Get keywords from URL
+    keywords = f"keywords:{keywords},"
+
+    generated_url = (
+        f"https://www.linkedin.com/voyager/api"
+        f"/graphql?variables=(start:{params['start']},origin:{params['origin']},"
+        f"query:("
+        f"{keywords}"
+        f"flagshipSearchIntent:SEARCH_SRP,"
+        f"queryParameters:{params['filters']},"
+        f"includeFiltersInResponse:false))&&queryId=voyagerSearchDashClusters"
+        f".711fd1976049eeb7ac5496821697249f"
+    )
+
+    return generated_url
