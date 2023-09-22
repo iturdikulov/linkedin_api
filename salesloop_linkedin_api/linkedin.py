@@ -25,7 +25,7 @@ import salesloop_linkedin_api.settings as settings
 from application.auto_throtle import AutoThrottleFunc
 from application.integrations.linkedin import LinkedinLoginError, LinkedinUnauthorized
 from application.integrations.linkedin.linkedin_html_parser_company import (
-    LinkedinHTMLParserCompany,
+    LinkedinJSONParserCompany,
 )
 from application.integrations.linkedin.linkedin_html_parser_people import LinkedinJSONParser
 from application.integrations.linkedin.utils import get_object_by_path
@@ -33,7 +33,8 @@ from application.profile.cookie_converter import request_cookies_to_cookies_list
 from application.utlis_sales_search import generate_sales_search_url
 from salesloop_linkedin_api.client import Client, LinkedinParsingError
 from salesloop_linkedin_api.properties import LinkedinApFeatureAccess
-from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url, generate_grapqhl_search_url
+from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url, \
+    generate_grapqhl_search_url, generate_graphql_companies_search_url
 from salesloop_linkedin_api.statistic import APIRequestType
 from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url
 from salesloop_linkedin_api.utils.helpers import (
@@ -1634,14 +1635,14 @@ class Linkedin(object):
         :param keywords: A list of search keywords (str)
         :rtype: list
         """
-
+        search_url = generate_graphql_companies_search_url(keywords)
         res = self._fetch(
-            f"https://www.linkedin.com/search/results/companies/?keywords={keywords}&origin=FACETED_SEARCH",
+            search_url,
             raw_url=True,
         )
 
-        html_parser = LinkedinHTMLParserCompany(res.text)
-        return html_parser.parse_companies()
+        json_parser = LinkedinJSONParserCompany(res.text)
+        return json_parser.parse_companies()
 
     def get_regions(self):
         """
