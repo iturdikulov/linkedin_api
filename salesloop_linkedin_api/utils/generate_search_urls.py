@@ -572,7 +572,7 @@ def quote_value(value):
     try:
         parsed_values = json.loads(value)
         if isinstance(parsed_values, list):
-            return ",".join([quote_plus(v) for v in parsed_values])
+            return ",".join([quote_plus(str(v)) for v in parsed_values])
         elif isinstance(parsed_values, str):
             return quote_plus(value.strip('"'))
         else:
