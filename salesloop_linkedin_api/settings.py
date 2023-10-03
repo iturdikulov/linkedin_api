@@ -39,6 +39,7 @@ REQUESTS_TYPES = {
         "search/dash",
         "sales/search",
         "sales-api/salesApiLeadSearch",
+        "graphql"
     ),
     "feed": (
         "feed/updates",
@@ -91,6 +92,7 @@ REQUESTS_TYPES = {
         "sales-api/salesApiEnterpriseAuthentication",
         "mynetwork",  # not sure right category
         "voyagerPremiumDashFeatureAccess",  # not sure right category
+        "mysettings-api/settingsApiSneakPeeks"
     ),
 }
 
