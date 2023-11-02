@@ -26,6 +26,7 @@ REQUESTS_TYPES = {
         "relationships/invitationsSummary",
         "relationships/connectionsSummary",
         "relationships/connections",
+        "voyagerRelationshipsDashMemberRelationships"
     ),
     "companies": (
         "entities/companies",
