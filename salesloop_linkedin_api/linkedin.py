@@ -53,6 +53,7 @@ def generate_tracking_id():
     """Generates and returns a random trackingId
     :return: Random trackingId string
     :rtype: str
+    TODO: propably not needed
     """
     random_int_array = [random.randrange(256) for _ in range(16)]
     rand_byte_array = bytearray(random_int_array)
@@ -224,7 +225,6 @@ class Linkedin(object):
                 requests.exceptions.ProxyError,
                 requests.exceptions.SSLError,
                 requests.exceptions.ReadTimeout,
-                requests.exceptions.HTTPError,
                 requests.exceptions.ConnectionError,
             ),
             max_time=self._get_max_retry_time,
@@ -241,7 +241,9 @@ class Linkedin(object):
                 kwargs["timeout"] = Linkedin._DEFAULT_POST_TIMEOUT
 
             post_response = self.client.session.post(url, **kwargs)
-            post_response.raise_for_status()
+            if post_response.status_code != 400:
+                # Some responses, such as ln connection, can be valid with 400 code!
+                post_response.raise_for_status()
 
             # Update statistics if request was successful
             self._update_statistics(url)
