@@ -1538,28 +1538,87 @@ class Linkedin(object):
         """
         sleep(random.randint(3, 5))  # sleep a random duration to try and evade suspention
 
+        tracking_ids = [
+            "/UUnvJmkTzOJJ06YAvOoBQ==",
+            "b5sl31fLRsSu9sj07UuEGg==",
+            "TbuG5+8HROWK3secP9ANyA==",
+            "W0l2S+Y+RGOtvgBL8urqCw==",
+            "D0Ol4WlyRG+CkKOWfmh3Eg==",
+            "cHuko5LqRHqhfgVwFRMznA==",
+            "+NKO3yrsRQWapoeO+n89bQ==",
+            "HVoT0u/4QV+R1Na0/y2QFQ==",
+            "LtE5LU6JTr2LxsTYD178gA==",
+            "MYw79hqeRMmIUHoXJeKZvQ==",
+            "q7WIXHYCQLq6r0vv3yPGUg==",
+            "MujhS4ehRZGxxG67j5fNuA==",
+            "ve0MfXubQA2LtrlyjW5fyg==",
+            "K2yBASVLRQ6AfsAUeTUdOg==",
+            "HK4tIiAwRr6COtryOy83dQ==",
+            "R7A4hMDpQUipIHCCaFW1Dg==",
+            "bQ0o99T2TJuhwuiDtCBZbw==",
+            "RBnQ8W7DSPiXFIRtQI5W2w==",
+            "XY5LRCUmSIOCnRAny+k5DQ==",
+            "M3mF+N91Tru8KEScK8xWAw==",
+            "vytODa2SR0iMsXxClvBu6g==",
+            "1BMhTu89SxWBlo+J2/gdiA==",
+            "VguB2Gl0R/W1EtAFy5AviA==",
+            "fSyULbVWRDiyxBykagOmNg==",
+            "sb2mWmSGRTmRXc9WzH/Pfw==",
+        ]
+
+        current_tracking_id = random.choice(tracking_ids)
         payload = {
-            "invitation": {
-                "emberEntityName": "growth/invitation/norm-invitation",
-                "invitee": {
-                    "com.linkedin.voyager.growth.invitation.InviteeProfile": {
-                        "profileId": profile_urn_id
-                    }
-                },
-                "trackingId": generate_tracking_id(),
-            }
+            "emberEntityName": "growth/invitation/norm-invitation",
+            "invitee": {
+                "com.linkedin.voyager.growth.invitation.InviteeProfile": {
+                    "profileId": profile_urn_id
+                }
+            },
+            "trackingId": current_tracking_id,
         }
 
         if message:
             payload["message"] = message
 
         res = self._post(
-            "/growth/normInvitations",
+            f"/growth/normInvitations",
             data=json.dumps(payload),
-            params={
-                "action": "verifyQuotaAndCreate",
-            },
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
+        )
+
+        return res.status_code != 201, res.status_code
+
+    def connect_with_someone_v2(self, profile_urn_id, message=None):
+        """
+        Send a message to a given conversation. If error, return true.
+        generate_tracking_id is not equal to API, gene
+        """
+        sleep(random.randint(3, 5))  # sleep a random duration to try and evade suspention
+
+        headers = {
+            'Accept': 'application/vnd.linkedin.normalized+json+2.1',
+        }
+
+        params = {
+            'action': 'verifyQuotaAndCreateV2',
+            'decorationId': 'com.linkedin.voyager.dash.deco.relationships.InvitationCreationResultWithInvitee-2',
+        }
+
+        json_data = {
+            'invitee': {
+                'inviteeUnion': {
+                    'memberProfile': 'urn:li:fsd_profile:ACoAAEaLzJYBReET2H4k9IRfS9IlXCipCsKGjjY',
+                },
+            },
+        }
+        if message:
+            json_data["customMessage"] = message
+
+        res = self._post(
+            "/voyagerRelationshipsDashMemberRelationships",
+            json=json_data,
+            params=params,
+            headers=headers
         )
 
         response_data = res.json()
