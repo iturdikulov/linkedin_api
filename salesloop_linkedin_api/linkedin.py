@@ -1870,3 +1870,36 @@ class Linkedin(object):
 
             if reformat_max_errors <= 0:
                 raise Exception("Too many reformat errors, break parsing...")
+
+    def get_invites_sent_per_interval(self, interval=3600 * 24):
+        """
+        Get invites sent per interval
+        :param interval: seconds, default 24 hours
+        """
+        sent_invites_data = []
+        max_pages_to_parse = 8 + random.randint(0, 5)
+
+        # Get connections from conversation history
+        for i in range(max_pages_to_parse):
+            get_sent_invites_start = i * 100
+
+            # check app sending limits
+            current_invites_data = self.get_sent_invitations(
+                start=get_sent_invites_start
+            )
+
+            for invite in current_invites_data:
+                if invite in sent_invites_data:
+                    logger.debug( "%s invite already exist, skipping", invite)
+                    continue
+
+                sent_time = datetime.fromtimestamp(invite["sentTime"] / 1000)
+                sent_time_timedelta = datetime.utcnow() - sent_time
+                if sent_time_timedelta.total_seconds() <= interval:
+                    sent_invites_data.append(invite)
+
+            if not current_invites_data:
+                logger.debug("No more invites found, break parsing")
+                break
+
+        return sent_invites_data
