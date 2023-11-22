@@ -1871,10 +1871,10 @@ class Linkedin(object):
             if reformat_max_errors <= 0:
                 raise Exception("Too many reformat errors, break parsing...")
 
-    def get_invites_sent_per_interval(self, interval=86400):
+    def get_invites_sent_per_interval(self, interval=86400) -> list:
         """
         Get invites sent per interval
-        :param interval: seconds, default 24 hours
+        :param interval: seconds, default 86400 seconds (1 day)
         """
         sent_invites_data = []
         max_pages_to_parse = 8 + random.randint(0, 5)
