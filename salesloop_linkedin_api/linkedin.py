@@ -1187,12 +1187,41 @@ class Linkedin(object):
             else Linkedin._MAX_SEARCH_COUNT
         )
 
-        default_params = {"count": count, "start": len(results), "sortType": "RECENTLY_ADDED"}
+        params = {
+                "decorationId": "com.linkedin.voyager.dash.deco.web.mynetwork.ConnectionListWithProfile-16",
+                "count": count,
+                "q": "search",
+                "sortType": "RECENTLY_ADDED",
+                "start": len(results),
+        }
 
-        res = self._fetch("/relationships/connections?" + urlencode(default_params))
+        res = self._fetch("/relationships/dash/connections", params=params)
 
         data = res.json()
-        total_found = data.get("paging", {}).get("count")
+
+        if data and data["elements"]:
+            connections_list = data["elements"]
+            connections = []
+            logger.debug("Found %d elements", len(connections_list))
+            if only_urn:
+                for profile in connections_list:
+                    connections.append(
+                        {
+                            "publicIdentifier": profile.get("miniProfile", {}).get(
+                                "publicIdentifier"
+                            ),
+                            "entityUrn": get_id_from_urn(profile["entityUrn"]),
+                        }
+                    )
+            else:
+                for profile in connections_list:
+                    current_profile_info = profile["connectedMemberResolutionResult"]
+                    if current_profile_info:
+                        connections.append(current_profile_info)
+
+            results = results + connections
+
+        total_found = data["paging"]["count"]
 
         # recursive base case
         if (
@@ -1209,41 +1238,7 @@ class Linkedin(object):
 
             return results
 
-        if data and data.get("elements"):
-            connections_list = data.get("elements")
-            connections = []
-            logger.debug("Found %d elements", len(connections_list))
-            if only_urn:
-                for profile in connections_list:
-                    connections.append(
-                        {
-                            "publicIdentifier": profile.get("miniProfile", {}).get(
-                                "publicIdentifier"
-                            ),
-                            "entityUrn": get_id_from_urn(profile["entityUrn"]),
-                        }
-                    )
-            else:
-                for profile in connections_list:
-                    current_profile_info = profile.get("miniProfile", {})
-                    if current_profile_info:
-                        current_profile_info = {
-                            k: v
-                            for k, v in current_profile_info.items()
-                            if k
-                            not in [
-                                "firstName",
-                                "lastName",
-                                "occupation",
-                                "picture",
-                            ]
-                        }
-                        connections.append(current_profile_info)
-
-            results = results + connections
-
-        sleep(random.randint(1, 40))
-
+        sleep(random.randint(1, 40)) # sleep to avoid throttling
         return self.get_profile_connections_raw(
             max_results=max_results, results=results, only_urn=only_urn
         )

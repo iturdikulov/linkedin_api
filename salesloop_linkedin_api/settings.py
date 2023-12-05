@@ -25,7 +25,8 @@ REQUESTS_TYPES = {
         "relationships/peopleYouMayKnow",
         "relationships/invitationsSummary",
         "relationships/connectionsSummary",
-        "relationships/connections",
+        "relationships/connections",  # TODO: deprecated, need to remove
+        "relationships/dash",
         "voyagerRelationshipsDashMemberRelationships"
     ),
     "companies": (
