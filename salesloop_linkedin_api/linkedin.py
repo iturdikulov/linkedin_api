@@ -268,36 +268,8 @@ class Linkedin(object):
             except LinkedinParsingError:
                 raise LinkedinUnauthorized("Unable to parse metadata/email from response")
 
-            default_params = {
-                "ids": "List("
-                "urn:li:fsd_featureAccess:CAN_ACCESS_RECRUITER_ENTRY_POINT,"
-                "urn:li:fsd_featureAccess:CAN_ACCESS_SALES_NAV_ENTRY_POINT"
-                ")",
-            }
-
-            # Set access levels
-            res = self._fetch(
-                f"/voyagerPremiumDashFeatureAccess?{urlencode(default_params, safe='(),')}",
-                headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
-            )
-
-            res.raise_for_status()
-
-            access_levels_response = res.json()
-            linkedin_features = access_levels_response["included"]
-
             # If we accessed to included data, this means we have access to the base API
             feature_access.linkedin = True
-
-            for ln_feature in linkedin_features:
-                access_type = ln_feature["featureAccessType"]
-                has_access = ln_feature["hasAccess"]
-
-                # TODO: add test for this, to check if can actually parse ln_features
-                if has_access and access_type == "CAN_ACCESS_SALES_NAV_ENTRY_POINT":
-                    feature_access.sales_nav = True
-                elif has_access and access_type == "CAN_ACCESS_RECRUITER_ENTRY_POINT":
-                    feature_access.recruiter = True
 
             # Set cookies
             metadata["session_cookies"] = request_cookies_to_cookies_list(
@@ -355,7 +327,13 @@ class Linkedin(object):
 
         # TODO: cover this with tests
         email = None
-        current_settings = self._fetch(f"https://www.linkedin.com/mysettings-api/settingsApiSneakPeeks?category=SIGN_IN_AND_SECURITY&q=category", raw_url=True).json()
+        if get_email:
+            self._fetch("https://www.linkedin.com/mypreferences/d/categories/account", raw_url=True)
+            response = self._fetch(f"https://www.linkedin.com/mysettings-api/settingsApiSneakPeeks?category=SIGN_IN_AND_SECURITY&q=category", raw_url=True)
+            if response.status_code == 401:
+                raise LinkedinLoginError()
+            else:
+                response.raise_for_status()
 
         elements = current_settings["elements"]
         for element in elements:
