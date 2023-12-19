@@ -1168,15 +1168,14 @@ class Linkedin(object):
         )
 
         params = {
-                "decorationId": "com.linkedin.voyager.dash.deco.web.mynetwork.ConnectionListWithProfile-16",
-                "count": count,
-                "q": "search",
-                "sortType": "RECENTLY_ADDED",
-                "start": len(results),
+            "decorationId": "com.linkedin.voyager.dash.deco.web.mynetwork.ConnectionListWithProfile-16",
+            "count": count,
+            "q": "search",
+            "sortType": "RECENTLY_ADDED",
+            "start": len(results),
         }
 
         res = self._fetch("/relationships/dash/connections", params=params)
-
         data = res.json()
 
         if data and data["elements"]:
