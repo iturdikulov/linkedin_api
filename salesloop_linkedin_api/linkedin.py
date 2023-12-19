@@ -19,9 +19,11 @@ from urllib.parse import urlencode, urlparse, parse_qs
 import backoff
 import requests
 from bs4 import BeautifulSoup
+from requests.models import Response
 from redis.client import StrictRedis
 
 import salesloop_linkedin_api.settings as settings
+from application.integrations.linkedin import LinkedinLoginError, LinkedinUnauthorized, LinkedinAPIError
 from application.auto_throtle import AutoThrottleFunc
 from application.integrations.linkedin import LinkedinLoginError, LinkedinUnauthorized
 from application.integrations.linkedin.linkedin_html_parser_company import (
@@ -1504,6 +1506,87 @@ class Linkedin(object):
 
         return results
 
+
+    def get_profile_data(self, public_id: str) -> dict:
+        random_page_instance_postfix = get_random_base64()
+        headers = {
+            'Accept': 'application/vnd.linkedin.normalized+json+2.1',
+            "x-li-page-instance": f"urn:li:page:d_flagship3_profile_view_base;{random_page_instance_postfix}",
+            'x-restli-protocol-version': '2.0.0',
+            'Referer': f'https://www.linkedin.com/in/{public_id}/',
+        }
+
+        # Fetch profile page
+        self._fetch("https://www.linkedin.com/in/" + public_id, raw_url=True)
+
+        # Get profile data
+        params = {
+            "includeWebMetadata":"true",
+            "variables": f"(vanityName:{public_id})",
+            "queryId":"voyagerIdentityDashProfiles.a1941bc56db02d2a36a03dd81313f3c7"
+        }
+
+        response = self._fetch(
+                f"/graphql?{urlencode(params, safe='(),:')}",
+            headers=headers,
+        )
+        response.raise_for_status()
+        profile = response.json()
+
+        entity_urn = profile["data"]["data"]["identityDashProfilesByMemberIdentity"]["*elements"][0]
+
+        keys_to_extract = ("publicIdentifier", "firstName", "lastName", "headline")
+
+        for item in profile["included"]:
+            if item["$type"] == "com.linkedin.voyager.dash.identity.profile.Profile" and\
+               item["entityUrn"] == entity_urn:
+                return {key: item[key] for key in keys_to_extract}
+
+        raise LinkedinAPIError("Profile data not found")
+
+
+    def get_profile_urn_v2(self, json_data: dict) -> str:
+        return json_data["included"][0]["entityUrn"]
+
+    def connect_with_someone_v2(self, profile_urn, message: str = "") -> Response:
+        params = {
+                'action': 'verifyQuotaAndCreateV2',
+                'decorationId': 'com.linkedin.voyager.dash.deco.relationships.InvitationCreationResultWithInvitee-2',
+        }
+
+        payload = {
+        'invitee': {
+            'inviteeUnion': {
+                'memberProfile': profile_urn,
+                },
+            },
+        }
+
+        random_page_instance_postfix = get_random_base64()
+        headers = {
+            'Accept': 'application/vnd.linkedin.normalized+json+2.1',
+            'x-li-lang': 'en_US',
+            "x-li-page-instance": f"urn:li:page:d_flagship3_profile_view_base;{random_page_instance_postfix}",
+            'x-restli-protocol-version': '2.0.0',
+            'x-li-pem-metadata': 'Voyager - Invitations=send-invite',
+            'x-li-deco-include-micro-schema': 'true',
+            'content-type': 'application/json; charset=utf-8',
+            'Origin': 'https://www.linkedin.com',
+            'DNT': '1',
+        }
+
+        response = self._post(
+            "/voyagerRelationshipsDashMemberRelationships",
+            params=params,
+            json=payload,
+            headers=headers,
+        )
+
+        #! if it fails with a 400 with the code "CANT_RESEND_YET" then we'll need to wait like 3 weeks
+        #todo: add a check for this
+
+        return response
+
     def connect_with_someone(self, profile_urn_id, message=None):
         """
         Send a message to a given conversation. If error, return true.
@@ -1560,52 +1643,6 @@ class Linkedin(object):
         )
 
         return res.status_code != 201, res.status_code
-
-    def connect_with_someone_v2(self, profile_urn_id, message=None):
-        """
-        Send a message to a given conversation. If error, return true.
-        generate_tracking_id is not equal to API, gene
-        """
-        sleep(random.randint(3, 5))  # sleep a random duration to try and evade suspention
-
-        headers = {
-            'Accept': 'application/vnd.linkedin.normalized+json+2.1',
-        }
-
-        params = {
-            'action': 'verifyQuotaAndCreateV2',
-            'decorationId': 'com.linkedin.voyager.dash.deco.relationships.InvitationCreationResultWithInvitee-2',
-        }
-
-        json_data = {
-            'invitee': {
-                'inviteeUnion': {
-                    'memberProfile': 'urn:li:fsd_profile:ACoAAEaLzJYBReET2H4k9IRfS9IlXCipCsKGjjY',
-                },
-            },
-        }
-        if message:
-            json_data["customMessage"] = message
-
-        res = self._post(
-            "/voyagerRelationshipsDashMemberRelationships",
-            json=json_data,
-            params=params,
-            headers=headers
-        )
-
-        response_data = res.json()
-        if response_data.get("data", "code") == "FUSE_LIMIT_EXCEEDED":
-            raise LinkedinInvitesRateLimit()
-        elif not isinstance(
-            response_data.get("data", {}).get("value", {}).get("invitationId"), int
-        ):
-            logger.warning("Failed to connect, unknown response detected: %s", response_data)
-            return False, res.status_code
-
-        # Used false status code for backwards compatibility with tests
-        connection_failed = res.status_code not in (200, 201)
-        return connection_failed, res.status_code
 
     def remove_connection(self, public_profile_id):
         res = self._post(
