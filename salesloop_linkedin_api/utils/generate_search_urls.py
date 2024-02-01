@@ -477,7 +477,6 @@ def generate_clusters_search_url(original_url):
         "company",
         "contactInterest",
         "network",
-        "facetNetwork",
         "industry",
         "connectionOf",
         "currentCompany",
