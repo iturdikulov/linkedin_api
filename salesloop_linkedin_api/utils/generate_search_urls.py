@@ -634,7 +634,7 @@ def generate_grapqhl_search_url(original_url: str, offset: int = 0):
         f"{keywords}"
         f"flagshipSearchIntent:SEARCH_SRP,"
         f"queryParameters:{default_params['filters']},"
-        f"includeFiltersInResponse:false))&&queryId=voyagerSearchDashClusters"
+        f"includeFiltersInResponse:false))&queryId=voyagerSearchDashClusters"
         f".b0928897b71bd00a5a7291755dcd64f0"
     )
 
