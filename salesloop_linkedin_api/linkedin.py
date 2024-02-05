@@ -1613,7 +1613,7 @@ class Linkedin(object):
         )
 
         #! if it fails with a 400 with the code "CANT_RESEND_YET" then we'll need to wait like 3 weeks
-        #todo: add a check for this
+        # todo: add a check for this
 
         return response
 
