@@ -1024,6 +1024,42 @@ class Linkedin(object):
 
         return data
 
+    def messenger_conversations(self, inbox_user_urn, recipient_urn) -> dict:
+        """Get conversation data between two users.
+        :param inbox_user_urn: the URN of the inbox user (who is logged in)
+        :param recipient_urn: the URN of the recipient
+        """
+
+        response = self._fetch(
+            f"https://www.linkedin.com/voyager/api/voyagerMessagingGraphQL/graphql?queryId=messengerConversations.c6e2778ef6f5c2b617c06261738cd193&variables=(mailboxUrn:urn%3Ali%3Afsd_profile%3A{inbox_user_urn},recipients:List(urn%3Ali%3Afsd_profile%3A{recipient_urn}))",
+            raw_url=True,
+            headers={"Accept": "application/graphql"},
+        )
+        response.raise_for_status()
+        elements = response.json()["data"]["messengerConversationsByRecipients"]["elements"]
+        if not elements:
+            logger.debug("No conversations found")
+            return {}
+
+        root_element = elements[0]
+        return {
+            "creator": root_element["creator"]["entityUrn"],
+            "creatorEntityUrn": root_element["creator"]["entityUrn"].split(":")[-1],
+            "entityUrn": root_element["entityUrn"],
+            "conversationUrl": root_element["conversationUrl"],
+            "conversationParticipants": [p for p in root_element["conversationParticipants"]],
+            "categories": root_element["categories"],
+            "createdAt": root_element["createdAt"],
+            "lastActivityAt": root_element["lastActivityAt"],
+        }
+
+    def messenger_messages(self, recipient_urn) -> list:
+        recipient_urn = quote_plus(recipient_urn)
+        url = f"https://www.linkedin.com/voyager/api/voyagerMessagingGraphQL/graphql?queryId=messengerMessages.fcaf6a3aca4ff63c4d1585bddb1e1a8e&variables=(conversationUrn:{recipient_urn})"
+        response = self._fetch(url, raw_url=True, headers={"Accept": "application/graphql"})
+        response.raise_for_status()
+        return parse_messenger_messages(response.json())
+
     def get_premium_subscription(self):
         """
         Return current user profile
