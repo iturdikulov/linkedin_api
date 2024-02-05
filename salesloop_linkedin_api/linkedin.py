@@ -1194,7 +1194,7 @@ class Linkedin(object):
 
         return res.status_code == 200
 
-    def get_profile_connections_raw(self, max_results=None, results=[], only_urn=False):
+    def get_profile_connections_raw(self, max_results=None, results=[]):
         count = (
             max_results
             if max_results and max_results <= Linkedin._MAX_SEARCH_COUNT
