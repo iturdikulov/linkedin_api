@@ -586,72 +586,60 @@ class Linkedin(object):
 
         return skills
 
-    def get_profile(self, public_id=None, urn_id=None, get_skills=False):
-        """
-        Return data for a single profile.
+    def profile(self, public_id: str) -> dict:
+        random_page_instance_postfix = get_random_base64()
+        # Fetch profile page
+        self._fetch("https://www.linkedin.com/in/" + public_id, raw_url=True)
 
-        [public_id] - public identifier i.e. tom-quirk-1928345
-        [urn_id] - id provided by the related URN
-        """
-        # NOTE this still works for now, but will probably eventually have to be converted to
-        # https://www.linkedin.com/voyager/api/identity/profiles/ACoAAAKT9JQBsH7LwKaE9Myay9WcX8OVGuDq9Uw
-        res = self._fetch(f"/identity/profiles/{public_id or urn_id}/profileView")
+        headers = {
+            "Accept": "application/vnd.linkedin.normalized+json+2.1",
+            "x-li-page-instance": f"urn:li:page:d_flagship3_profile_view_base;{random_page_instance_postfix}",
+            "x-restli-protocol-version": "2.0.0",
+        }
 
-        data = res.json()
-        if data and "status" in data and data["status"] != 200:
-            self.logger.info("request failed: {}".format(data["message"]))
-            return {}
+        # Get profile data
+        params = {
+            "includeWebMetadata": "true",
+            "variables": f"(vanityName:{public_id})",
+            "queryId": "voyagerIdentityDashProfiles.a1941bc56db02d2a36a03dd81313f3c7",
+        }
 
-        # massage [profile] data
-        profile = data["profile"]
-        if "miniProfile" in profile:
-            if "picture" in profile["miniProfile"]:
-                profile["displayPictureUrl"] = profile["miniProfile"]["picture"][
-                    "com.linkedin.common.VectorImage"
-                ]["rootUrl"]
-            profile["profile_id"] = get_id_from_urn(profile["miniProfile"]["entityUrn"])
-            profile["publicIdentifier"] = profile["miniProfile"].get("publicIdentifier")
+        response = self._fetch(
+            f"/graphql?{urlencode(params, safe='(),:')}",
+            headers=headers,
+        )
+        response.raise_for_status()
+        return response.json()
 
-            del profile["miniProfile"]
+    def profile_cards(self, profile_urn: str) -> dict:
+        random_page_instance_postfix = get_random_base64()
+        headers = {
+            "Accept": "application/vnd.linkedin.normalized+json+2.1",
+            "x-li-page-instance": f"urn:li:page:d_flagship3_profile_view_base;{random_page_instance_postfix}",
+            "x-restli-protocol-version": "2.0.0",
+        }
 
-        del profile["defaultLocale"]
-        del profile["supportedLocales"]
-        del profile["versionTag"]
-        del profile["showEducationOnProfileTopCard"]
+        response = self._fetch(
+            f"/graphql?includeWebMetadata=true&variables=(profileUrn:urn%3Ali%3Afsd_profile%3A{profile_urn})&queryId=voyagerIdentityDashProfileCards.5ba28aea1970071579633b9f449b8a7e",
+            headers=headers,
+        )
 
-        # massage [experience] data
-        experience = data["positionView"]["elements"]
-        for item in experience:
-            if "company" in item and "miniCompany" in item["company"]:
-                if "logo" in item["company"]["miniCompany"]:
-                    logo = item["company"]["miniCompany"]["logo"].get(
-                        "com.linkedin.common.VectorImage"
-                    )
-                    if logo:
-                        item["companyLogoUrl"] = logo["rootUrl"]
-                del item["company"]["miniCompany"]
+        response.raise_for_status()
+        return response.json()
 
-        profile["experience"] = experience
-
-        # massage [skills] data
-        # skills = [item["name"] for item in data["skillView"]["elements"]]
-        # profile["skills"] = skills
-        if get_skills:
-            profile["skills"] = self.get_profile_skills(public_id=public_id, urn_id=urn_id)
-
-        # massage [education] data
-        education = data["educationView"]["elements"]
-        for item in education:
-            if "school" in item:
-                if "logo" in item["school"]:
-                    item["school"]["logoUrl"] = item["school"]["logo"][
-                        "com.linkedin.common.VectorImage"
-                    ]["rootUrl"]
-                    del item["school"]["logo"]
-
-        profile["education"] = education
-
-        return profile
+    def profile_contacts(self, public_id: str) -> dict:
+        random_page_instance_postfix = get_random_base64()
+        headers = {
+            "Accept": "application/vnd.linkedin.normalized+json+2.1",
+            "x-li-page-instance": f"urn:li:page:d_flagship3_profile_view_base;{random_page_instance_postfix}",
+            "x-restli-protocol-version": "2.0.0",
+        }
+        response = self._fetch(
+            f"/graphql?variables=(memberIdentity:{public_id})&queryId=voyagerIdentityDashProfiles.84cab0be7183be5d0b8e79cd7d5ffb7b",
+            headers=headers,
+        )
+        response.raise_for_status()
+        return response.json()
 
     def get_profile_connections(self, urn_id, limit=None):
         """
