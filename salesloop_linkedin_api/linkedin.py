@@ -253,7 +253,7 @@ class Linkedin(object):
 
         return post_data()
 
-    def get_ln_user_metadata(self):
+    def get_ln_user_metadata(self, get_email=False):
         """
         Fetch basic metadata from Linkedin API.
         Also used to check if we are logged in.
@@ -265,7 +265,7 @@ class Linkedin(object):
         response = self._fetch("https://www.linkedin.com/mynetwork/", raw_url=True)
         if response.status_code == 200:
             try:
-                user_metadata = self._parse_user_metadata(response.text)
+                user_metadata = self._parse_user_metadata(response.text, get_email=get_email)
                 metadata.update(user_metadata)
             except LinkedinParsingError:
                 raise LinkedinUnauthorized("Unable to parse metadata/email from response")
@@ -285,7 +285,7 @@ class Linkedin(object):
 
         return metadata
 
-    def _parse_user_metadata(self, response_text: str) -> dict:
+    def _parse_user_metadata(self, response_text: str, get_email: bool = False) -> dict:
         """
         Parse email from response text
         Args:
@@ -298,6 +298,7 @@ class Linkedin(object):
         soup = BeautifulSoup(response_text, "lxml")
         code_elements = soup.find_all("code")
 
+        my_info = None
         avatar = None
         for search_hit in code_elements:
             try:
@@ -323,11 +324,10 @@ class Linkedin(object):
             segment = get_object_by_path(picture, "artifacts.2.fileIdentifyingUrlPathSegment")
             root_url = get_object_by_path(picture, "rootUrl")
 
-                        # Prefix with correct url
-                        avatar = f"{root_url}{segment}"
-
-            except json.decoder.JSONDecodeError:
-                self.logger.debug(f"Failed to parse code element, skip: {search_hit}")
+            # Prefix with correct url
+            avatar = f"{root_url}{segment}"
+        except (KeyError, IndexError):
+            logger.warning("Could not parse avatar from search_hit_data: %s", my_info)
 
         # TODO: cover this with tests
         email = None
@@ -344,10 +344,11 @@ class Linkedin(object):
             else:
                 response.raise_for_status()
 
-        elements = current_settings["elements"]
-        for element in elements:
-            if element["settingCardKey"] == "manageEmailAddresses":
-                email = element["displayText"]
+            current_settings = response.json()
+            elements = current_settings["elements"]
+            for element in elements:
+                if element["settingCardKey"] == "manageEmailAddresses":
+                    email = element["displayText"]
 
             if not email:
                 raise LinkedinParsingError(
