@@ -1824,12 +1824,12 @@ class Linkedin(object):
         reformat_max_errors = 6
         for i, lead in enumerate(results):
             try:
-                if lead.get("entityUrn") and not lead.get("publicIdentifier"):
+                if lead.get("publicIdentifier"):
                     # evade limit each N requests
                     if i > 0 and i % randrange(4, 6) == 0:
                         sleep(randrange(15, 25))
 
-                    profile = self.get_profile(urn_id=lead.get("entityUrn"))
+                    profile = self.get_profile_data(public_id=lead.get("publicIdentifier"))
                     lead["publicIdentifier"] = profile["publicIdentifier"]
 
                     # fill additional fields
