@@ -959,7 +959,7 @@ class Linkedin(object):
 
     def send_message(
         self, conversation_urn_id=None, recipients=[], message_body=None, parse_urn_id=False
-    ):
+    ) -> bool:
         """
         Send a message to a given conversation. If error, return true.
 
