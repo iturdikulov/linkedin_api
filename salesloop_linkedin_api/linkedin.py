@@ -20,10 +20,6 @@ import backoff
 import requests
 from bs4 import BeautifulSoup
 from requests.models import Response
-from salesloop_linkedin_api.parser import (
-    ProfileParsingError,
-    parse_messenger_messages,
-)
 from redis.client import StrictRedis
 
 import salesloop_linkedin_api.settings as settings
