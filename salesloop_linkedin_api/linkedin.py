@@ -1180,21 +1180,20 @@ class Linkedin(object):
             connections_list = data["elements"]
             connections = []
             logger.debug("Found %d elements", len(connections_list))
-            if only_urn:
-                for profile in connections_list:
+            for profile in connections_list:
+                try:
                     connections.append(
                         {
-                            "publicIdentifier": profile.get("miniProfile", {}).get(
+                            "publicIdentifier": profile["connectedMemberResolutionResult"][
                                 "publicIdentifier"
-                            ),
+                            ],
                             "entityUrn": get_id_from_urn(profile["entityUrn"]),
                         }
                     )
-            else:
-                for profile in connections_list:
-                    current_profile_info = profile["connectedMemberResolutionResult"]
-                    if current_profile_info:
-                        connections.append(current_profile_info)
+                except KeyError:
+                    # This is probably a deleted profile or canceled invitation
+                    logger.warning("Failed to parse connection data: %s", profile)
+                    continue
 
             results = results + connections
 
@@ -1215,10 +1214,8 @@ class Linkedin(object):
 
             return results
 
-        sleep(random.randint(1, 40)) # sleep to avoid throttling
-        return self.get_profile_connections_raw(
-            max_results=max_results, results=results, only_urn=only_urn
-        )
+        sleep(random.randint(1, 40))  # sleep to avoid throttling
+        return self.get_profile_connections_raw(max_results=max_results, results=results)
 
     def get_current_profile_urn(self, public_id=None):
         """
