@@ -20,6 +20,10 @@ import backoff
 import requests
 from bs4 import BeautifulSoup
 from requests.models import Response
+from salesloop_linkedin_api.parser import (
+    ProfileParsingError,
+    parse_messenger_messages,
+)
 from redis.client import StrictRedis
 
 import salesloop_linkedin_api.settings as settings
@@ -307,19 +311,21 @@ class Linkedin(object):
                 if data:
                     data_type = data.get("$type")
                     if data_type == "com.linkedin.voyager.common.Me":
-                        # TODO: cover this with tests
-                        try:
-                            picture = get_object_by_path(
-                                search_hit_data,
-                                "included.0.picture"
-                            )
-                            segment = get_object_by_path(picture,
-                                                         "artifacts.2.fileIdentifyingUrlPathSegment")
-                            root_url = get_object_by_path(picture, "rootUrl")
-                        except (KeyError, IndexError):
-                            logger.warning("Could not parse avatar from search_hit_data: %s",
-                                           search_hit_data)
-                            continue
+                        my_info = search_hit_data
+            except json.decoder.JSONDecodeError:
+                self.logger.debug(f"Failed to parse code element, skip: {search_hit}")
+
+        if not my_info:
+            raise LinkedinLoginError("Could not parse my_info from response: %s", response_text)
+
+        # Get profile urn
+        urn = get_id_from_urn(my_info["data"]["*miniProfile"])
+
+        # TODO: cover this with tests
+        try:
+            picture = get_object_by_path(my_info, "included.0.picture")
+            segment = get_object_by_path(picture, "artifacts.2.fileIdentifyingUrlPathSegment")
+            root_url = get_object_by_path(picture, "rootUrl")
 
                         # Prefix with correct url
                         avatar = f"{root_url}{segment}"
@@ -330,8 +336,13 @@ class Linkedin(object):
         # TODO: cover this with tests
         email = None
         if get_email:
-            self._fetch("https://www.linkedin.com/mypreferences/d/categories/account", raw_url=True)
-            response = self._fetch(f"https://www.linkedin.com/mysettings-api/settingsApiSneakPeeks?category=SIGN_IN_AND_SECURITY&q=category", raw_url=True)
+            self._fetch(
+                "https://www.linkedin.com/mypreferences/d/categories/account", raw_url=True
+            )
+            response = self._fetch(
+                f"https://www.linkedin.com/mysettings-api/settingsApiSneakPeeks?category=SIGN_IN_AND_SECURITY&q=category",
+                raw_url=True,
+            )
             if response.status_code == 401:
                 raise LinkedinLoginError()
             else:
@@ -342,10 +353,13 @@ class Linkedin(object):
             if element["settingCardKey"] == "manageEmailAddresses":
                 email = element["displayText"]
 
-        if not email:
-            raise LinkedinParsingError("Could not parse email from response: %s", response_text)
+            if not email:
+                raise LinkedinParsingError(
+                    "Could not parse email from response: %s", response_text
+                )
 
         return {
+            "urn": urn,
             "email": email,
             "avatar": avatar,
         }
