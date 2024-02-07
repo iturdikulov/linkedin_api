@@ -14,13 +14,14 @@ from os.path import isfile
 from pathlib import Path
 from random import randrange
 from time import sleep
-from urllib.parse import urlencode, urlparse, parse_qs
+from urllib.parse import urlencode, urlparse, parse_qs, quote_plus
 
 import backoff
 import requests
 from bs4 import BeautifulSoup
 from requests.models import Response
 from redis.client import StrictRedis
+from salesloop_linkedin_api.parser import parse_messenger_messages
 
 import salesloop_linkedin_api.settings as settings
 from application.integrations.linkedin import LinkedinLoginError, LinkedinUnauthorized, LinkedinAPIError
@@ -1668,7 +1669,7 @@ class Linkedin(object):
             payload["message"] = message
 
         res = self._post(
-            f"/growth/normInvitations",
+            "/growth/normInvitations",
             data=json.dumps(payload),
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
         )
