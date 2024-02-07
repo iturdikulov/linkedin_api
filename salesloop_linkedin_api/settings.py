@@ -59,6 +59,7 @@ REQUESTS_TYPES = {
         "messaging/conversations",
         "messaging/stickerpacks",
         "messaging/conversations",
+        "voyagerMessagingGraphQL/graphql"
     ),
     "identity": (
         "identity/cards",

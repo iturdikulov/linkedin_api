@@ -42,4 +42,8 @@ class APIRequestType:
             if endpoint in request_tuple:
                 return request_type
 
+        # TODO: avoid hardcode here
+        if endpoint.startswith("in/"): # Profile parsing logic
+            return "identity"
+
         raise Exception(f"Found unknown url/request type: {url}, endpoint: {endpoint}")
