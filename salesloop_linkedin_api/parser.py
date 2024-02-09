@@ -51,6 +51,12 @@ def parse_profile(response_data: dict) -> dict:
             item_type="com.linkedin.voyager.dash.identity.profile.Profile",
             included=included,
         )
+
+        member_distance = extract_included_item(
+            item_entity_urn=f"urn:li:fsd_memberRelationship:{get_id_from_urn(profile_item['entityUrn'])}",
+            item_type="com.linkedin.voyager.dash.relationships.MemberRelationship",
+            included=included,
+        )
     except (KeyError, IndexError, TypeError):
         raise ProfileParsingError("profile not found, can't parse it")
 
@@ -75,6 +81,10 @@ def parse_profile(response_data: dict) -> dict:
 
         profile_data[nkey] = value  # We use own key names,
         # this is why nkey is used here
+
+
+    # Check user connected with us
+    profile_data["connection"] = member_distance["memberRelationship"].get("*connection")
 
     # Fill generated data and adjust some fields
     profile_data["entityUrn"] = get_id_from_urn(profile_data["entityUrn"])
