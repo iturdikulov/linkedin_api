@@ -938,6 +938,7 @@ class Linkedin(object):
             "conversation_urn_id": conversation_urn_id,
         }
 
+    # NEXT: outdated, need to remove
     def get_conversations(self, createdBefore=None):
         """
         Return list of conversations the user is in.
@@ -1025,6 +1026,47 @@ class Linkedin(object):
         data = res.json()
 
         return data
+
+    def conversations(self, inbox_user_urn) -> list:
+        """
+        Return list of conversations from users inbox
+        NOTE: not support next/previous page (newSyncToken), but it can be added
+        """
+
+        response = self._fetch(
+            f"/voyagerMessagingGraphQL/graphql?queryId=messengerConversations.0df6f006f938bcf4f6be8f8fdfc2fe4c&variables=(mailboxUrn:urn%3Ali%3Afsd_profile%3{inbox_user_urn})",
+            headers={"Accept": "application/graphql"},
+        )
+        conversations = (
+            get_object_by_path(response.json(), "data.messengerConversationsBySyncToken.elements")
+            or []
+        )
+        if not conversations:
+            logger.warning("No converations found")
+
+        parsed_messages = []
+        for conversation in conversations:
+            messages = (
+                get_object_by_path(
+                    conversation,
+                    "messages.elements",
+                )
+                or []
+            )
+            for message in messages:
+                if not message or not isinstance(message, dict):
+                    raise ValueError("Invalid message")
+
+                parsed_messages.append({
+                    "message_body": message["body"]["text"],
+                    "creatorEntityUrn": message["sender"]["entityUrn"].split(":")[-1],
+                    "entityUrn": message["entityUrn"],
+                    "deliveredAt": datetime.fromtimestamp(message["deliveredAt"] / 1000),
+                    "type": message["_type"],
+                })
+
+        return parsed_messages
+
 
     def messenger_conversations(self, inbox_user_urn, recipient_urn) -> dict:
         """Get conversation data between two users.
