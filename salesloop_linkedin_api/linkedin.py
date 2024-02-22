@@ -24,7 +24,11 @@ from redis.client import StrictRedis
 from salesloop_linkedin_api.parser import parse_messenger_messages
 
 import salesloop_linkedin_api.settings as settings
-from application.integrations.linkedin import LinkedinLoginError, LinkedinUnauthorized, LinkedinAPIError
+from application.integrations.linkedin import (
+    LinkedinLoginError,
+    LinkedinUnauthorized,
+    LinkedinAPIError,
+)
 from application.auto_throtle import AutoThrottleFunc
 from application.integrations.linkedin import LinkedinLoginError, LinkedinUnauthorized
 from application.integrations.linkedin.linkedin_html_parser_company import (
@@ -36,8 +40,11 @@ from application.profile.cookie_converter import request_cookies_to_cookies_list
 from application.utlis_sales_search import generate_sales_search_url
 from salesloop_linkedin_api.client import Client, LinkedinParsingError
 from salesloop_linkedin_api.properties import LinkedinApFeatureAccess
-from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url, \
-    generate_grapqhl_search_url, generate_graphql_companies_search_url
+from salesloop_linkedin_api.utils.generate_search_urls import (
+    generate_clusters_search_url,
+    generate_grapqhl_search_url,
+    generate_graphql_companies_search_url,
+)
 from salesloop_linkedin_api.statistic import APIRequestType
 from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url
 from salesloop_linkedin_api.utils.helpers import (
@@ -215,7 +222,7 @@ class Linkedin(object):
 
         return fetch_data()
 
-    def _post(self, uri, evade=default_evade, raw_url=False, **kwargs):
+    def _post(self, uri, evade=default_evade, raw_url=False, allowed_status_codes=(), **kwargs):
         """
         POST request to LinkedIn API
         """
@@ -244,7 +251,10 @@ class Linkedin(object):
                 kwargs["timeout"] = Linkedin._DEFAULT_POST_TIMEOUT
 
             post_response = self.client.session.post(url, **kwargs)
-            if post_response.status_code != 400:
+            if (
+                post_response.status_code != 400
+                and post_response.status_code not in allowed_status_codes
+            ):
                 # Some responses, such as ln connection, can be valid with 400 code!
                 post_response.raise_for_status()
 
@@ -733,9 +743,7 @@ class Linkedin(object):
             "com.linkedin.voyager.identity.me.wvmpOverview.WvmpViewersCard"
         ]["insightCards"][0]["value"][
             "com.linkedin.voyager.identity.me.wvmpOverview.WvmpSummaryInsightCard"
-        ][
-            "numViews"
-        ]
+        ]["numViews"]
 
     def get_school(self, public_id):
         """
@@ -1034,7 +1042,7 @@ class Linkedin(object):
         """
 
         response = self._fetch(
-            f"/voyagerMessagingGraphQL/graphql?queryId=messengerConversations.0df6f006f938bcf4f6be8f8fdfc2fe4c&variables=(mailboxUrn:urn%3Ali%3Afsd_profile%3{inbox_user_urn})",
+            f"/voyagerMessagingGraphQL/graphql?queryId=messengerConversations.0df6f006f938bcf4f6be8f8fdfc2fe4c&variables=(mailboxUrn:urn%3Ali%3Afsd_profile%3A{inbox_user_urn})",
             headers={"Accept": "application/graphql"},
         )
         conversations = (
@@ -1053,20 +1061,22 @@ class Linkedin(object):
                 )
                 or []
             )
+
             for message in messages:
                 if not message or not isinstance(message, dict):
                     raise ValueError("Invalid message")
 
-                parsed_messages.append({
-                    "message_body": message["body"]["text"],
-                    "creatorEntityUrn": message["sender"]["entityUrn"].split(":")[-1],
-                    "entityUrn": message["entityUrn"],
-                    "deliveredAt": datetime.fromtimestamp(message["deliveredAt"] / 1000),
-                    "type": message["_type"],
-                })
+                parsed_messages.append(
+                    {
+                        "message_body": message["body"]["text"],
+                        "creatorEntityUrn": message["sender"]["entityUrn"].split(":")[-1],
+                        "entityUrn": message["entityUrn"],
+                        "deliveredAt": datetime.fromtimestamp(message["deliveredAt"] / 1000),
+                        "type": message["_type"],
+                    }
+                )
 
         return parsed_messages
-
 
     def messenger_conversations(self, inbox_user_urn, recipient_urn) -> dict:
         """Get conversation data between two users.
@@ -1580,14 +1590,13 @@ class Linkedin(object):
 
         return results
 
-
     def get_profile_data(self, public_id: str) -> dict:
         random_page_instance_postfix = get_random_base64()
         headers = {
-            'Accept': 'application/vnd.linkedin.normalized+json+2.1',
+            "Accept": "application/vnd.linkedin.normalized+json+2.1",
             "x-li-page-instance": f"urn:li:page:d_flagship3_profile_view_base;{random_page_instance_postfix}",
-            'x-restli-protocol-version': '2.0.0',
-            'Referer': f'https://www.linkedin.com/in/{public_id}/',
+            "x-restli-protocol-version": "2.0.0",
+            "Referer": f"https://www.linkedin.com/in/{public_id}/",
         }
 
         # Fetch profile page
@@ -1595,58 +1604,61 @@ class Linkedin(object):
 
         # Get profile data
         params = {
-            "includeWebMetadata":"true",
+            "includeWebMetadata": "true",
             "variables": f"(vanityName:{public_id})",
-            "queryId":"voyagerIdentityDashProfiles.a1941bc56db02d2a36a03dd81313f3c7"
+            "queryId": "voyagerIdentityDashProfiles.a1941bc56db02d2a36a03dd81313f3c7",
         }
 
         response = self._fetch(
-                f"/graphql?{urlencode(params, safe='(),:')}",
+            f"/graphql?{urlencode(params, safe='(),:')}",
             headers=headers,
         )
         response.raise_for_status()
         profile = response.json()
 
-        entity_urn = profile["data"]["data"]["identityDashProfilesByMemberIdentity"]["*elements"][0]
+        entity_urn = profile["data"]["data"]["identityDashProfilesByMemberIdentity"]["*elements"][
+            0
+        ]
 
         keys_to_extract = ("publicIdentifier", "firstName", "lastName", "headline")
 
         for item in profile["included"]:
-            if item["$type"] == "com.linkedin.voyager.dash.identity.profile.Profile" and\
-               item["entityUrn"] == entity_urn:
+            if (
+                item["$type"] == "com.linkedin.voyager.dash.identity.profile.Profile"
+                and item["entityUrn"] == entity_urn
+            ):
                 return {key: item[key] for key in keys_to_extract}
 
         raise LinkedinAPIError("Profile data not found")
-
 
     def get_profile_urn_v2(self, json_data: dict) -> str:
         return json_data["included"][0]["entityUrn"]
 
     def connect_with_someone_v2(self, profile_urn, message: str = "") -> Response:
         params = {
-                'action': 'verifyQuotaAndCreateV2',
-                'decorationId': 'com.linkedin.voyager.dash.deco.relationships.InvitationCreationResultWithInvitee-2',
+            "action": "verifyQuotaAndCreateV2",
+            "decorationId": "com.linkedin.voyager.dash.deco.relationships.InvitationCreationResultWithInvitee-2",
         }
 
         payload = {
-        'invitee': {
-            'inviteeUnion': {
-                'memberProfile': profile_urn,
+            "invitee": {
+                "inviteeUnion": {
+                    "memberProfile": profile_urn,
                 },
             },
         }
 
         random_page_instance_postfix = get_random_base64()
         headers = {
-            'Accept': 'application/vnd.linkedin.normalized+json+2.1',
-            'x-li-lang': 'en_US',
+            "Accept": "application/vnd.linkedin.normalized+json+2.1",
+            "x-li-lang": "en_US",
             "x-li-page-instance": f"urn:li:page:d_flagship3_profile_view_base;{random_page_instance_postfix}",
-            'x-restli-protocol-version': '2.0.0',
-            'x-li-pem-metadata': 'Voyager - Invitations=send-invite',
-            'x-li-deco-include-micro-schema': 'true',
-            'content-type': 'application/json; charset=utf-8',
-            'Origin': 'https://www.linkedin.com',
-            'DNT': '1',
+            "x-restli-protocol-version": "2.0.0",
+            "x-li-pem-metadata": "Voyager - Invitations=send-invite",
+            "x-li-deco-include-micro-schema": "true",
+            "content-type": "application/json; charset=utf-8",
+            "Origin": "https://www.linkedin.com",
+            "DNT": "1",
         }
 
         response = self._post(
@@ -1714,6 +1726,7 @@ class Linkedin(object):
             "/growth/normInvitations",
             data=json.dumps(payload),
             headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
+            allowed_status_codes=(400, 406)
         )
 
         return res.status_code != 201, res.status_code
@@ -1968,13 +1981,11 @@ class Linkedin(object):
             get_sent_invites_start = i * 100
 
             # check app sending limits
-            current_invites_data = self.get_sent_invitations(
-                start=get_sent_invites_start
-            )
+            current_invites_data = self.get_sent_invitations(start=get_sent_invites_start)
 
             for invite in current_invites_data:
                 if invite in sent_invites_data:
-                    logger.debug( "%s invite already exist, skipping", invite)
+                    logger.debug("%s invite already exist, skipping", invite)
                     continue
 
                 sent_time = datetime.fromtimestamp(invite["sentTime"] / 1000)
