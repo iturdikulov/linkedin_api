@@ -347,7 +347,7 @@ class Linkedin(object):
                 "https://www.linkedin.com/mypreferences/d/categories/account", raw_url=True
             )
             response = self._fetch(
-                f"https://www.linkedin.com/mysettings-api/settingsApiSneakPeeks?category=SIGN_IN_AND_SECURITY&q=category",
+                "https://www.linkedin.com/mysettings-api/settingsApiSneakPeeks?category=SIGN_IN_AND_SECURITY&q=category",
                 raw_url=True,
             )
             if response.status_code == 401:
@@ -784,7 +784,7 @@ class Linkedin(object):
             "universalName": public_id,
         }
 
-        res = self._fetch(f"/organization/companies", params=params)
+        res = self._fetch("/organization/companies", params=params)
 
         data = res.json()
 
