@@ -3,7 +3,6 @@ Provides linkedin api-related code
 """
 import base64
 import json
-import logging
 import pickle
 import random
 import re
@@ -30,7 +29,6 @@ from application.integrations.linkedin import (
     LinkedinAPIError,
 )
 from application.auto_throtle import AutoThrottleFunc
-from application.integrations.linkedin import LinkedinLoginError, LinkedinUnauthorized
 from application.integrations.linkedin.linkedin_html_parser_company import (
     LinkedinJSONParserCompany,
 )
@@ -46,7 +44,6 @@ from salesloop_linkedin_api.utils.generate_search_urls import (
     generate_graphql_companies_search_url,
 )
 from salesloop_linkedin_api.statistic import APIRequestType
-from salesloop_linkedin_api.utils.generate_search_urls import generate_clusters_search_url
 from salesloop_linkedin_api.utils.helpers import (
     parse_search_hits,
     get_default_regions,
@@ -55,9 +52,9 @@ from salesloop_linkedin_api.utils.helpers import (
     get_id_from_urn,
 )
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger("application")
+from celery.utils.log import get_task_logger
 
+logger = get_task_logger(__name__)
 
 def generate_tracking_id():
     """Generates and returns a random trackingId
@@ -135,8 +132,8 @@ class Linkedin(object):
 
         # Count each request and save amount per X timerange
         self.requests_amount = {k: 0 for k in settings.REQUESTS_TYPES.keys()}
-        self.requests_amount["start_timestamp"] = None
-        self.requests_amount["end_timestamp"] = None
+        self.requests_amount["start_timestamp"] = 0
+        self.requests_amount["end_timestamp"] = 0
 
         # First and last request timestamps
         self.requests_start_timestamp = None
@@ -173,6 +170,7 @@ class Linkedin(object):
         # ln.api -> LinkedIn API statistics
         # ttl is 1 month
         if self.linkedin_login_id:
+            logger.debug(f"New request {request_type} to {url}, updating statistics in redis")
             self.rds.set(
                 f"ln.api:{self.linkedin_login_id}:{self.session_id}",
                 json.dumps(self.requests_amount),
@@ -545,6 +543,7 @@ class Linkedin(object):
         connections_summary = data["data"]
         return connections_summary
 
+    # TODO: outdated, need to remove
     def get_profile_contact_info(self, public_id=None, urn_id=None):
         """
         Return data for a single profile.
@@ -1916,57 +1915,6 @@ class Linkedin(object):
                 raise Exception("Too many reformat errors, break parsing...")
 
         return processed_results
-
-    # TODO: remove this, when ve fix VQ
-    def reformat_api_results(self, linkedin_login_id=None):
-        # search public ids if not exists, use same method like in scrapy search
-        reformat_max_errors = 6
-        for i, lead in enumerate(self.results):
-            lead["linkedin_login_id"] = linkedin_login_id
-            try:
-                if lead.get("entityUrn") and (
-                    not lead.get("publicIdentifier") or not lead.get("companyName")
-                ):
-                    # evade limit each N requests
-                    if i > 0 and i % randrange(4, 6) == 0:
-                        sleep(randrange(15, 25))
-
-                    profile = self.get_profile(urn_id=lead.get("entityUrn"))
-
-                    lead["publicIdentifier"] = profile["publicIdentifier"]
-
-                    # fill additional fields
-                    lead["firstname"] = profile["firstName"]
-                    lead["lastname"] = profile["lastName"]
-                    lead["headline"] = profile["headline"]
-
-                    if "currentPositions" in lead:
-                        for position in lead["currentPositions"]:
-                            if "companyName" in position:
-                                lead["companyName"] = position["companyName"]
-
-                            if "title" in position:
-                                lead["position"] = position["title"]
-                            break
-
-                    # fill company name based on experience field
-                    # (can override info from currentPositions)
-                    experience = profile.get("experience")
-                    if experience:
-                        for position in experience:
-                            if "companyName" in position:
-                                lead["companyName"] = position["companyName"]
-
-                            if "title" in position:
-                                lead["position"] = position["title"]
-                            break
-
-            except Exception as e:
-                logger.warning("Failed get profile data for %s lead", lead, exc_info=e)
-                reformat_max_errors -= 1
-
-            if reformat_max_errors <= 0:
-                raise Exception("Too many reformat errors, break parsing...")
 
     def get_invites_sent_per_interval(self, interval=86400.0) -> list:
         """
