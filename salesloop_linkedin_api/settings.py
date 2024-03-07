@@ -97,6 +97,7 @@ REQUESTS_TYPES = {
         "voyagerPremiumDashFeatureAccess",  # not sure right category
         "mysettings-api/settingsApiSneakPeeks",
         "mypreferences/d",
+        "checkpoint/enterprise",
     ),
 }
 
