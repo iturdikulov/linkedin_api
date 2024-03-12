@@ -78,9 +78,12 @@ class Linkedin(object):
 
     _MAX_UPDATE_COUNT = 100  # max seems to be 100
     _MAX_SEARCH_COUNT = 49  # max seems to be 49
+    _MAX_SEARCH_LEN = settings.MAX_SEARCH_LEN
+    _MAX_SEARCH_LEN_SALES_NAV = settings.MAX_SEARCH_LEN_SALES_NAV
     _MAX_REPEATED_REQUESTS = 200  # VERY conservative max requests count to avoid rate-limit
     _DEFAULT_GET_TIMEOUT = settings.REQUEST_TIMEOUT
     _DEFAULT_POST_TIMEOUT = settings.REQUEST_TIMEOUT
+
 
     def __init__(
         self,
@@ -1556,6 +1559,10 @@ class Linkedin(object):
                 parsed_users, pagination, unknown_profiles, limit_data = parse_search_hits(
                     search_hits, is_sales=is_sales
                 )
+
+                # Normalize pagination total, can't be more than _MAX_SEARCH_LEN_SALES_NAV
+                if pagination.get("total") and pagination["total"] > self._MAX_SEARCH_LEN_SALES_NAV:
+                    pagination["total"] = self._MAX_SEARCH_LEN_SALES_NAV
             else:
                 search_url = generate_grapqhl_search_url(search_url)
                 search_json = self._fetch(
@@ -1564,6 +1571,11 @@ class Linkedin(object):
                 ).json()
                 search_parser = LinkedinJSONParser(search_json)
                 pagination = search_parser.get_paging()
+
+                # Normalize pagination total, can't be more than _MAX_SEARCH_LEN
+                if pagination.get("total") and pagination["total"] > self._MAX_SEARCH_LEN:
+                    pagination["total"] = self._MAX_SEARCH_LEN
+
                 parsed_users = search_parser.parse_users()
                 unknown_profiles = []
                 limit_data = {}
