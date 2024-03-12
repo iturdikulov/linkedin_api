@@ -144,7 +144,7 @@ class Linkedin(object):
 
         redis_url = urlparse(environ["BROKER_URL"])
         redis_host, redis_port = redis_url.netloc.split(":")
-        self.rds = StrictRedis(redis_host, port=redis_port, decode_responses=True, charset="utf-8")
+        self.rds = StrictRedis(redis_host, port=int(redis_port), decode_responses=True, charset="utf-8")
 
         # Unique session id, based on UUID
         self.session_id = uuid.uuid4()
