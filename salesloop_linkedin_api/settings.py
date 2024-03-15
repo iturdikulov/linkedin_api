@@ -74,6 +74,7 @@ REQUESTS_TYPES = {
         "identity/wvmpCards",
         "identity/panels",
         "sales-api/salesApiIdentity",
+        "sales-api/salesApiProfiles",
     ),
     "other": (
         "legoWidgetActionEvents",
