@@ -600,6 +600,24 @@ class Linkedin(object):
 
         return skills
 
+    def sn_profile(self, urn_id) -> dict:
+        # NOTE: we use orignal url here, with same format as in the browser
+        profile_url = f"https://www.linkedin.com/sales-api/salesApiProfiles/({urn_id})?decoration=%28%0A%20%20entityUrn%2C%0A%20%20objectUrn%2C%0A%20%20firstName%2C%0A%20%20lastName%2C%0A%20%20fullName%2C%0A%20%20headline%2C%0A%20%20memberBadges%2C%0A%20%20pronoun%2C%0A%20%20degree%2C%0A%20%20profileUnlockInfo%2C%0A%20%20latestTouchPointActivity%2C%0A%20%20location%2C%0A%20%20listCount%2C%0A%20%20summary%2C%0A%20%20savedLead%2C%0A%20%20defaultPosition%2C%0A%20%20contactInfo%2C%0A%20%20crmStatus%2C%0A%20%20pendingInvitation%2C%0A%20%20unlocked%2C%0A%20%20flagshipProfileUrl%2C%0A%20%20fullNamePronunciationAudio%2C%0A%20%20memorialized%2C%0A%20%20numOfConnections%2C%0A%20%20numOfSharedConnections%2C%0A%20%20showTotalConnectionsPage%2C%0A%20%20profilePictureDisplayImage%2C%0A%20%20profileBackgroundPicture%2C%0A%20%20relatedColleagueCompanyId%2C%0A%20%20blockThirdPartyDataSharing%2C%0A%20%20noteCount%2C%0A%20%20positions*%28%0A%20%20%20%20companyName%2C%0A%20%20%20%20current%2C%0A%20%20%20%20new%2C%0A%20%20%20%20description%2C%0A%20%20%20%20endedOn%2C%0A%20%20%20%20posId%2C%0A%20%20%20%20startedOn%2C%0A%20%20%20%20title%2C%0A%20%20%20%20location%2C%0A%20%20%20%20richMedia*%2C%0A%20%20%20%20companyUrn~fs_salesCompany%28entityUrn%2Cname%2CcompanyPictureDisplayImage%29%0A%20%20%29%2C%0A%20%20educations*%28%0A%20%20%20%20degree%2C%0A%20%20%20%20eduId%2C%0A%20%20%20%20endedOn%2C%0A%20%20%20%20schoolName%2C%0A%20%20%20%20startedOn%2C%0A%20%20%20%20fieldsOfStudy*%2C%0A%20%20%20%20richMedia*%2C%0A%20%20%20%20school~fs_salesSchool%28entityUrn%2ClogoId%2Cname%2Curl%2CschoolPictureDisplayImage%29%0A%20%20%29%2C%0A%20%20skills*%2C%0A%20%20languages*%0A%29"
+
+        headers = {
+            'Accept': '*/*',
+            'X-li-page-instance': f'urn:li:page:d_sales2_search_people;{get_random_base64()}',
+            "x-restli-protocol-version": "2.0.0",
+        }
+
+        response = self._fetch(
+            profile_url,
+            headers=headers,
+            raw_url=True,
+        )
+
+        return response.json()
+
     def profile(self, public_id: str) -> dict:
         random_page_instance_postfix = get_random_base64()
         # Fetch profile page
