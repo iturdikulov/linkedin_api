@@ -781,6 +781,7 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
                         leadTags.append(leadTagId)
 
                 i["tags"] = ("\n").join(leadTags)
+
                 entityUrn = None
                 if "entityUrn" in lead:
                     entityUrn = ("").join(
@@ -794,6 +795,13 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
                                 "https://www.linkedin.com/profile/view/?id=%s" % entityUrns[0]
                             )
                             i["entityUrn"] = entityUrns[0]
+
+                            # Generate search entity
+                            full_entity = lead["entityUrn"].split("(")[1].split(")")[0]
+                            entityUrn, auth_type, auth_token = full_entity.split(",")
+                            search_entity = f"profileId:{entityUrn},authType:{auth_type},authToken:{auth_token}"
+                            i["searchEntityUrn"] = search_entity
+
                 if "currentPositions" in lead:
                     for position in lead["currentPositions"]:
                         if position["current"] is True:
