@@ -798,9 +798,8 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
 
                             # Generate search entity
                             full_entity = lead["entityUrn"].split("(")[1].split(")")[0]
-                            entityUrn, auth_type, auth_token = full_entity.split(",")
-                            search_entity = f"profileId:{entityUrn},authType:{auth_type},authToken:{auth_token}"
-                            i["searchEntityUrn"] = search_entity
+                            entityUrn, _, auth_token = full_entity.split(",")
+                            i["ln_auth_token"] = auth_token
 
                 if "currentPositions" in lead:
                     for position in lead["currentPositions"]:
