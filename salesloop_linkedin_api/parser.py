@@ -197,8 +197,6 @@ def parse_profile_from_source(html: str) -> dict:
     return profile_data
 
 
-# TODO: we not currently use it, but can be used in future
-# change this if we will use it
 def parse_ln_sn_profile(profile: dict) -> dict:
     # Extract full entity urn
     match = re.search(r"\(([^)]+)\)", profile["entityUrn"])
@@ -215,12 +213,12 @@ def parse_ln_sn_profile(profile: dict) -> dict:
     public_id = proflie_url.split("/in/", 1)[1]
 
     profile_data = {
-        "publicIdentifier": public_id,
+        "public_id": public_id,
         "firstname": profile["firstName"],
-        "fullname": profile["fullName"],
+        "full_name": profile["fullName"],
         "lastname": profile["lastName"],
         "headline": profile["headline"],
-        "entityUrn": short_entity_urn,
+        "URN": short_entity_urn,
         "profileLinkSN": f"https://www.linkedin.com/sales/lead/{full_entity_urn}",
     }
 
