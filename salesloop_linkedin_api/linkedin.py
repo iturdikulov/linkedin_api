@@ -271,7 +271,7 @@ class Linkedin(object):
         Also used to check if we are logged in.
         """
         metadata = {}
-        feature_access = LinkedinApFeatureAccess(linkedin=False, sales_nav=False, recruiter=False)
+        feature_access = LinkedinApFeatureAccess(linkedin=False, premium=False)
 
         # Check if we can access the network page
         response = self._fetch("https://www.linkedin.com/mynetwork/", raw_url=True)
@@ -284,6 +284,7 @@ class Linkedin(object):
 
             # If we accessed to included data, this means we have access to the base API
             feature_access.linkedin = True
+            feature_access.premium = user_metadata["premium"]
 
             # Set cookies
             metadata["session_cookies"] = request_cookies_to_cookies_list(
@@ -368,6 +369,7 @@ class Linkedin(object):
                 )
 
         return {
+            "premium": get_object_by_path(my_info, "data.premiumSubscriber"),
             "urn": urn,
             "email": email,
             "avatar": avatar,
