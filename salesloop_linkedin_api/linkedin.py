@@ -1057,7 +1057,7 @@ class Linkedin(object):
 
         return data
 
-    def conversations(self, inbox_user_urn) -> list:
+    def conversations(self, inbox_user_urn):
         """
         Return list of conversations from users inbox
         NOTE: not support next/previous page (newSyncToken), but it can be added
@@ -1074,8 +1074,15 @@ class Linkedin(object):
         if not conversations:
             logger.warning("No converations found")
 
-        parsed_messages = []
+        parcipiants = []
+        parsed_messages = {}
         for conversation in conversations:
+            creator = None
+            for parcipant in conversation["conversationParticipants"]:
+                parcipant_urn = parcipant["entityUrn"].split(":")[-1]
+                if parcipant_urn != inbox_user_urn:
+                    parcipiants.append(parcipant_urn)
+
             messages = (
                 get_object_by_path(
                     conversation,
@@ -1088,17 +1095,16 @@ class Linkedin(object):
                 if not message or not isinstance(message, dict):
                     raise ValueError("Invalid message")
 
-                parsed_messages.append(
-                    {
-                        "message_body": message["body"]["text"],
-                        "creatorEntityUrn": message["sender"]["entityUrn"].split(":")[-1],
-                        "entityUrn": message["entityUrn"],
-                        "deliveredAt": datetime.fromtimestamp(message["deliveredAt"] / 1000),
-                        "type": message["_type"],
-                    }
-                )
+                creator = message["sender"]["entityUrn"].split(":")[-1]
+                parsed_messages[creator] = {
+                    "message_body": message["body"]["text"],
+                    "creatorEntityUrn": creator,
+                    "entityUrn": message["entityUrn"],
+                    "deliveredAt": datetime.fromtimestamp(message["deliveredAt"] / 1000),
+                    "type": message["_type"],
+                }
 
-        return parsed_messages
+        return parcipiants, parsed_messages
 
     def messenger_conversations(self, inbox_user_urn, recipient_urn) -> dict:
         """Get conversation data between two users.
