@@ -313,6 +313,7 @@ class Linkedin(object):
 
         my_info = None
         avatar = None
+        data_types = []
         for search_hit in code_elements:
             try:
                 search_hit_data = json.loads(search_hit.get_text())
@@ -320,10 +321,13 @@ class Linkedin(object):
                 data = search_hit_data.get("data", {})
                 if data:
                     data_type = data.get("$type")
+                    data_types.append(data_type)
                     if data_type == "com.linkedin.voyager.common.Me":
                         my_info = search_hit_data
             except json.decoder.JSONDecodeError:
                 self.logger.debug(f"Failed to parse code element, skip: {search_hit}")
+
+        logger.debug(f"Founds data types: {data_types}")
 
         if not my_info:
             raise LinkedinLoginError("Could not parse my_info from response: %s", response_text)
