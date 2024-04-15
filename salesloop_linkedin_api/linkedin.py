@@ -39,7 +39,6 @@ from application.utlis_sales_search import generate_sales_search_url
 from salesloop_linkedin_api.client import Client, LinkedinParsingError
 from salesloop_linkedin_api.properties import LinkedinApFeatureAccess
 from salesloop_linkedin_api.utils.generate_search_urls import (
-    generate_clusters_search_url,
     generate_grapqhl_search_url,
     generate_graphql_companies_search_url,
 )
@@ -437,24 +436,6 @@ class Linkedin(object):
             self.logger.debug(f"results grew to {len(results)}")
 
         return results
-
-    # TODO: remove this method
-    def clusters_search_people(self, linkedin_url):
-        """
-        Do a people search using voyager/api/search/dash/cluster
-        """
-
-        url_params_str = "&".join(
-            [f"{k}={v}" for k, v in generate_clusters_search_url(linkedin_url).items()]
-        )
-
-        res = self._fetch(
-            f"/search/dash/clusters?{url_params_str}",
-            headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
-        )
-
-        data = res.json()
-        return [data]
 
     def cluster_sales_search_people(self, linkedin_url):
         generated_url = generate_sales_search_url(linkedin_url)
