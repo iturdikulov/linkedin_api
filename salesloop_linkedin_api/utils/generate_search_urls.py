@@ -9,7 +9,6 @@ import pickle
 from os import environ
 from urllib.parse import urlparse, quote, parse_qs
 import pycountry
-import re
 from application.config import Config
 from application.integrations.enums import ServiceType
 
@@ -20,7 +19,8 @@ from salesloop_linkedin_api.utils.helpers import (
     fast_evade,
 )
 
-# TODO - optimize/convert to class?
+# NEXT: - optimize/convert to class?
+# integration test
 def generate_search_url(
     linkedin_api,
     company_leads,
@@ -204,8 +204,7 @@ def generate_search_url_leads(
     )
 
     DEFAULT_SEARCH_PARAMS = {
-        "facetCurrentCompany": None,
-        "facetGeoRegion": None,
+        "currentCompany": None,
         "origin": "FACETED_SEARCH",
         "title": None,
         "geoUrn": None,
@@ -348,11 +347,11 @@ def generate_search_url_leads(
             else:
                 # DEFAULT URL LOGIC
                 sub_url_default_params = DEFAULT_SEARCH_PARAMS
-                sub_url_default_params["facetCurrentCompany"] = quote_query_param(company_id)
+                sub_url_default_params["currentCompany"] = quote_query_param(company_id)
 
                 if countries_codes:
                     # regions exist, overwrite leads locations
-                    sub_url_default_params["facetGeoRegion"] = quote_query_param(regions)
+                    sub_url_default_params["geoRegion"] = quote_query_param(regions)
                     geo_urns = [
                         linkedin_geo_codes_data.get(region.replace(":0", "").upper(), {}).get("id")
                         for region in regions
@@ -361,7 +360,7 @@ def generate_search_url_leads(
                 else:
                     # use lead location, append location to generate all regions
                     regions.append(f"{lead.get('country_code')}:0")
-                    sub_url_default_params["facetGeoRegion"] = quote_query_param(
+                    sub_url_default_params["geoRegion"] = quote_query_param(
                         f"{lead.get('country_code')}:0"
                     )
                     geo_urns = [
@@ -397,8 +396,8 @@ def generate_search_url_leads(
             search_url = f"https://www.linkedin.com/sales/search/people/?{query_data}"
         else:
             url_default_params = DEFAULT_SEARCH_PARAMS
-            url_default_params["facetCurrentCompany"] = quote_query_param(companies_ids)
-            url_default_params["facetGeoRegion"] = quote_query_param(regions)
+            url_default_params["currentCompany"] = quote_query_param(companies_ids)
+            url_default_params["geoRegion"] = quote_query_param(regions)
 
             geo_urns = [
                 linkedin_geo_codes_data.get(region.replace(":0", "").upper(), {}).get("id")
