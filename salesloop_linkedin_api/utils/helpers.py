@@ -346,7 +346,7 @@ def parse_search_hits(search_hits, is_sales=False, search_start=0):
     users_data = None
     users = {}
     parsed_users = []
-    unknown_profiles = []
+    unknown_profiles = []  # NEXT: propably not used
     pagination = {}
     results_length = 0
     logged_in = False
