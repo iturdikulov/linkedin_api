@@ -125,6 +125,29 @@ BASE_REQUESTS_LIMITS = {
 }
 
 
+# This can be found from linkedin, use custom filters and copy the url
+# NEXT: need to document/cover with integrtion tests?
+VALID_NORMAL_SEARCH_PARAMS = (
+    "keywords",
+    "network",
+    "origin",
+    "geoUrn",
+    "sid",
+    "currentCompany",
+    "pastCompany",
+    "schoolFilter",
+    "industry",
+    "profileLanguage",
+    "contactInterest",
+    "serviceCategory",
+    # Last text filters
+    "company",
+    "firstName",
+    "lastName",
+    "schoolFreetext",
+    "titleFreeText"
+)
+
 def get_account_requests_limits(connections_number: int, is_premium: bool):
     """
     Get account requests limits based on connections_number and is_premium
