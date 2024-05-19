@@ -145,7 +145,9 @@ VALID_NORMAL_SEARCH_PARAMS = (
     "firstName",
     "lastName",
     "schoolFreetext",
-    "titleFreeText"
+    "titleFreeText",
+    # Paging
+    "page"
 )
 
 def get_account_requests_limits(connections_number: int, is_premium: bool):
