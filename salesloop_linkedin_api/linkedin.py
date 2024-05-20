@@ -33,7 +33,7 @@ from application.integrations.linkedin.linkedin_html_parser_company import (
     LinkedinJSONParserCompany,
 )
 from application.integrations.linkedin.linkedin_html_parser_people import LinkedinJSONParser
-from application.integrations.linkedin.utils import get_object_by_path
+from application.integrations.linkedin.utils import get_object_by_path, validate_search_url
 from application.profile.cookie_converter import request_cookies_to_cookies_list
 from application.utlis_sales_search import generate_sales_search_url
 from salesloop_linkedin_api.client import Client, LinkedinParsingError
@@ -307,43 +307,24 @@ class Linkedin(object):
             email address
 
         """
-        soup = BeautifulSoup(response_text, "lxml")
-        code_elements = soup.find_all("code")
+        my_info = self.get_user_profile()
+        mini_profile = my_info["miniProfile"]
 
-        my_info = None
-        avatar = None
-        data_types = []
-        for search_hit in code_elements:
-            try:
-                search_hit_data = json.loads(search_hit.get_text())
-                # Normal account email
-                data = search_hit_data.get("data", {})
-                if data:
-                    data_type = data.get("$type")
-                    data_types.append(data_type)
-                    if data_type == "com.linkedin.voyager.common.Me":
-                        my_info = search_hit_data
-            except json.decoder.JSONDecodeError:
-                self.logger.debug(f"Failed to parse code element, skip: {search_hit}")
-
-        logger.debug(f"Founds data types: {data_types}")
-
-        if not my_info:
-            raise LinkedinLoginError("Could not parse my_info from response: %s", response_text)
+        logger.debug("Parsing user metadata from response: %s", mini_profile)
 
         # Get profile urn
-        urn = get_id_from_urn(my_info["data"]["*miniProfile"])
+        urn = get_id_from_urn(mini_profile["entityUrn"])
 
         # TODO: cover this with tests
         try:
-            picture = get_object_by_path(my_info, "included.0.picture")
-            segment = get_object_by_path(picture, "artifacts.2.fileIdentifyingUrlPathSegment")
+            picture = mini_profile["picture"]["com.linkedin.common.VectorImage"]
+            segment = (picture, "artifacts.2.fileIdentifyingUrlPathSegment")
             root_url = get_object_by_path(picture, "rootUrl")
 
             # Prefix with correct url
             avatar = f"{root_url}{segment}"
-        except (KeyError, IndexError):
-            logger.warning("Could not parse avatar from search_hit_data: %s", my_info)
+        except (KeyError, IndexError) as e:
+            logger.critical("Could not parse avatar from search_hit_data: %s", mini_profile, exc_info=e)
 
         # TODO: cover this with tests
         email = None
@@ -372,7 +353,7 @@ class Linkedin(object):
                 )
 
         return {
-            "premium": get_object_by_path(my_info, "data.premiumSubscriber"),
+            "premium": my_info["premiumSubscriber"],
             "urn": urn,
             "email": email,
             "avatar": avatar,
@@ -1547,7 +1528,10 @@ class Linkedin(object):
     def get_leads(
         self, search_url, is_sales=False, timeout=None, get_raw=False, send_sn_requests=True
     ):
-        logger.info("Leads quick search with %s timeout. Is Sales %s.", timeout, is_sales)
+        logger.info("Leads quick search %s url, with %s timeout. Is Sales %s.", search_url, timeout, is_sales)
+
+        if not validate_search_url(search_url):
+            raise LinkedinAPIError("Invalid search URL")
 
         if search_url.startswith("https://www.linkedin.com/sales/search"):
             is_sales = True
