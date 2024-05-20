@@ -206,7 +206,7 @@ def generate_search_url_leads(
     DEFAULT_SEARCH_PARAMS = {
         "currentCompany": None,
         "origin": "FACETED_SEARCH",
-        "title": None,
+        "titleFreeText": None,
         "geoUrn": None,
     }
 
@@ -351,7 +351,7 @@ def generate_search_url_leads(
 
                 if countries_codes:
                     # regions exist, overwrite leads locations
-                    sub_url_default_params["geoRegion"] = quote_query_param(regions)
+                    sub_url_default_params["geoUrn"] = quote_query_param(regions)
                     geo_urns = [
                         linkedin_geo_codes_data.get(region.replace(":0", "").upper(), {}).get("id")
                         for region in regions
@@ -360,7 +360,7 @@ def generate_search_url_leads(
                 else:
                     # use lead location, append location to generate all regions
                     regions.append(f"{lead.get('country_code')}:0")
-                    sub_url_default_params["geoRegion"] = quote_query_param(
+                    sub_url_default_params["geoUrn"] = quote_query_param(
                         f"{lead.get('country_code')}:0"
                     )
                     geo_urns = [
@@ -370,7 +370,7 @@ def generate_search_url_leads(
                 if geo_urns:
                     sub_url_default_params["geoUrn"] = quote_query_param(geo_urns)
 
-                sub_url_default_params["title"] = url_title
+                sub_url_default_params["titleFreeText"] = url_title
                 query_data = "&".join(
                     ["{}={}".format(k, v) for k, v in sub_url_default_params.items()]
                 )
@@ -397,7 +397,6 @@ def generate_search_url_leads(
         else:
             url_default_params = DEFAULT_SEARCH_PARAMS
             url_default_params["currentCompany"] = quote_query_param(companies_ids)
-            url_default_params["geoRegion"] = quote_query_param(regions)
 
             geo_urns = [
                 linkedin_geo_codes_data.get(region.replace(":0", "").upper(), {}).get("id")
@@ -406,7 +405,7 @@ def generate_search_url_leads(
             ]
             url_default_params["geoUrn"] = quote_query_param(geo_urns)
 
-            url_default_params["title"] = url_title
+            url_default_params["titleFreeText"] = url_title
             query_data = "&".join(["{}={}".format(k, v) for k, v in url_default_params.items()])
             search_url = f"https://www.linkedin.com/search/results/people/?{query_data}"
 
