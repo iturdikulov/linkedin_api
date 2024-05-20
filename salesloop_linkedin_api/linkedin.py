@@ -307,8 +307,8 @@ class Linkedin(object):
             email address
 
         """
-        my_info = self.get_user_profile()
-        mini_profile = my_info["miniProfile"]
+        my_info = self.dash_global_navs()
+        mini_profile = my_info["included"][0]
 
         logger.debug("Parsing user metadata from response: %s", mini_profile)
 
@@ -317,8 +317,11 @@ class Linkedin(object):
 
         # TODO: cover this with tests
         try:
-            picture = mini_profile["picture"]["com.linkedin.common.VectorImage"]
-            segment = (picture, "artifacts.2.fileIdentifyingUrlPathSegment")
+            picture = get_object_by_path(
+                mini_profile, "profilePicture.displayImageReferenceResolutionResult.vectorImage"
+            )
+
+            segment = get_object_by_path(picture, "artifacts.2.fileIdentifyingUrlPathSegment")
             root_url = get_object_by_path(picture, "rootUrl")
 
             # Prefix with correct url
@@ -352,8 +355,12 @@ class Linkedin(object):
                     "Could not parse email from response: %s", response_text
                 )
 
+        # NEXT: do we need to get this?
+        # premium_data = api.get_premium_subscription()["map"]["headerData"]["premium"]
+        # logger.debug(premium_data)
+
         return {
-            "premium": my_info["premiumSubscriber"],
+            "premium": None,
             "urn": urn,
             "email": email,
             "avatar": avatar,
@@ -1014,6 +1021,7 @@ class Linkedin(object):
 
         return res.status_code != 200
 
+    # NEXT: trigger deauth, need to remove
     def get_user_profile(self):
         """
         Return current user profile
@@ -1022,6 +1030,32 @@ class Linkedin(object):
         data = res.json()
 
         return data
+
+    def dash_global_navs(self):
+        """
+        Return current user profile
+        """
+
+        headers = {
+            "Accept": "application/vnd.linkedin.normalized+json+2.1",
+            "x-li-page-instance": f"urn:li:page:d_flagship3_feed;{get_random_base64()}",
+            "x-restli-protocol-version": "2.0.0",
+        }
+
+        # Get profile data
+        params = {
+            "includeWebMetadata": "true",
+            "variables": "()",
+            "queryId": "voyagerFeedDashGlobalNavs.392ef5b3577c3f317acf6087b30391ff",
+        }
+
+        # NEXT: parmetrize?
+        response = self._fetch(
+            f"/graphql?{urlencode(params, safe='(),:')}",
+            headers=headers,
+        )
+        response.raise_for_status()
+        return response.json()
 
     def conversations(self, inbox_user_urn):
         """
