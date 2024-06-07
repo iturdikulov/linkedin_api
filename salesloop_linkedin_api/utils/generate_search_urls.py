@@ -1,5 +1,5 @@
 import json
-from urllib.parse import urlparse, parse_qs, quote_plus
+from urllib.parse import urlparse, parse_qs, quote
 
 from collections import OrderedDict
 from json import JSONDecodeError
@@ -7,7 +7,6 @@ from concurrent.futures import ThreadPoolExecutor
 from requests_futures.sessions import FuturesSession
 import pickle
 from os import environ
-from urllib.parse import urlparse, quote, parse_qs
 import pycountry
 from application.config import Config
 from application.integrations.enums import ServiceType
@@ -435,13 +434,13 @@ def quote_value(value):
     try:
         parsed_values = json.loads(value)
         if isinstance(parsed_values, list):
-            return ",".join([quote_plus(str(v)) for v in parsed_values])
+            return ",".join([quote(str(v)) for v in parsed_values])
         elif isinstance(parsed_values, str):
-            return quote_plus(value.strip('"'))
+            return quote(value.strip('"'))
         else:
-            return quote_plus(value)
+            return quote(value)
     except JSONDecodeError:
-        return quote_plus(value)
+        return quote(value)
 
 def generate_grapqhl_search_url(original_url: str, offset: int = 0):
     parsed_url = urlparse(original_url)
