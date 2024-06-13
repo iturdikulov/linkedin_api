@@ -128,6 +128,7 @@ BASE_REQUESTS_LIMITS = {
 # This can be found from linkedin, use custom filters and copy the url
 # NEXT: need to document/cover with integrtion tests?
 VALID_NORMAL_SEARCH_PARAMS = (
+    # Normal search
     "keywords",
     "network",
     "origin",
