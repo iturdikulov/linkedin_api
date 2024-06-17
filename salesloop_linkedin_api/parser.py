@@ -94,28 +94,6 @@ def parse_profile(response_data: dict) -> dict:
         "profileLinkSN"
     ] = f"https://www.linkedin.com/sales/people/{profile_data['entityUrn']}"
 
-    # Extract specific fields from included data
-    position_items = {
-        "profileTopEducation": {
-            "type": "com.linkedin.voyager.dash.identity.profile.Education",
-            "key": "schoolName",
-        },
-        "profileTopPosition": {
-            "type": "com.linkedin.voyager.dash.identity.profile.Position",
-            "key": "companyName",
-        },
-    }
-
-    for position_name, position_data in position_items.items():
-        position_item_urn = profile_element_urn(position_name, profile_item)
-        if position_item_urn:
-            position_item = extract_included_item(
-                item_type=position_data["type"],
-                item_entity_urn=position_item_urn,
-                included=included,
-            )
-            profile_data[position_data["key"]] = position_item[position_data["key"]]
-
     return profile_data
 
 

@@ -608,7 +608,7 @@ class Linkedin(object):
         params = {
             "includeWebMetadata": "true",
             "variables": f"(vanityName:{public_id})",
-            "queryId": "voyagerIdentityDashProfiles.a1941bc56db02d2a36a03dd81313f3c7",
+            "queryId": "voyagerIdentityDashProfiles.2531a1a7d1d5530ad1834e0012bf7d50",
         }
 
         response = self._fetch(
