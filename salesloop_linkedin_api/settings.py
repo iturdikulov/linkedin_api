@@ -91,6 +91,7 @@ REQUESTS_TYPES = {
         "typeahead/hits",
         "legoWidgetImpressionEvents",
         "psettings/premium-subscription",
+        "dms/image",
     ),
     "uas": (
         "sales",
