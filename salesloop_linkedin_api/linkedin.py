@@ -278,7 +278,7 @@ class Linkedin(object):
             try:
                 user_metadata = self._parse_user_metadata(response.text, get_email=get_email)
                 metadata.update(user_metadata)
-            except LinkedinParsingError:
+            except (IndexError, LinkedinParsingError):
                 raise LinkedinUnauthorized("Unable to parse metadata/email from response")
 
             # If we accessed to included data, this means we have access to the base API
