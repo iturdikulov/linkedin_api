@@ -316,6 +316,7 @@ class Linkedin(object):
         urn = get_id_from_urn(mini_profile["entityUrn"])
 
         # TODO: cover this with tests
+        avatar = None
         try:
             picture = get_object_by_path(
                 mini_profile, "profilePicture.displayImageReferenceResolutionResult.vectorImage"
