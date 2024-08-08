@@ -200,6 +200,7 @@ class Linkedin(object):
                 requests.exceptions.SSLError,
                 requests.exceptions.ReadTimeout,
                 requests.exceptions.ConnectionError,
+                requests.exceptions.ChunkedEncodingError
             ),
             max_time=max_time,
             on_backoff=self.backoff_hdlr,
