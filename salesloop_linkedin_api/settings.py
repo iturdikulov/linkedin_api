@@ -12,6 +12,8 @@ STATISTICS_TTL = int(os.getenv("LINKEDIN_API_STATISTICS_TTL", 2592000))
 
 OLD_ACCOUNT_MIN_CONNECTIONS = 5000
 
+LOG_PROXY_ERROR_MSG= os.environ["LOG_PROXY_ERROR_MSG"]
+
 # Based on https://linkedin.api-docs.io/v1.0
 REQUESTS_TYPES = {
     "growth": (
