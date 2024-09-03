@@ -212,8 +212,7 @@ class Linkedin(object):
                 requests.exceptions.ChunkedEncodingError
             ),
             max_time=max_time,
-            on_backoff=self.backoff_hdlr,
-            interval=10
+            on_backoff=self.backoff_hdlr
         )
         def fetch_data():
             if raw_url:
@@ -249,8 +248,7 @@ class Linkedin(object):
                 requests.exceptions.ConnectionError,
             ),
             max_time=self._get_max_retry_time,
-            on_backoff=self.backoff_hdlr,
-            interval=10
+            on_backoff=self.backoff_hdlr
         )
         def post_data():
             if raw_url:
