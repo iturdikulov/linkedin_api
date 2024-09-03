@@ -17,7 +17,6 @@ from urllib.parse import urlencode, urlparse, parse_qs, quote_plus
 
 import backoff
 import requests
-from bs4 import BeautifulSoup
 from requests.models import Response
 from redis.client import StrictRedis
 from salesloop_linkedin_api.parser import parse_messenger_messages
