@@ -122,6 +122,7 @@ class Linkedin(object):
 
         self.api_cookies = self.client.api_cookies
         self.api_headers = self.client.api_headers
+
         self.api_proxies = proxies
 
         self.results = None
@@ -140,6 +141,11 @@ class Linkedin(object):
         self.requests_start_timestamp = None
         self.requests_end_timestamp = None
 
+        # Generated proxy url, used for proxy error message
+        proxy_url = next(iter(proxies.values()))
+        self.parsed_proxy = urlparse(proxy_url)
+
+        # Redis connection
         redis_url = urlparse(environ["BROKER_URL"])
         redis_host, redis_port = redis_url.netloc.split(":")
         self.rds = StrictRedis(redis_host, port=int(redis_port), decode_responses=True, charset="utf-8")
@@ -153,11 +159,15 @@ class Linkedin(object):
         return self.default_retry_max_time
 
     def backoff_hdlr(self, details):
-        self.logger.debug(
-            "Backing off {wait:0.1f} seconds afters {tries} tries "
-            "calling function {target} with args {args} and kwargs "
-            "{kwargs}".format(**details)
-        )
+        error_type = f"LinkedINAPIError_{details['target'].__name__}"
+        error_message = "Backing off {wait:0.1f} seconds afters {tries} tries "
+        "calling function {target} with args {args} and kwargs "
+        "{kwargs}".format(**details)
+
+        logger.warning(settings.LOG_PROXY_ERROR_MSG.format(
+                parsed_proxy=self.parsed_proxy,
+                error_type=error_type,
+                error_message=error_message))
 
     def _update_statistics(self, url):
         request_type = APIRequestType.get_request_type(url)
@@ -203,6 +213,7 @@ class Linkedin(object):
             ),
             max_time=max_time,
             on_backoff=self.backoff_hdlr,
+            interval=10
         )
         def fetch_data():
             if raw_url:
@@ -239,6 +250,7 @@ class Linkedin(object):
             ),
             max_time=self._get_max_retry_time,
             on_backoff=self.backoff_hdlr,
+            interval=10
         )
         def post_data():
             if raw_url:
