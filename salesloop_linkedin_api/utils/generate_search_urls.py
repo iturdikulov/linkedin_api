@@ -62,7 +62,7 @@ def generate_search_url(
 
             # Location field
             id = lead["id"]
-            country_code = None
+            country_code = ""
             country = None
             region = None
             city = None
@@ -247,7 +247,7 @@ def generate_search_url_leads(
                 }
 
                 res = session.get(
-                    f"https://www.linkedin.com/voyager/api/organization/companies",
+                    "https://www.linkedin.com/voyager/api/organization/companies",
                     params=params,
                     cookies=linkedin_api_cookies,
                     headers=linkedin_api_headers,
@@ -515,7 +515,7 @@ def generate_graphql_companies_search_url(keywords) -> str:
     }
 
     # Get keywords from URL
-    keywords = f"keywords:{keywords},"
+    keywords = f"keywords:{quote(keywords)},"
 
     generated_url = (
         f"https://www.linkedin.com/voyager/api"
