@@ -645,6 +645,7 @@ class Linkedin(object):
         response.raise_for_status()
         return response.json()
 
+    # NEXT: need to remove
     def profile_contacts(self, public_id: str) -> dict:
         random_page_instance_postfix = get_random_base64()
         headers = {
