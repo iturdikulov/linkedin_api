@@ -144,6 +144,9 @@ VALID_NORMAL_SEARCH_PARAMS = (
     "profileLanguage",
     "contactInterest",
     "serviceCategory",
+    # Sales search
+    "savedSearchId",
+    "sessionId",
     # Last text filters
     "company",
     "firstName",
