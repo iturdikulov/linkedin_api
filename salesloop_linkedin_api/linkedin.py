@@ -1453,7 +1453,7 @@ class Linkedin(object):
 
         return False
 
-    def sales_login(self, timeout=None):
+    def sales_login(self, timeout=None) -> bool:
         request_homepage = self._fetch(
             "https://www.linkedin.com/sales/", raw_url=True, timeout=timeout
         )
@@ -1564,12 +1564,25 @@ class Linkedin(object):
                     timeout=timeout,
                 )
 
-                logger.info(
-                    "Sales API - logged through %s url, using %s headers",
-                    salesApiEnterpriseAuthenticationUrl,
-                    headers,
-                )
-                return request_enterprise_auth
+                if request_enterprise_auth.status_code == 200:
+                    logger.info(
+                        "Sales API - successfuly logged through %s url",
+                        salesApiEnterpriseAuthenticationUrl
+                    )
+                    return True
+                else:
+                    logger.critical(
+                        "Enterprise autorization issue for %s account, auth request: %s",
+                        self.linkedin_login_id,
+                        request_enterprise_auth
+                    )
+
+        # NEXT: maybe need to stop continue on issues?
+        logger.critical(
+            "Something went wrong during sales-nav autorization for %s account, but continue anyway",
+            self.linkedin_login_id,
+        )
+        return False
 
     def get_leads(
         self, search_url, is_sales=False, timeout=None, get_raw=False, send_sn_requests=True
