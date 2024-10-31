@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from json import JSONDecodeError
 from bs4 import BeautifulSoup
 from flask import json
@@ -283,7 +283,7 @@ def parse_messenger_messages(response_data: dict) -> list:
                 "body": message["body"]["text"],
                 "profileUrl": sender["profileUrl"],
                 "sender_distance": sender["distance"],
-                "delivered_at": datetime.fromtimestamp(message["deliveredAt"] / 1000),
+                "delivered_at": datetime.fromtimestamp(message["deliveredAt"] / 1000, tz=UTC),
             }
         )
 
