@@ -77,6 +77,8 @@ REQUESTS_TYPES = {
         "identity/panels",
         "sales-api/salesApiIdentity",
         "sales-api/salesApiProfiles",
+        "sales-api/salesApiPrimaryIdentity",
+        "sales-api/salesApiAccess",
     ),
     "other": (
         "legoWidgetActionEvents",
@@ -144,6 +146,7 @@ VALID_NORMAL_SEARCH_PARAMS = (
     "profileLanguage",
     "contactInterest",
     "serviceCategory",
+    "searchId",
     # Sales search
     "savedSearchId",
     "sessionId",
