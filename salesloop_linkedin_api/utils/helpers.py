@@ -1,4 +1,5 @@
 import base64
+import pickle
 import json
 import logging
 import random
@@ -877,3 +878,12 @@ def xstr(s):
 
 def days_hours_minutes(td):
     return f"{td.days}d. {td.seconds//3600}h. {(td.seconds//60)%60}m."
+
+def cffi_get_cookies(client):
+    return pickle.loads(client.cookies.jar._cookies)
+
+def cffi_set_cookies(client):
+    return pickle.dumps(client.cookies.jar._cookies)
+
+def cffi_set_headers(client):
+    return pickle.dumps(client.headers)
