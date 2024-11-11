@@ -1699,18 +1699,16 @@ class Linkedin(object):
     def get_profile_urn_v2(self, json_data: dict) -> str:
         return json_data["included"][0]["entityUrn"]
 
-    def connect_with_someone_v2(self, profile_urn, message: str = "") -> Response:
+    def connect_with_someone(
+        self, profile_urn_id: str, message: str | None = None
+    ) -> LinkedinConnectionState:
+        """
+        Send a message to a given conversation. If error, return true.
+        generate_tracking_id is not equal to API, gene
+        """
         params = {
             "action": "verifyQuotaAndCreateV2",
             "decorationId": "com.linkedin.voyager.dash.deco.relationships.InvitationCreationResultWithInvitee-2",
-        }
-
-        payload = {
-            "invitee": {
-                "inviteeUnion": {
-                    "memberProfile": profile_urn,
-                },
-            },
         }
 
         random_page_instance_postfix = get_random_base64()
@@ -1718,83 +1716,38 @@ class Linkedin(object):
             "Accept": "application/vnd.linkedin.normalized+json+2.1",
             "x-li-lang": "en_US",
             "x-li-page-instance": f"urn:li:page:d_flagship3_profile_view_base;{random_page_instance_postfix}",
-            "x-restli-protocol-version": "2.0.0",
-            "x-li-pem-metadata": "Voyager - Invitations=send-invite",
+            "x-li-pem-metadata": "Voyager - Invitations - Actions=invite-send",
             "x-li-deco-include-micro-schema": "true",
             "content-type": "application/json; charset=utf-8",
             "Origin": "https://www.linkedin.com",
             "DNT": "1",
         }
 
-        response = self._post(
-            "/voyagerRelationshipsDashMemberRelationships",
-            params=params,
-            json=payload,
-            headers=headers,
-        )
-
-        #! if it fails with a 400 with the code "CANT_RESEND_YET" then we'll need to wait like 3 weeks
-        # todo: add a check for this
-
-        return response
-
-    def connect_with_someone(self, profile_urn_id, message=None):
-        """
-        Send a message to a given conversation. If error, return true.
-        generate_tracking_id is not equal to API, gene
-        """
-        sleep(random.randint(3, 5))  # sleep a random duration to try and evade suspention
-
-        tracking_ids = [
-            "/UUnvJmkTzOJJ06YAvOoBQ==",
-            "b5sl31fLRsSu9sj07UuEGg==",
-            "TbuG5+8HROWK3secP9ANyA==",
-            "W0l2S+Y+RGOtvgBL8urqCw==",
-            "D0Ol4WlyRG+CkKOWfmh3Eg==",
-            "cHuko5LqRHqhfgVwFRMznA==",
-            "+NKO3yrsRQWapoeO+n89bQ==",
-            "HVoT0u/4QV+R1Na0/y2QFQ==",
-            "LtE5LU6JTr2LxsTYD178gA==",
-            "MYw79hqeRMmIUHoXJeKZvQ==",
-            "q7WIXHYCQLq6r0vv3yPGUg==",
-            "MujhS4ehRZGxxG67j5fNuA==",
-            "ve0MfXubQA2LtrlyjW5fyg==",
-            "K2yBASVLRQ6AfsAUeTUdOg==",
-            "HK4tIiAwRr6COtryOy83dQ==",
-            "R7A4hMDpQUipIHCCaFW1Dg==",
-            "bQ0o99T2TJuhwuiDtCBZbw==",
-            "RBnQ8W7DSPiXFIRtQI5W2w==",
-            "XY5LRCUmSIOCnRAny+k5DQ==",
-            "M3mF+N91Tru8KEScK8xWAw==",
-            "vytODa2SR0iMsXxClvBu6g==",
-            "1BMhTu89SxWBlo+J2/gdiA==",
-            "VguB2Gl0R/W1EtAFy5AviA==",
-            "fSyULbVWRDiyxBykagOmNg==",
-            "sb2mWmSGRTmRXc9WzH/Pfw==",
-        ]
-
-        current_tracking_id = random.choice(tracking_ids)
-        payload = {
-            "emberEntityName": "growth/invitation/norm-invitation",
+        message_data = {
             "invitee": {
-                "com.linkedin.voyager.growth.invitation.InviteeProfile": {
-                    "profileId": profile_urn_id
-                }
+                "inviteeUnion": {
+                    "memberProfile": f"urn:li:fsd_profile:{profile_urn_id}",
+                },
             },
-            "trackingId": current_tracking_id,
         }
-
         if message:
-            payload["message"] = message
+            message_data["customMessage"] = message
 
-        res = self._post(
-            "/growth/normInvitations",
-            data=json.dumps(payload),
-            headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
-            allowed_status_codes=(400, 406)
-        )
+        res_data = self._post(
+            "/voyagerRelationshipsDashMemberRelationships",
+            headers=headers,
+            params=params,
+            json=message_data
+        ).json()["data"]
 
-        return res.status_code != 201, res.status_code
+        if res_data.get("code") == "CANT_RESEND_YET":
+            return LinkedinConnectionState.CANT_RESEND_YET
+        else:
+            invitation_urn = res_data["value"]["invitationUrn"]
+            if invitation_urn:
+                return LinkedinConnectionState.SUCCESS
+
+        raise Exception(f"Unknown connection error: {res_data}")
 
     def remove_connection(self, public_profile_id):
         res = self._post(
