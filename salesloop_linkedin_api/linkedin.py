@@ -3,7 +3,6 @@ Provides linkedin api-related code
 """
 import base64
 import json
-import pickle
 import random
 import re
 import uuid
@@ -16,8 +15,8 @@ from time import sleep
 from urllib.parse import urlencode, urlparse, parse_qs, quote_plus
 
 import backoff
-import requests
-from requests.models import Response
+from requests.exceptions import ReadTimeout, Timeout, ProxyError, SSLError, ReadTimeout, ConnectionError, ChunkedEncodingError
+
 from redis.client import StrictRedis
 from salesloop_linkedin_api.parser import parse_messenger_messages
 
@@ -33,16 +32,17 @@ from application.integrations.linkedin.linkedin_html_parser_company import (
 )
 from application.integrations.linkedin.linkedin_html_parser_people import LinkedinJSONParser
 from application.integrations.linkedin.utils import get_object_by_path, validate_search_url
-from application.profile.cookie_converter import request_cookies_to_cookies_list
 from application.utlis_sales_search import generate_sales_search_url
 from salesloop_linkedin_api.client import Client, LinkedinParsingError
-from salesloop_linkedin_api.properties import LinkedinApFeatureAccess
+from salesloop_linkedin_api.properties import LinkedinApFeatureAccess, LinkedinConnectionState
 from salesloop_linkedin_api.utils.generate_search_urls import (
     generate_grapqhl_search_url,
     generate_graphql_companies_search_url,
 )
 from salesloop_linkedin_api.statistic import APIRequestType
 from salesloop_linkedin_api.utils.helpers import (
+    cffi_set_cookies,
+    cffi_set_headers,
     parse_search_hits,
     get_default_regions,
     default_evade,
@@ -51,6 +51,7 @@ from salesloop_linkedin_api.utils.helpers import (
 )
 
 from celery.utils.log import get_task_logger
+
 
 logger = get_task_logger(__name__)
 
@@ -92,17 +93,23 @@ class Linkedin(object):
         debug=False,
         proxies={},
         api_cookies=None,
+        api_headers=None,
         cached_login=False,
         ua=None,
         default_retry_max_time=600,
         linkedin_login_id=None,
+        cookies=None,
     ):
+        self.proxies = proxies
         self.logger = logger
+
         self.client = Client(
             refresh_cookies=refresh_cookies,
             debug=debug,
             proxies=proxies,
             api_cookies=api_cookies,
+            api_headers=api_headers,
+            cookies=cookies,
             ua=ua,
         )
         self.username = username
@@ -114,14 +121,6 @@ class Linkedin(object):
             self._DEFAULT_GET_TIMEOUT,
             self._DEFAULT_POST_TIMEOUT,
         )
-
-        if cached_login:
-            self.client.alternate_authenticate()
-        else:
-            self.client.authenticate(username, password)
-
-        self.api_cookies = self.client.api_cookies
-        self.api_headers = self.client.api_headers
 
         self.api_proxies = proxies
 
@@ -204,12 +203,12 @@ class Linkedin(object):
         @backoff.on_exception(
             backoff.expo,
             (
-                requests.exceptions.Timeout,
-                requests.exceptions.ProxyError,
-                requests.exceptions.SSLError,
-                requests.exceptions.ReadTimeout,
-                requests.exceptions.ConnectionError,
-                requests.exceptions.ChunkedEncodingError
+                Timeout,
+                ProxyError,
+                SSLError,
+                ReadTimeout,
+                ConnectionError,
+                ChunkedEncodingError
             ),
             max_time=max_time,
             on_backoff=self.backoff_hdlr
@@ -241,11 +240,11 @@ class Linkedin(object):
         @backoff.on_exception(
             backoff.expo,
             (
-                requests.exceptions.Timeout,
-                requests.exceptions.ProxyError,
-                requests.exceptions.SSLError,
-                requests.exceptions.ReadTimeout,
-                requests.exceptions.ConnectionError,
+                Timeout,
+                ProxyError,
+                SSLError,
+                ReadTimeout,
+                ConnectionError,
             ),
             max_time=self._get_max_retry_time,
             on_backoff=self.backoff_hdlr
@@ -261,6 +260,7 @@ class Linkedin(object):
                 kwargs["timeout"] = Linkedin._DEFAULT_POST_TIMEOUT
 
             post_response = self.client.session.post(url, **kwargs)
+
             if (
                 post_response.status_code != 400
                 and post_response.status_code not in allowed_status_codes
@@ -296,9 +296,8 @@ class Linkedin(object):
             feature_access.premium = user_metadata["premium"]
 
             # Set cookies
-            metadata["session_cookies"] = request_cookies_to_cookies_list(
-                self.client.session.cookies
-            )
+            metadata["session_cookies"] = cffi_set_cookies(self.client.session)
+            metadata["session_headers"] = cffi_set_headers(self.client.session)
 
         if not feature_access.linkedin:
             raise LinkedinLoginError("Linkedin account has no minimum access to Linkedin API")
@@ -394,7 +393,6 @@ class Linkedin(object):
 
         results = []
         while True:
-            limit
             if limit > -1 and limit - len(results) < count:
                 count = limit - len(results)
             default_params = {
@@ -1359,106 +1357,10 @@ class Linkedin(object):
         if entityUrn:
             return get_id_from_urn(entityUrn)
 
-    def requiter_login(self, timeout=None):
-        # TODO: this incomplete (proof of concept)
-        # Get session_id and client page instance data for login process
-        home_page_request = self._fetch(
-            "https://www.linkedin.com/talent/contract-chooser?autoLogin=true&"
-            "trk=nav_account_sub_nav_cap&lipi=urn%3Ali%3Apage%3Ad_flagship3_feed%3BfUOiERNPToCg3iRq9UyKew%3D%3D&licu=urn%3Ali%3Acontrol%3Ad_flagship3_feed-nav_recruiter",
-            raw_url=True,
-            timeout=timeout,
-        )
-        home_page_request.raise_for_status()
-
-        cookies = requests.utils.dict_from_cookiejar(self.client.session.cookies)
-        session_id = cookies.get("JSESSIONID").strip('"')
-        client_page_group = re.search(
-            r'id="clientPageInstance">([\S\s]*?)</code>', home_page_request.content.decode()
-        )
-
-        try:
-            client_page_instance = client_page_group.group(1).strip()
-        except IndexError:
-            client_page_instance = None
-
-        # Send login request
-        if session_id and client_page_instance:
-            headers = {
-                "authority": "www.linkedin.com",
-                "x-restli-protocol-version": "2.0.0",
-                "x-li-lang": "en_US",
-                "sec-ch-ua-mobile": "?0",
-                "x-li-page-instance": client_page_instance,
-                "content-type": "application/json; charset=UTF-8",
-                "accept": "application/json",
-                "csrf-token": session_id,
-                "origin": "https://www.linkedin.com",
-                "sec-fetch-site": "same-origin",
-                "sec-fetch-mode": "cors",
-                "sec-fetch-dest": "empty",
-                "referer": "https://www.linkedin.com/talent/contract-chooser",
-                "accept-language": "en-US,en;q=0.9,ru;q=0.8",
-            }
-
-            params = (("action", "login"),)
-
-            data = '{"contract":"urn:li:ts_contract:309649621"}'
-
-            talent_auth_request = self._post(
-                "https://www.linkedin.com/talent/api/talentAuthentication",
-                headers=headers,
-                params=params,
-                data=data,
-                raw_url=True,
-            )
-            talent_auth_request.raise_for_status()
-
-            smart_search_page = self._fetch(
-                "https://www.linkedin.com/recruiter/smartsearch", raw_url=True
-            )
-            smart_search_page.raise_for_status()
-
-            headers = {
-                "authority": "www.linkedin.com",
-                "sec-ch-ua": '" Not A;Brand";v="99", "Chromium";v="92"',
-                "accept": "application/json, text/javascript, */*; q=0.01",
-                "x-requested-with": "XMLHttpRequest",
-                "sec-ch-ua-mobile": "?0",
-                "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36",
-                "x-li-page-instance": "urn:li:page:cap-fe-desktop-smart-search;"
-                "91R1nNZUSG2OL9PFYurpzA==",
-                "sec-fetch-site": "same-origin",
-                "sec-fetch-mode": "cors",
-                "sec-fetch-dest": "empty",
-                "accept-language": "en-US,en;q=0.9,ru;q=0.8",
-            }
-
-            params = (
-                ("searchHistoryId", "4708802586"),
-                ("searchCacheKey", "51061984-9df6-4d16-a893-f55a991ce73e,D4lv"),
-                ("searchRequestId", "ab1e5a67-63c5-4753-be5f-861b0af566bf,e2e0"),
-                ("searchSessionId", "4708802586"),
-                ("linkContext", "Controller:smartSearch,Action:search,ID:4708802586"),
-                ("doExplain", "false"),
-                ("start", "0"),
-            )
-
-            self._fetch(
-                "https://www.linkedin.com/recruiter/api/smartsearch",
-                headers=headers,
-                params=params,
-                raw_url=True,
-            )
-
-        return False
-
-    def sales_login(self, timeout=None) -> bool:
+    def sales_login(self, timeout=None):
         request_homepage = self._fetch(
             "https://www.linkedin.com/sales/", raw_url=True, timeout=timeout
         )
-        cookies = requests.utils.dict_from_cookiejar(self.client.session.cookies)
-        session_id = cookies.get("JSESSIONID").strip('"')
         client_page_instance = None
 
         client_page_instance_data_groups = re.search(
@@ -1474,11 +1376,7 @@ class Linkedin(object):
                 "No client_page_instance_data_groups groups found %s",
                 client_page_instance_data_groups,
             )
-            return [], None, {}
-
-        if not session_id:
-            logger.error("Session id not found, cookies: %s", cookies)
-            return [], None, {}
+            raise LinkedinLoginError("No client_page_instance_data_groups groups")
 
         request_sales_api_identity = self._fetch(
             "https://www.linkedin.com/sales-api/salesApiIdentity?q=findLicensesByCurrentMember",
@@ -1495,7 +1393,6 @@ class Linkedin(object):
                 "x-restli-protocol-version": "2.0.0",
                 "authority": "www.linkedin.com",
                 "referer": "https://www.linkedin.com/sales/",
-                "Csrf-Token": session_id,
             },
             timeout=timeout,
         )
@@ -1524,7 +1421,6 @@ class Linkedin(object):
                 SALES_API_AGONSITC_AUTH_URL,
                 raw_url=True,
                 headers={
-                    "Csrf-Token": session_id,
                     "X-Restli-Protocol-Version": "2.0.0",
                     "X-Requested-With": "XMLHttpRequest",
                     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -1535,54 +1431,7 @@ class Linkedin(object):
                 data=json.dumps(contractData),
                 timeout=timeout,
             )
-
-            location = request_api_agnostic.headers.get("Location")
-
-            if location and "checkpoint/enterprise/login" in location:
-                request_enterprise_login = self._fetch(location, raw_url=True, timeout=timeout)
-
-                parsedURL = urlparse(request_enterprise_login.url)
-                parsedUrlQs = parse_qs(parsedURL.query)
-                salesApiEnterpriseAuthenticationUrl = "https://www.linkedin.com/sales-api/salesApiEnterpriseAuthentication?accountId=%s&appInstanceId=%s&budgetGroupId=%s&licenseType=%s&viewerDeviceType=DESKTOP"
-                salesApiEnterpriseAuthenticationUrl = salesApiEnterpriseAuthenticationUrl % (
-                    parsedUrlQs["accountId"][0],
-                    parsedUrlQs["appInstanceId"][0],
-                    parsedUrlQs["budgetGroupId"][0],
-                    parsedUrlQs["licenseType"][0],
-                )
-
-                headers = {
-                    "Csrf-Token": session_id,
-                    "X-Restli-Protocol-Version": "2.0.0",
-                    "X-Requested-With": "XMLHttpRequest",
-                }
-
-                request_enterprise_auth = self._fetch(
-                    salesApiEnterpriseAuthenticationUrl,
-                    raw_url=True,
-                    headers=headers,
-                    timeout=timeout,
-                )
-
-                if request_enterprise_auth.status_code == 200:
-                    logger.info(
-                        "Sales API - successfuly logged through %s url",
-                        salesApiEnterpriseAuthenticationUrl
-                    )
-                    return True
-                else:
-                    logger.critical(
-                        "Enterprise autorization issue for %s account, auth request: %s",
-                        self.linkedin_login_id,
-                        request_enterprise_auth
-                    )
-
-        # NEXT: maybe need to stop continue on issues?
-        logger.critical(
-            "Something went wrong during sales-nav autorization for %s account, but continue anyway",
-            self.linkedin_login_id,
-        )
-        return False
+            request_api_agnostic.raise_for_status()
 
     def get_leads(
         self, search_url, is_sales=False, timeout=None, get_raw=False, send_sn_requests=True
@@ -1597,9 +1446,6 @@ class Linkedin(object):
 
         if is_sales and send_sn_requests:
             self.sales_login(timeout=timeout)
-
-        self.api_cookies = pickle.dumps(self.client.session.cookies, pickle.HIGHEST_PROTOCOL)
-        self.api_headers = pickle.dumps(self.client.session.headers, pickle.HIGHEST_PROTOCOL)
 
         raw_html_request = self._fetch(search_url, raw_url=True, timeout=timeout)
         raw_html_request.raise_for_status()
@@ -1756,26 +1602,6 @@ class Linkedin(object):
         )
 
         return res.status_code != 200
-
-    # TODO doesn't work
-    # def view_profile(self, public_profile_id):
-    #     res = self._fetch(
-    #         f"/identity/profiles/{public_profile_id}/profileView",
-    #         headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
-    #     )
-
-    #     return res.status_code != 200
-
-    def get_profile_privacy_settings(self, public_profile_id):
-        res = self._fetch(
-            f"/identity/profiles/{public_profile_id}/privacySettings",
-            headers={"accept": "application/vnd.linkedin.normalized+json+2.1"},
-        )
-        if res.status_code != 200:
-            return {}
-
-        data = res.json()
-        return data.get("data", {})
 
     def get_profile_member_badges(self, public_profile_id):
         res = self._fetch(
