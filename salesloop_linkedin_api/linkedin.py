@@ -12,10 +12,10 @@ from os.path import isfile
 from pathlib import Path
 from random import randrange
 from time import sleep
-from urllib.parse import urlencode, urlparse, parse_qs, quote_plus
+from urllib.parse import urlencode, urlparse, quote_plus
 
 import backoff
-from requests.exceptions import ReadTimeout, Timeout, ProxyError, SSLError, ReadTimeout, ConnectionError, ChunkedEncodingError
+from curl_cffi.requests.exceptions import RequestException
 
 from redis.client import StrictRedis
 from salesloop_linkedin_api.parser import parse_messenger_messages
@@ -203,12 +203,7 @@ class Linkedin(object):
         @backoff.on_exception(
             backoff.expo,
             (
-                Timeout,
-                ProxyError,
-                SSLError,
-                ReadTimeout,
-                ConnectionError,
-                ChunkedEncodingError
+                RequestException,
             ),
             max_time=max_time,
             on_backoff=self.backoff_hdlr
@@ -240,11 +235,7 @@ class Linkedin(object):
         @backoff.on_exception(
             backoff.expo,
             (
-                Timeout,
-                ProxyError,
-                SSLError,
-                ReadTimeout,
-                ConnectionError,
+                RequestException,
             ),
             max_time=self._get_max_retry_time,
             on_backoff=self.backoff_hdlr
