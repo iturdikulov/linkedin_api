@@ -148,11 +148,11 @@ def parse_profile_from_source(html: str) -> dict:
     # Extract base profile data
     profile_data = {}
     keys_to_extract = {
-        "publicIdentifier": "publicIdentifier",
-        "firstName": "firstname",
-        "lastName": "lastname",
+        "publicIdentifier": "public_id",
+        "firstName": "first_name",
+        "lastName": "last_name",
         "headline": "headline",
-        "entityUrn": "entityUrn",
+        "entityUrn": "URN",
     }
 
     for key, nkey in keys_to_extract.items():
@@ -165,48 +165,42 @@ def parse_profile_from_source(html: str) -> dict:
         # this is why nkey is used here
 
     # Fill generated data and adjust some fields
-    profile_data["entityUrn"] = get_id_from_urn(profile_data["entityUrn"])
-    profile_data["profilelink"] = f"https://www.linkedin.com/in/{profile_data['publicIdentifier']}"
-    profile_data["fullname"] = f"{profile_data['firstname']} {profile_data['lastname']}"
-    profile_data[
-        "profileLinkSN"
-    ] = f"https://www.linkedin.com/sales/people/{profile_data['entityUrn']}"
-
+    profile_data["URN"] = get_id_from_urn(profile_data["URN"])
     return profile_data
 
 
-def parse_ln_sn_profile(profile: dict) -> dict:
-    # Extract full entity urn
-    match = re.search(r"\(([^)]+)\)", profile["entityUrn"])
-    if not match:
-        raise ValueError(f"No objectUrn found for {profile}")
-    full_entity_urn = match.group(1)
-
-    short_entity_urn = full_entity_urn.split(",")[0].split("(")[0]
-    logger.debug("Short entity urn: %s", short_entity_urn)
-    logger.debug("Full entity urn: %s", full_entity_urn)
-
-    # Extract public id
-    proflie_url = profile["flagshipProfileUrl"]
-    public_id = proflie_url.split("/in/", 1)[1]
-
-    profile_data = {
-        "public_id": public_id,
-        "firstname": profile["firstName"],
-        "full_name": profile["fullName"],
-        "lastname": profile["lastName"],
-        "headline": profile["headline"],
-        "URN": short_entity_urn,
-        "profileLinkSN": f"https://www.linkedin.com/sales/lead/{full_entity_urn}",
-    }
-
-    # Extract position company name
-    default_position = profile.get("defaultPosition")
-    if default_position and default_position.get("current"):
-        profile_data["companyName"] = default_position["companyName"]
-        profile_data["title"] = default_position["title"]
-
-    return profile_data
+# def parse_ln_sn_profile(profile: dict) -> dict:
+#     # Extract full entity urn
+#     match = re.search(r"\(([^)]+)\)", profile["entityUrn"])
+#     if not match:
+#         raise ValueError(f"No objectUrn found for {profile}")
+#     full_entity_urn = match.group(1)
+#
+#     short_entity_urn = full_entity_urn.split(",")[0].split("(")[0]
+#     logger.debug("Short entity urn: %s", short_entity_urn)
+#     logger.debug("Full entity urn: %s", full_entity_urn)
+#
+#     # Extract public id
+#     proflie_url = profile["flagshipProfileUrl"]
+#     public_id = proflie_url.split("/in/", 1)[1]
+#
+#     profile_data = {
+#         "public_id": public_id,
+#         "firstname": profile["firstName"],
+#         "full_name": profile["fullName"],
+#         "lastname": profile["lastName"],
+#         "headline": profile["headline"],
+#         "URN": short_entity_urn,
+#         "profileLinkSN": f"https://www.linkedin.com/sales/lead/{full_entity_urn}",
+#     }
+#
+#     # Extract position company name
+#     default_position = profile.get("defaultPosition")
+#     if default_position and default_position.get("current"):
+#         profile_data["companyName"] = default_position["companyName"]
+#         profile_data["title"] = default_position["title"]
+#
+#     return profile_data
 
 
 def parse_profile_cards(response_data) -> dict:

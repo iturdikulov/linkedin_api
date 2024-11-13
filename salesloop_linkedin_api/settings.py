@@ -79,6 +79,7 @@ REQUESTS_TYPES = {
         "sales-api/salesApiProfiles",
         "sales-api/salesApiPrimaryIdentity",
         "sales-api/salesApiAccess",
+        "profile/view",
     ),
     "other": (
         "legoWidgetActionEvents",
@@ -150,6 +151,7 @@ VALID_NORMAL_SEARCH_PARAMS = (
     # Sales search
     "savedSearchId",
     "sessionId",
+    "query",
     # Last text filters
     "company",
     "firstName",
@@ -157,7 +159,7 @@ VALID_NORMAL_SEARCH_PARAMS = (
     "schoolFreetext",
     "titleFreeText",
     # Paging
-    "page"
+    "page",
 )
 
 def get_account_requests_limits(connections_number: int, is_premium: bool):
