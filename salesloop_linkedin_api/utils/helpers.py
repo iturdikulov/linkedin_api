@@ -883,7 +883,7 @@ def cffi_get_cookies(client):
     return pickle.loads(client.cookies.jar._cookies)
 
 def cffi_set_cookies(client):
-    return pickle.dumps(client.cookies.jar._cookies)
+    return pickle.dumps(client.cookies.jar._cookies, protocol=pickle.HIGHEST_PROTOCOL)
 
 def cffi_set_headers(client):
-    return pickle.dumps(client.headers)
+    return pickle.dumps(client.headers, protocol=pickle.HIGHEST_PROTOCOL)
