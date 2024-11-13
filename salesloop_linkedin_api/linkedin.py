@@ -15,7 +15,7 @@ from time import sleep
 from urllib.parse import urlencode, urlparse, quote_plus
 
 import backoff
-from curl_cffi.requests.exceptions import RequestException
+from curl_cffi.requests.exceptions import ProxyError, ConnectionError
 
 from redis.client import StrictRedis
 from salesloop_linkedin_api.parser import parse_messenger_messages
@@ -54,6 +54,7 @@ from celery.utils.log import get_task_logger
 
 
 logger = get_task_logger(__name__)
+RetryExceptions = (ProxyError, ConnectionError)
 
 def generate_tracking_id():
     """Generates and returns a random trackingId
@@ -202,9 +203,7 @@ class Linkedin(object):
 
         @backoff.on_exception(
             backoff.expo,
-            (
-                RequestException,
-            ),
+            RetryExceptions,
             max_time=max_time,
             on_backoff=self.backoff_hdlr
         )
@@ -234,9 +233,7 @@ class Linkedin(object):
 
         @backoff.on_exception(
             backoff.expo,
-            (
-                RequestException,
-            ),
+            RetryExceptions,
             max_time=self._get_max_retry_time,
             on_backoff=self.backoff_hdlr
         )
