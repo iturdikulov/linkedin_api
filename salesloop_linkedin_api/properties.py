@@ -9,5 +9,6 @@ class LinkedinApFeatureAccess:
 
 class LinkedinConnectionState(Enum):
     SUCCESS = 0
-    CANT_RESEND_YET = 1
+    FAILED = 1
+    CANT_RESEND_YET = 2
 

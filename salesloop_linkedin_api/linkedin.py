@@ -593,7 +593,7 @@ class Linkedin(object):
         params = {
             "includeWebMetadata": "true",
             "variables": f"(vanityName:{public_id})",
-            "queryId": "voyagerIdentityDashProfiles.2531a1a7d1d5530ad1834e0012bf7d50",
+            "queryId": "voyagerIdentityDashProfiles.99846ade1cc203e6f684e7369b01d501",
         }
 
         response = self._fetch(
@@ -1568,9 +1568,12 @@ class Linkedin(object):
         if res_data.get("code") == "CANT_RESEND_YET":
             return LinkedinConnectionState.CANT_RESEND_YET
         else:
-            invitation_urn = res_data["value"]["invitationUrn"]
-            if invitation_urn:
-                return LinkedinConnectionState.SUCCESS
+            try:
+                if res_data["value"]["invitationUrn"]:
+                    return LinkedinConnectionState.SUCCESS
+            except KeyError:
+                logger.warning("No invitation urn found in response: %s", res_data)
+                return LinkedinConnectionState.FAILED
 
         raise Exception(f"Unknown connection error: {res_data}")
 
