@@ -15,7 +15,7 @@ from time import sleep
 from urllib.parse import urlencode, urlparse, quote_plus
 
 import backoff
-from curl_cffi.requests.exceptions import ProxyError, ConnectionError
+from curl_cffi.requests.exceptions import RequestsException
 
 from redis.client import StrictRedis
 from salesloop_linkedin_api.parser import parse_messenger_messages, parse_profile_from_source
@@ -54,7 +54,7 @@ from celery.utils.log import get_task_logger
 
 
 logger = get_task_logger(__name__)
-RetryExceptions = (ProxyError, ConnectionError)
+RetryExceptions = (RequestsException,)
 
 def generate_tracking_id():
     """Generates and returns a random trackingId
