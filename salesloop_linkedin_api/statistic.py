@@ -43,7 +43,8 @@ class APIRequestType:
                 return request_type
 
         # TODO: avoid hardcode here
-        if endpoint.startswith("in/"): # Profile parsing logic
+        if endpoint.startswith("in/") \
+            or endpoint.startswith("voyagerMessagingDashComposeOptions"):
             return "identity"
 
         raise Exception(f"Found unknown url/request type: {url}, endpoint: {endpoint}")
