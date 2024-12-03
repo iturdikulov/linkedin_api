@@ -159,6 +159,10 @@ class Linkedin(object):
         return self.default_retry_max_time
 
     def backoff_hdlr(self, details):
+        # TODO: remove/verify this after curl_cifi upgrade!
+        if details['exception'].args and 'HTTP Error' in details['exception'].args[0]:
+            raise Exception("HTTP fatal error, stop retrying")
+
         error_type = f"LinkedINAPIError_{details['target'].__name__}"
         error_message = "Backing off {wait:0.1f} seconds afters {tries} tries "
         "calling function {target} with args {args} and kwargs "
@@ -205,7 +209,7 @@ class Linkedin(object):
             backoff.expo,
             RetryExceptions,
             max_time=max_time,
-            on_backoff=self.backoff_hdlr
+            on_backoff=self.backoff_hdlr,
         )
         def fetch_data():
             if raw_url:
@@ -235,7 +239,7 @@ class Linkedin(object):
             backoff.expo,
             RetryExceptions,
             max_time=self._get_max_retry_time,
-            on_backoff=self.backoff_hdlr
+            on_backoff=self.backoff_hdlr,
         )
         def post_data():
             if raw_url:
@@ -250,7 +254,7 @@ class Linkedin(object):
             post_response = self.client.session.post(url, **kwargs)
 
             if (
-                post_response.status_code != 400
+                post_response.status_code != 400 # TODO: need to remove this?
                 and post_response.status_code not in allowed_status_codes
             ):
                 # Some responses, such as ln connection, can be valid with 400 code!
@@ -1562,10 +1566,12 @@ class Linkedin(object):
             "/voyagerRelationshipsDashMemberRelationships",
             headers=headers,
             params=params,
-            json=message_data
+            json=message_data,
+            allowed_status_codes=(406,)
         ).json()["data"]
 
-        if res_data.get("code") == "CANT_RESEND_YET":
+        error_code = res_data.get("code")
+        if error_code == "CANT_RESEND_YET":
             return LinkedinConnectionState.CANT_RESEND_YET
         else:
             try:
