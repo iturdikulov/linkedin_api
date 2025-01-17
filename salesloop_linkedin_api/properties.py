@@ -11,4 +11,5 @@ class LinkedinConnectionState(Enum):
     SUCCESS = 0
     FAILED = 1
     CANT_RESEND_YET = 2
+    CUSTOM_INVITE_LIMIT_REACHED = 3
 

@@ -1567,12 +1567,14 @@ class Linkedin(object):
             headers=headers,
             params=params,
             json=message_data,
-            allowed_status_codes=(406,)
+            allowed_status_codes=(406, 429)
         ).json()["data"]
 
         error_code = res_data.get("code")
         if error_code == "CANT_RESEND_YET":
             return LinkedinConnectionState.CANT_RESEND_YET
+        elif error_code == "CUSTOM_INVITE_LIMIT_REACHED":
+            return LinkedinConnectionState.CUSTOM_INVITE_LIMIT_REACHED
         else:
             try:
                 if res_data["value"]["invitationUrn"]:
