@@ -21,6 +21,7 @@ from redis.client import StrictRedis
 from salesloop_linkedin_api.parser import parse_messenger_messages, parse_profile_from_source
 
 import salesloop_linkedin_api.settings as settings
+from salesloop_linkedin_api.settings import FeatureAccess
 from application.integrations.linkedin import (
     LinkedinLoginError,
     LinkedinUnauthorized,
@@ -285,7 +286,13 @@ class Linkedin(object):
 
             # If we accessed to included data, this means we have access to the base API
             feature_access.linkedin = True
-            feature_access.premium = user_metadata["premium"]
+
+            # Verify if we has access to some premium features
+            feature_access_list = self.get_access_list()
+            if feature_access_list.CAN_ACCESS_SALES_NAV_ENTRY_POINT or \
+                feature_access_list.CAN_ACCESS_RECRUITER_ENTRY_POINT or \
+                feature_access_list.CAN_ACCESS_PREMIUM_REFERRALS:
+                feature_access.premium = True
 
             # Set cookies
             metadata["session_cookies"] = cffi_set_cookies(self.client.session)
@@ -357,12 +364,7 @@ class Linkedin(object):
                     "Could not parse email from response: %s", response_text
                 )
 
-        # NEXT: do we need to get this?
-        # premium_data = api.get_premium_subscription()["map"]["headerData"]["premium"]
-        # logger.debug(premium_data)
-
         return {
-            "premium": None,
             "urn": urn,
             "email": email,
             "avatar": avatar,
@@ -1131,6 +1133,26 @@ class Linkedin(object):
         response = self._fetch(url, raw_url=True, headers={"Accept": "application/graphql"})
         response.raise_for_status()
         return parse_messenger_messages(response.json())
+
+    def get_access_list(self) -> FeatureAccess:
+        random_page_instance_postfix = get_random_base64()
+        headers = {
+            "Accept": "application/vnd.linkedin.normalized+json+2.1",
+            "x-li-page-instance": f"urn:li:page:d_flagship3_feed;{random_page_instance_postfix}",
+            "x-restli-protocol-version": "2.0.0",
+            "Referer": "https://www.linkedin.com/in/mynetwork/",
+        }
+        params = {
+            "variables": "(featureAccessTypes:List(CAN_ACCESS_SALES_NAV_ENTRY_POINT,CAN_ACCESS_RECRUITER_ENTRY_POINT,CAN_ACCESS_ADVERTISE_BADGE,CAN_ACCESS_HIRING_MANAGER_MAILBOX,CAN_ACCESS_PREMIUM_REFERRALS))",
+            "queryId":  "voyagerPremiumDashFeatureAccess.c87b20dac35795f9920f2a8072fd7af5"
+        }
+        response = self._fetch(
+            f"/graphql?{urlencode(params, safe='(),:')}",
+            headers=headers,
+        ).json()
+        return FeatureAccess(
+            **{access["featureAccessType"]: access["hasAccess"] for access in response["included"]}
+        )
 
     def get_premium_subscription(self):
         """

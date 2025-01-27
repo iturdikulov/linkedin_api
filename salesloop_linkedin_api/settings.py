@@ -1,3 +1,5 @@
+from collections import namedtuple
+from enum import Enum
 import os
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -188,3 +190,11 @@ def get_account_requests_limits(connections_number: int, is_premium: bool):
             account_requests_limits[request_type] = limits[old]
 
     return account_requests_limits
+
+FeatureAccess = namedtuple('FeatureAccess', [
+    'CAN_ACCESS_SALES_NAV_ENTRY_POINT',
+    'CAN_ACCESS_RECRUITER_ENTRY_POINT',
+    'CAN_ACCESS_ADVERTISE_BADGE',
+    'CAN_ACCESS_HIRING_MANAGER_MAILBOX',
+    'CAN_ACCESS_PREMIUM_REFERRALS'
+])
