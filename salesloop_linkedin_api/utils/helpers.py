@@ -34,10 +34,9 @@ def default_evade():
     A catch-all method to try and evade suspension from Linkedin.
     Currently, just delays the request by a random (bounded) time
     """
-    sleep(
-        random.uniform(EVADE_MIN_TIMEOUT, EVADE_MAX_TIMEOUT)
-    )  # sleep a random duration to try and evade suspention
-
+    evade_delay = random.uniform(EVADE_MIN_TIMEOUT, EVADE_MAX_TIMEOUT)
+    sleep(evade_delay)
+    logger.debug("Evade delay: %s", evade_delay)
 
 def fast_evade():
     """
