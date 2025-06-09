@@ -1,6 +1,7 @@
 """
 Provides linkedin api-related code
 """
+
 import base64
 import json
 import random
@@ -57,6 +58,7 @@ from celery.utils.log import get_task_logger
 logger = get_task_logger(__name__)
 RetryExceptions = (RequestsException,)
 
+
 def generate_tracking_id():
     """Generates and returns a random trackingId
     :return: Random trackingId string
@@ -85,7 +87,6 @@ class Linkedin(object):
     _DEFAULT_GET_TIMEOUT = settings.REQUEST_TIMEOUT
     _DEFAULT_POST_TIMEOUT = settings.REQUEST_TIMEOUT
 
-
     def __init__(
         self,
         username,
@@ -96,7 +97,6 @@ class Linkedin(object):
         proxies={},
         api_cookies=None,
         api_headers=None,
-        cached_login=False,
         ua=None,
         default_retry_max_time=600,
         linkedin_login_id=None,
@@ -149,7 +149,9 @@ class Linkedin(object):
         # Redis connection
         redis_url = urlparse(environ["BROKER_URL"])
         redis_host, redis_port = redis_url.netloc.split(":")
-        self.rds = StrictRedis(redis_host, port=int(redis_port), decode_responses=True, charset="utf-8")
+        self.rds = StrictRedis(
+            redis_host, port=int(redis_port), decode_responses=True, charset="utf-8"
+        )
 
         # Unique session id, based on UUID
         self.session_id = uuid.uuid4()
@@ -161,7 +163,7 @@ class Linkedin(object):
 
     def backoff_hdlr(self, details):
         # TODO: remove/verify this after curl_cifi upgrade!
-        if details['exception'].args and 'HTTP Error' in details['exception'].args[0]:
+        if details["exception"].args and "HTTP Error" in details["exception"].args[0]:
             raise Exception("HTTP fatal error, stop retrying")
 
         error_type = f"LinkedINAPIError_{details['target'].__name__}"
@@ -169,10 +171,11 @@ class Linkedin(object):
         "calling function {target} with args {args} and kwargs "
         "{kwargs}".format(**details)
 
-        logger.warning(settings.LOG_PROXY_ERROR_MSG.format(
-                parsed_proxy=self.parsed_proxy,
-                error_type=error_type,
-                error_message=error_message))
+        logger.warning(
+            settings.LOG_PROXY_ERROR_MSG.format(
+                parsed_proxy=self.parsed_proxy, error_type=error_type, error_message=error_message
+            )
+        )
 
     def _update_statistics(self, url):
         request_type = APIRequestType.get_request_type(url)
@@ -255,7 +258,7 @@ class Linkedin(object):
             post_response = self.client.session.post(url, **kwargs)
 
             if (
-                post_response.status_code != 400 # TODO: need to remove this?
+                post_response.status_code != 400  # TODO: need to remove this?
                 and post_response.status_code not in allowed_status_codes
             ):
                 # Some responses, such as ln connection, can be valid with 400 code!
@@ -289,9 +292,11 @@ class Linkedin(object):
 
             # Verify if we has access to some premium features
             feature_access_list = self.get_access_list()
-            if feature_access_list.CAN_ACCESS_SALES_NAV_ENTRY_POINT or \
-                feature_access_list.CAN_ACCESS_RECRUITER_ENTRY_POINT or \
-                feature_access_list.CAN_ACCESS_PREMIUM_REFERRALS:
+            if (
+                feature_access_list.CAN_ACCESS_SALES_NAV_ENTRY_POINT
+                or feature_access_list.CAN_ACCESS_RECRUITER_ENTRY_POINT
+                or feature_access_list.CAN_ACCESS_PREMIUM_REFERRALS
+            ):
                 feature_access.premium = True
 
             # Set cookies
@@ -336,7 +341,9 @@ class Linkedin(object):
             # Prefix with correct url
             avatar = f"{root_url}{segment}"
         except (KeyError, IndexError) as e:
-            logger.critical("Could not parse avatar from search_hit_data: %s", mini_profile, exc_info=e)
+            logger.critical(
+                "Could not parse avatar from search_hit_data: %s", mini_profile, exc_info=e
+            )
 
         # TODO: cover this with tests
         email = None
@@ -466,7 +473,6 @@ class Linkedin(object):
         industries=None,
         schools=None,
         title=None,
-        include_private_profiles=False,  # profiles without a public id, "Linkedin Member"
         limit=None,
     ):
         """
@@ -478,19 +484,19 @@ class Linkedin(object):
         if network_depth:
             filters.append(f"network->{network_depth}")
         if regions:
-            filters.append(f'geoRegion->{"|".join(regions)}')
+            filters.append(f"geoRegion->{'|'.join(regions)}")
         if industries:
-            filters.append(f'industry->{"|".join(industries)}')
+            filters.append(f"industry->{'|'.join(industries)}")
         if current_company:
-            filters.append(f'currentCompany->{"|".join(current_company)}')
+            filters.append(f"currentCompany->{'|'.join(current_company)}")
         if past_companies:
-            filters.append(f'pastCompany->{"|".join(past_companies)}')
+            filters.append(f"pastCompany->{'|'.join(past_companies)}")
         if profile_languages:
-            filters.append(f'profileLanguage->{"|".join(profile_languages)}')
+            filters.append(f"profileLanguage->{'|'.join(profile_languages)}")
         if nonprofit_interests:
-            filters.append(f'nonprofitInterest->{"|".join(nonprofit_interests)}')
+            filters.append(f"nonprofitInterest->{'|'.join(nonprofit_interests)}")
         if schools:
-            filters.append(f'schools->{"|".join(schools)}')
+            filters.append(f"schools->{'|'.join(schools)}")
         if title:
             filters.append(f"title->{title}")
 
@@ -1144,7 +1150,7 @@ class Linkedin(object):
         }
         params = {
             "variables": "(featureAccessTypes:List(CAN_ACCESS_SALES_NAV_ENTRY_POINT,CAN_ACCESS_RECRUITER_ENTRY_POINT,CAN_ACCESS_ADVERTISE_BADGE,CAN_ACCESS_HIRING_MANAGER_MAILBOX,CAN_ACCESS_PREMIUM_REFERRALS))",
-            "queryId":  "voyagerPremiumDashFeatureAccess.c87b20dac35795f9920f2a8072fd7af5"
+            "queryId": "voyagerPremiumDashFeatureAccess.c87b20dac35795f9920f2a8072fd7af5",
         }
         response = self._fetch(
             f"/graphql?{urlencode(params, safe='(),:')}",
@@ -1441,7 +1447,12 @@ class Linkedin(object):
     def get_leads(
         self, search_url, is_sales=False, timeout=None, get_raw=False, send_sn_requests=True
     ):
-        logger.info("Leads quick search %s url, with %s timeout. Is Sales %s.", search_url, timeout, is_sales)
+        logger.info(
+            "Leads quick search %s url, with %s timeout. Is Sales %s.",
+            search_url,
+            timeout,
+            is_sales,
+        )
 
         if not validate_search_url(search_url):
             raise LinkedinAPIError("Invalid search URL")
@@ -1466,7 +1477,10 @@ class Linkedin(object):
                 )
 
                 # Normalize pagination total, can't be more than _MAX_SEARCH_LEN_SALES_NAV
-                if pagination.get("total") and pagination["total"] > self._MAX_SEARCH_LEN_SALES_NAV:
+                if (
+                    pagination.get("total")
+                    and pagination["total"] > self._MAX_SEARCH_LEN_SALES_NAV
+                ):
                     pagination["total"] = self._MAX_SEARCH_LEN_SALES_NAV
             else:
                 search_url = generate_grapqhl_search_url(search_url)
@@ -1589,7 +1603,7 @@ class Linkedin(object):
             headers=headers,
             params=params,
             json=message_data,
-            allowed_status_codes=(406, 429)
+            allowed_status_codes=(406, 429),
         ).json()["data"]
 
         error_code = res_data.get("code")
