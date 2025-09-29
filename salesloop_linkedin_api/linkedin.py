@@ -23,7 +23,7 @@ from salesloop_linkedin_api.parser import parse_messenger_messages, parse_profil
 
 import salesloop_linkedin_api.settings as settings
 from salesloop_linkedin_api.settings import FeatureAccess
-from application.integrations.linkedin import (
+from application.integrations.linkedin.exceptions import (
     LinkedinLoginError,
     LinkedinUnauthorized,
     LinkedinAPIError,
